@@ -28,6 +28,7 @@ class SecurityContext(BaseModel):
     user_id: str
     tenant_id: str = "default"
     session_id: str = ""
+    project_id: Optional[str] = None
     roles: list[Role] = Field(default_factory=list)
     scopes: list[str] = Field(default_factory=list)
     email: Optional[str] = None
@@ -63,6 +64,7 @@ class EpisodicContext(BaseModel):
     turn_count: int = 0
     recent_messages: list[Message] = Field(default_factory=list)
     channel: str = "chat"  # "chat", "voice", "episode"
+    metadata: dict = Field(default_factory=dict)
 
 
 class Fact(BaseModel):
