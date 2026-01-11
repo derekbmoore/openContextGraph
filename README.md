@@ -1,4 +1,4 @@
-# OpenContextGraph (ctxgraph)
+# OpenContextGraph (ctxEco)
 
 > **Enterprise AI Context Orchestration Platform**
 

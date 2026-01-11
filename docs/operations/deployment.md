@@ -11,7 +11,7 @@ cd frontend && npm run dev
 ## On-Prem (Kubernetes)
 
 ```bash
-helm install ctxgraph ./infra/helm/ctxgraph
+helm install ctxEco ./infra/helm/ctxEco
 ```
 
 ## Prerequisites

@@ -7,15 +7,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: ctxgraph
-      POSTGRES_USER: ctxgraph
+      POSTGRES_DB: ctxEco
+      POSTGRES_USER: ctxEco
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ctxgraph"]
+      test: ["CMD-SHELL", "pg_isready -U ctxEco"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
     image: ghcr.io/getzep/zep:latest
     environment:
       ZEP_STORE_TYPE: postgres
-      ZEP_STORE_POSTGRES_DSN: postgres://ctxgraph:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ctxgraph?sslmode=disable
+      ZEP_STORE_POSTGRES_DSN: postgres://ctxEco:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ctxEco?sslmode=disable
       ZEP_AUTH_REQUIRED: false
       ZEP_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
@@ -44,7 +44,7 @@ services:
     environment:
       - DB=postgresql
       - DB_PORT=5432
-      - POSTGRES_USER=ctxgraph
+      - POSTGRES_USER=ctxEco
       - POSTGRES_PWD=${POSTGRES_PASSWORD:-changeme}
       - POSTGRES_SEEDS=postgres
     ports:
