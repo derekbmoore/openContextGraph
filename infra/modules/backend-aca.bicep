@@ -1,0 +1,466 @@
+@description('Location for all resources.')
+param location string = resourceGroup().location
+
+@description('Name of the Container Apps Environment.')
+param acaEnvName string
+
+@description('Name of the backend container app.')
+param appName string = 'ctxEco-api'
+
+@description('Whether to attach a custom domain and managed certificate to the backend.')
+param enableCustomDomain bool = false
+
+@description('Custom domain name for the backend.')
+param customDomainName string = 'api.ctxEco.work'
+
+@description('Binding type: Disabled (HTTP only) or SniEnabled (HTTPS with Cert).')
+param customDomainBindingType string = 'SniEnabled'
+
+@description('Name of the docs storage share attached to the environment.')
+param docsStorageName string
+
+@description('Container image for the backend.')
+param containerImage string
+
+@description('PostgreSQL FQDN.')
+param postgresFqdn string
+
+@description('Temporal host.')
+param temporalHost string
+
+@description('Zep API URL.')
+param zepApiUrl string
+
+@description('Azure AI Services APIM Gateway endpoint for Chat (Azure OpenAI format).')
+param azureAiEndpoint string = 'https://zimax-gw.azure-api.net/zimax'
+
+@description('Azure AI Services project name (not used with APIM gateway).')
+param azureAiProjectName string = ''  // Empty for APIM gateway endpoints
+
+@description('Azure AI Model Router deployment name (recommended for intelligent routing).')
+param azureAiModelRouter string = 'model-router'
+
+@description('Azure VoiceLive endpoint (Azure AI Services direct).')
+param azureVoiceLiveEndpoint string = 'https://zimax.services.ai.azure.com'
+
+@description('Key Vault URI.')
+param keyVaultUri string
+
+@description('User-assigned identity resource ID used for Key Vault access.')
+param identityResourceId string
+
+@description('User-assigned identity client ID (for DefaultAzureCredential).')
+param identityClientId string
+
+@description('Whether API requests require user auth (Entra JWT). Set false for POC/staging to reduce friction.')
+param authRequired bool = false  // POC default: false (set true for production)
+
+@description('Azure AD tenant ID for authentication.')
+param azureAdTenantId string = ''
+
+@description('Azure AD client ID for frontend app.')
+param azureAdClientId string = ''
+
+@description('Whether using Entra External ID (CIAM) vs Workforce identity.')
+param azureAdExternalId bool = false
+
+@description('Entra External ID tenant domain (e.g., ctxEcoai for ctxEcoai.ciamlogin.com).')
+param azureAdExternalDomain string = ''
+
+@description('Registry username.')
+param registryUsername string
+
+@description('Registry password.')
+@secure()
+param registryPassword string
+
+@description('Tags to apply to all resources.')
+param tags object = {
+  Project: 'CtxEco'
+  Component: 'Backend'
+}
+
+// Conditional Model Router environment variable
+var modelRouterEnv = !empty(azureAiModelRouter) ? [
+  {
+    name: 'AZURE_AI_MODEL_ROUTER'
+    value: azureAiModelRouter
+  }
+] : []
+
+// Get reference to existing ACA environment for parenting the cert
+resource acaEnv 'Microsoft.App/managedEnvironments@2022-03-01' existing = {
+  name: acaEnvName
+}
+
+// Create Managed Certificate for Custom Domain (Only if SniEnabled)
+resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (enableCustomDomain && customDomainBindingType == 'SniEnabled') {
+  parent: acaEnv
+  name: '${appName}-cert'
+  location: location
+  properties: {
+    subjectName: customDomainName
+    domainControlValidation: 'CNAME'
+  }
+}
+
+// Backend API Container App
+resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: appName
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identityResourceId}': {}
+    }
+  }
+  properties: {
+    managedEnvironmentId: acaEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'http'
+        allowInsecure: false
+        customDomains: enableCustomDomain ? [
+          {
+            name: customDomainName
+            certificateId: customDomainBindingType == 'SniEnabled' ? certificate.id : null
+            bindingType: customDomainBindingType
+          }
+        ] : []
+
+
+      }
+      dapr: {
+        enabled: false
+      }
+      secrets: [
+        {
+          name: 'postgres-password'
+          keyVaultUrl: '${keyVaultUri}secrets/postgres-password'
+          identity: identityResourceId
+        }
+        {
+          name: 'zep-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/zep-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'azure-ai-key'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-ai-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'anthropic-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/anthropic-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'gemini-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/gemini-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'registry-password'
+          value: registryPassword
+        }
+        {
+          name: 'voicelive-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/voicelive-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'github-token'
+          keyVaultUrl: '${keyVaultUri}secrets/github-token'
+          identity: identityResourceId
+        }
+        // Foundry secrets (always reference - app handles None/empty gracefully)
+        {
+          name: 'azure-foundry-agent-endpoint'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-foundry-agent-endpoint'
+          identity: identityResourceId
+        }
+        {
+          name: 'azure-foundry-agent-project'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-foundry-agent-project'
+          identity: identityResourceId
+        }
+        {
+          name: 'azure-foundry-agent-key'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-foundry-agent-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'elena-foundry-agent-id'
+          keyVaultUrl: '${keyVaultUri}secrets/elena-foundry-agent-id'
+          identity: identityResourceId
+        }
+      ]
+      registries: [
+        {
+          server: 'ghcr.io'
+          username: registryUsername
+          passwordSecretRef: 'registry-password'
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'api'
+          image: containerImage
+          env: [
+            {
+              name: 'ENVIRONMENT'
+              value: 'production'
+            }
+            {
+              name: 'AZURE_KEYVAULT_URL'
+              value: keyVaultUri
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: identityClientId
+            }
+            {
+              name: 'POSTGRES_HOST'
+              value: postgresFqdn
+            }
+            {
+              name: 'POSTGRES_PORT'
+              value: '5432'
+            }
+            {
+              name: 'POSTGRES_USER'
+              value: 'cogadmin'
+            }
+            {
+              name: 'POSTGRES_PASSWORD'
+              secretRef: 'postgres-password'
+            }
+            {
+              name: 'POSTGRES_DB'
+              value: 'ctxEco'
+            }
+            {
+              name: 'TEMPORAL_HOST'
+              value: temporalHost
+            }
+            {
+              name: 'TEMPORAL_NAMESPACE'
+              value: 'default'
+            }
+            {
+              name: 'TEMPORAL_TASK_QUEUE'
+              value: 'ctxEco-agents'
+            }
+            {
+              name: 'ZEP_API_URL'
+              value: zepApiUrl
+            }
+            {
+              name: 'ZEP_API_KEY'
+              secretRef: 'zep-api-key'
+            }
+            {
+              name: 'AZURE_AI_ENDPOINT'
+              value: '${azureAiEndpoint}/openai/v1'
+            }
+            {
+              name: 'AZURE_AI_PROJECT_NAME'
+              value: azureAiProjectName
+            }
+            {
+              name: 'AZURE_AI_DEPLOYMENT'
+              value: 'gpt-5.2-chat'
+            }
+            {
+              name: 'AZURE_AI_API_VERSION'
+              value: '2024-05-01-preview'
+            }
+            ...modelRouterEnv
+            {
+              name: 'AZURE_AI_KEY'
+              secretRef: 'azure-ai-key'
+            }
+            // Azure AI Foundry Agent Service (always set - app handles None/empty gracefully)
+            {
+              name: 'AZURE_FOUNDRY_AGENT_ENDPOINT'
+              secretRef: 'azure-foundry-agent-endpoint'
+            }
+            {
+              name: 'AZURE_FOUNDRY_AGENT_PROJECT'
+              secretRef: 'azure-foundry-agent-project'
+            }
+            {
+              name: 'AZURE_FOUNDRY_AGENT_KEY'
+              secretRef: 'azure-foundry-agent-key'
+            }
+            {
+              name: 'AZURE_FOUNDRY_AGENT_API_VERSION'
+              value: '2025-11-15-preview'
+            }
+            {
+              name: 'ELENA_FOUNDRY_AGENT_ID'
+              secretRef: 'elena-foundry-agent-id'
+            }
+            {
+              name: 'AZURE_VOICELIVE_ENDPOINT'
+              value: azureVoiceLiveEndpoint
+            }
+            {
+              name: 'AZURE_VOICELIVE_KEY'
+              secretRef: 'voicelive-api-key'
+            }
+            {
+              name: 'AZURE_VOICELIVE_MODEL'
+              value: 'gpt-realtime'
+            }
+            {
+              name: 'AZURE_VOICELIVE_PROJECT_NAME'
+              value: 'zimax'  // Required for unified endpoint routing
+            }
+            {
+              name: 'AZURE_VOICELIVE_API_VERSION'
+              value: '2025-10-01'  // Latest version with 140+ languages, Neural HD voices, improved VAD, 4K avatars
+            }
+            {
+              name: 'CORS_ORIGINS'
+              value: '["https://ctxEco.work","http://localhost:5173","http://localhost:5174"]'
+            }
+            {
+              name: 'AUTH_REQUIRED'
+              value: authRequired ? 'true' : 'false'  // Respect the authRequired parameter
+            }
+            // Sage Agent LLM keys
+            {
+              name: 'ANTHROPIC_API_KEY'
+              secretRef: 'anthropic-api-key'
+            }
+            {
+              name: 'GEMINI_API_KEY'
+              secretRef: 'gemini-api-key'
+            }
+            {
+              name: 'ONEDRIVE_DOCS_PATH' // Ensure app uses the mounted path
+              value: 'docs'
+            }
+            {
+              name: 'GITHUB_TOKEN'
+              secretRef: 'github-token'
+            }
+            // Entra External ID (CIAM) configuration
+            {
+              name: 'AZURE_AD_TENANT_ID'
+              value: azureAdTenantId
+            }
+            {
+              name: 'AZURE_AD_CLIENT_ID'
+              value: azureAdClientId
+            }
+            {
+              name: 'AZURE_AD_EXTERNAL_ID'
+              value: azureAdExternalId ? 'true' : 'false'
+            }
+            {
+              name: 'AZURE_AD_EXTERNAL_DOMAIN'
+              value: azureAdExternalDomain
+            }
+          ]
+          volumeMounts: [
+            {
+              volumeName: 'docs-volume'
+              mountPath: '/app/docs'
+            }
+          ]
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          probes: [
+            {
+              type: 'Startup'
+              httpGet: {
+                port: 8080
+                path: '/health'
+              }
+              initialDelaySeconds: 60  // Backend starts THIRD (priority 3) - wait for Temporal+Zep
+              periodSeconds: 10
+              failureThreshold: 12     // 180s total window
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                port: 8080
+                path: '/health'
+              }
+              initialDelaySeconds: 5   // Reduced - startup probe handles initial wait
+              periodSeconds: 10
+              failureThreshold: 3
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                port: 8080
+                path: '/health'
+              }
+              initialDelaySeconds: 60  // Max allowed (after startup probe completes)
+              periodSeconds: 30
+              failureThreshold: 5
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        // Warm Start: Set minReplicas to 1 if you want to avoid initial cold start.
+        // Current: Warm start enabled for production verification
+        maxReplicas: 3
+        rules: [
+          {
+            name: 'http-scale'
+            http: {
+              metadata: {
+                concurrentRequests: '10'
+                cooldownPeriod: '1800' // 30 minutes idle before stopping
+              }
+            }
+          }
+        ]
+      }
+      volumes: [
+        {
+          name: 'docs-volume'
+          storageName: docsStorageName
+          storageType: 'AzureFile'
+        }
+      ]
+    }
+  }
+}
+
+// Output default ACA FQDN as URL
+output backendFqdn string = backendApp.properties.configuration.ingress.fqdn
+// Use custom domain when enabled, otherwise use default FQDN
+output backendUrl string = enableCustomDomain ? 'https://${customDomainName}' : 'https://${backendApp.properties.configuration.ingress.fqdn}'
+output backendDefaultFqdn string = backendApp.properties.configuration.ingress.fqdn
+output backendId string = backendApp.id
+
+resource authConfig 'Microsoft.App/containerApps/authConfigs@2023-05-01' = {
+  parent: backendApp
+  name: 'current'
+  properties: {
+    platform: {
+      enabled: false  // Auth handled by application code, not platform
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'AllowAnonymous'
+    }
+    // No identity providers - auth disabled completely at platform level
+  }
+}
+
+
+

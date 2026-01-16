@@ -1,0 +1,75 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "value": "prod"
+        },
+        "envName": {
+            "value": "ctxeco"
+        },
+        "location": {
+            "value": "eastus2"
+        },
+        "azureAdTenantId": {
+            "value": "8838531d-55dd-4018-8341-77705f4845f4"
+        },
+        "azureAdClientId": {
+            "value": ""
+        },
+        "azureAdExternalId": {
+            "value": true
+        },
+        "azureAdExternalDomain": {
+            "value": "ctxeco"
+        },
+        "authRequired": {
+            "value": false
+        },
+        "aksNodeCount": {
+            "value": 3
+        },
+        "aksNodeSize": {
+            "value": "Standard_D4s_v3"
+        },
+        "aksNodeMinCount": {
+            "value": 3
+        },
+        "aksNodeMaxCount": {
+            "value": 10
+        },
+        "postgresSku": {
+            "value": "Standard_B2ms"
+        },
+        "postgresStorageGB": {
+            "value": 32
+        },
+        "postgresHighAvailability": {
+            "value": false
+        },
+        "postgresReadReplicas": {
+            "value": 0
+        },
+        "enablePrivateLink": {
+            "value": false
+        },
+        "blobStorageRedundancy": {
+            "value": "LRS"
+        },
+        "temporalHistoryShards": {
+            "value": 4
+        },
+        "enableCodecServer": {
+            "value": false
+        },
+        "logRetentionDays": {
+            "value": 30
+        },
+        "enableBackup": {
+            "value": true
+        },
+        "backupRetentionDays": {
+            "value": 7
+        }
+    }
+}

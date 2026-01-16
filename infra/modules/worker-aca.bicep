@@ -1,0 +1,221 @@
+@description('Location for all resources.')
+param location string = resourceGroup().location
+
+@description('Name of the Container Apps Environment.')
+param acaEnvId string
+
+@description('Name of the worker container app.')
+param appName string = 'ctxEco-worker'
+
+@description('Name of the docs storage share attached to the environment.')
+param docsStorageName string
+
+@description('Container image for the worker.')
+param containerImage string
+
+@description('PostgreSQL FQDN.')
+param postgresFqdn string
+
+@description('Temporal host.')
+param temporalHost string
+
+@description('Zep API URL.')
+param zepApiUrl string
+
+@description('Azure AI Services APIM Gateway endpoint (Azure OpenAI format).')
+param azureAiEndpoint string = 'https://zimax-gw.azure-api.net/zimax'
+
+@description('Azure AI Services project name (not used with APIM gateway).')
+param azureAiProjectName string = ''  // Empty for APIM gateway endpoints
+
+@description('Key Vault URI.')
+param keyVaultUri string
+
+@description('User-assigned identity resource ID used for Key Vault access.')
+param identityResourceId string
+
+@description('User-assigned identity client ID (for DefaultAzureCredential).')
+param identityClientId string
+
+@description('Registry username.')
+param registryUsername string
+
+@description('Registry password.')
+@secure()
+param registryPassword string
+
+@description('Tags to apply to all resources.')
+param tags object = {
+  Project: 'CtxEco'
+  Component: 'Worker'
+}
+
+// Worker Container App
+resource workerApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: appName
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identityResourceId}': {}
+    }
+  }
+  properties: {
+    managedEnvironmentId: acaEnvId
+    configuration: {
+      // Worker doesn't expose HTTP - no ingress needed
+      dapr: {
+        enabled: false
+      }
+      secrets: [
+        {
+          name: 'postgres-password'
+          keyVaultUrl: '${keyVaultUri}secrets/postgres-password'
+          identity: identityResourceId
+        }
+        {
+          name: 'zep-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/zep-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'registry-password'
+          value: registryPassword
+        }
+        // Required for Sage story generation with Claude
+        {
+          name: 'anthropic-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/anthropic-api-key'
+          identity: identityResourceId
+        }
+        // Required for Sage diagram generation with Gemini
+        {
+          name: 'gemini-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/gemini-api-key'
+          identity: identityResourceId
+        }
+      ]
+      registries: [
+        {
+          server: 'ghcr.io'
+          username: registryUsername
+          passwordSecretRef: 'registry-password'
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'worker'
+          image: containerImage
+          command: ['python', '-m', 'workflows.worker']
+          args: []
+          env: [
+            {
+              name: 'ENVIRONMENT'
+              value: 'production'
+            }
+            {
+              name: 'AZURE_KEYVAULT_URL'
+              value: keyVaultUri
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: identityClientId
+            }
+            {
+              name: 'POSTGRES_HOST'
+              value: postgresFqdn
+            }
+            {
+              name: 'POSTGRES_PORT'
+              value: '5432'
+            }
+            {
+              name: 'POSTGRES_USER'
+              value: 'cogadmin'
+            }
+            {
+              name: 'POSTGRES_PASSWORD'
+              secretRef: 'postgres-password'
+            }
+            {
+              name: 'POSTGRES_DB'
+              value: 'ctxEco'
+            }
+            {
+              name: 'TEMPORAL_HOST'
+              value: temporalHost
+            }
+            {
+              name: 'TEMPORAL_NAMESPACE'
+              value: 'default'
+            }
+            {
+              name: 'TEMPORAL_TASK_QUEUE'
+              value: 'ctxEco-agents'
+            }
+            {
+              name: 'ZEP_API_URL'
+              value: zepApiUrl
+            }
+            {
+              name: 'ZEP_API_KEY'
+              secretRef: 'zep-api-key'
+            }
+            {
+              name: 'AZURE_AI_ENDPOINT'
+              value: '${azureAiEndpoint}/openai/v1'
+            }
+            {
+              name: 'AZURE_AI_PROJECT_NAME'
+              value: azureAiProjectName
+            }
+            // Sage Agent: Story generation with Claude
+            {
+              name: 'ANTHROPIC_API_KEY'
+              secretRef: 'anthropic-api-key'
+            }
+            // Sage Agent: Diagram generation with Gemini
+            {
+              name: 'GEMINI_API_KEY'
+              secretRef: 'gemini-api-key'
+            }
+            {
+              name: 'ONEDRIVE_DOCS_PATH' // Ensure app uses the mounted path
+              value: 'docs'
+            }
+          ]
+          volumeMounts: [
+            {
+              volumeName: 'docs-volume'
+              mountPath: '/app/docs'
+            }
+          ]
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          // Worker doesn't expose HTTP - no probes needed
+          // Container health is managed by Temporal's heartbeat mechanism
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+      volumes: [
+        {
+          name: 'docs-volume'
+          storageName: docsStorageName
+          storageType: 'AzureFile'
+        }
+      ]
+    }
+  }
+}
+
+// Outputs
+output workerAppName string = workerApp.name
+

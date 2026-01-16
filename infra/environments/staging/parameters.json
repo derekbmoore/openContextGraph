@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "staging"
+    },
+    "envName": {
+      "value": "ctxEco-staging"
+    },
+    "location": {
+      "value": "[resourceGroup().location]"
+    },
+    "azureAdTenantId": {
+      "value": "6684288a-b805-4161-bf41-ba2121e51c90"
+    },
+    "azureAdClientId": {
+      "value": "e32c6c40-615e-4a25-bc9e-944169e99697"
+    },
+    "azureAdExternalId": {
+      "value": true
+    },
+    "azureAdExternalDomain": {
+      "value": "ctxEcoai"
+    },
+    "authRequired": {
+      "value": true
+    },
+    "postgresSku": {
+      "value": "B1ms"
+    },
+    "enablePrivateLink": {
+      "value": false
+    },
+    "scaleToZero": {
+      "value": true
+    },
+    "postgresPassword": {
+      "reference": {
+        "keyVault": "[resourceId('Microsoft.KeyVault/vaults', 'ctxEco-staging-kv')]",
+        "secretName": "postgres-password"
+      }
+    },
+    "registryUsername": {
+      "reference": {
+        "keyVault": "[resourceId('Microsoft.KeyVault/vaults', 'ctxEco-staging-kv')]",
+        "secretName": "registry-username"
+      }
+    },
+    "registryPassword": {
+      "reference": {
+        "keyVault": "[resourceId('Microsoft.KeyVault/vaults', 'ctxEco-staging-kv')]",
+        "secretName": "registry-password"
+      }
+    },
+    "zepApiKey": {
+      "reference": {
+        "keyVault": "[resourceId('Microsoft.KeyVault/vaults', 'ctxEco-staging-kv')]",
+        "secretName": "zep-api-key"
+      }
+    },
+    "azureAiEndpoint": {
+      "value": ""
+    },
+    "azureAiProjectName": {
+      "value": ""
+    },
+    "azureAiKey": {
+      "reference": {
+        "keyVault": "[resourceId('Microsoft.KeyVault/vaults', 'ctxEco-staging-kv')]",
+        "secretName": "azure-ai-key"
+      }
+    }
+  }
+}
