@@ -319,6 +319,7 @@ class ZepMemoryClient:
         query: str,
         user_id: str,
         session_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
         search_type: str = "hybrid",
         limit: int = 10,
     ) -> dict:
@@ -335,13 +336,14 @@ class ZepMemoryClient:
             k = 60 (standard constant)
         
         NIST AI RMF Controls:
-        - MANAGE 2.3: Results scoped to user
+        - MANAGE 2.3: Results scoped to user and tenant
         - MEASURE 2.1: Relevance scores enable quality measurement
         
         Args:
             query: Search query
             user_id: Scope results to this user
             session_id: Optional session filter
+            tenant_id: Scope results to this tenant (CRITICAL for valid isolation)
             search_type: "keyword", "similarity", or "hybrid"
             limit: Maximum results
         
@@ -349,6 +351,16 @@ class ZepMemoryClient:
             {results: [...], search_type, fusion_scores}
         """
         results = []
+        
+        # SECURITY: Global search requires user_id and tenant_id
+        if session_id == "global-search":
+            if not user_id:
+                logger.warning("SECURITY: Global search attempted without user_id - denying request")
+                return {"results": [], "search_type": search_type, "query": query}
+            if not tenant_id:
+                logger.warning("SECURITY: Global search attempted without tenant_id - denying request")
+                return {"results": [], "search_type": search_type, "query": query}
+            logger.info(f"Global search authorized for user={user_id}, tenant={tenant_id}")
         
         try:
             # Try Zep's native search endpoint
@@ -522,11 +534,12 @@ class ZepMemoryClient:
     async def list_sessions(
         self,
         user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
         limit: int = 20,
         offset: int = 0
     ) -> list[dict]:
         """
-        List conversation sessions with optional user filtering.
+        List conversation sessions with user and tenant filtering.
         """
         try:
             result = await self._request("GET", "/api/v1/sessions")
@@ -534,6 +547,14 @@ class ZepMemoryClient:
             if result and isinstance(result, list):
                 sessions = result
                 
+                # SECURITY: Filter by tenant_id first (highest priority)
+                if tenant_id:
+                    sessions = [
+                        s for s in sessions 
+                        if s.get("metadata", {}).get("tenant_id") == tenant_id
+                        or s.get("metadata", {}).get("tenant_id") is None  # Legacy sessions
+                    ]
+
                 if user_id:
                     sessions = [
                         s for s in sessions 

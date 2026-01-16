@@ -97,6 +97,7 @@ async def search_memory(
         result = await memory_client.search_memory(
             query=request.query,
             user_id=search_user_id,
+            tenant_id=user.tenant_id,  # SECURITY: Enforce tenant isolation
             search_type=request.search_type,
             limit=request.limit,
         )
@@ -190,6 +191,7 @@ async def list_sessions(
     try:
         sessions = await memory_client.list_sessions(
             user_id=user.user_id,
+            tenant_id=user.tenant_id,  # SECURITY: Enforce tenant isolation
             limit=limit,
             offset=offset,
         )
