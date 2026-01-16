@@ -43,6 +43,7 @@ jobs:
       - name: Run tests
         run: |
           cd backend
+          export PYTHONPATH=$PYTHONPATH:.
           pytest tests/ -v
 
   # Build Images
