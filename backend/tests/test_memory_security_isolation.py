@@ -161,7 +161,7 @@ class TestCrossUserIsolation:
         user_tenant_a_alice
     ):
         """Admin should be able to access any user's memories in their tenant."""
-        from backend.memory.access_policy import MemoryAccessPolicy
+        from memory.access_policy import MemoryAccessPolicy
         
         # Alice's memory
         alices_memory = {
@@ -183,14 +183,14 @@ class TestSystemMemoryAccess:
     
     def test_analyst_can_access_system_memories(self, user_tenant_a_alice):
         """Analyst should be able to access system memories."""
-        from backend.memory.access_policy import MemoryAccessPolicy
+        from memory.access_policy import MemoryAccessPolicy
         
         can_access = MemoryAccessPolicy.can_access_system_memories(user_tenant_a_alice)
         assert can_access, "Analyst should be able to access system memories"
     
     def test_viewer_cannot_access_system_memories(self):
         """Viewer role should NOT be able to access system memories."""
-        from backend.memory.access_policy import MemoryAccessPolicy
+        from memory.access_policy import MemoryAccessPolicy
         
         viewer = SecurityContext(
             user_id="user-viewer",
@@ -205,7 +205,7 @@ class TestSystemMemoryAccess:
     
     def test_system_memory_requires_same_tenant(self, user_tenant_a_alice):
         """System memory access requires same tenant."""
-        from backend.memory.access_policy import MemoryAccessPolicy
+        from memory.access_policy import MemoryAccessPolicy
         
         # System memory from a different tenant
         other_tenant_system_memory = {
@@ -249,7 +249,7 @@ class TestGlobalSearchSecurity:
     @pytest.mark.asyncio
     async def test_global_search_requires_tenant_id(self):
         """Global search should fail without tenant_id."""
-        from backend.memory.client import ZepMemoryClient
+        from memory.client import ZepMemoryClient
         
         client = ZepMemoryClient()
         

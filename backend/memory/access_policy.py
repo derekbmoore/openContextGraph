@@ -5,7 +5,7 @@ Defines and enforces access control policies for memory operations,
 particularly for system-ingested memories and cross-user access.
 """
 
-from backend.core import SecurityContext, Role
+from core import SecurityContext, Role
 
 
 class MemoryAccessPolicy:
