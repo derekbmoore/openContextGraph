@@ -43,6 +43,9 @@ param azureAiModelRouter string = 'model-router'
 @description('Azure VoiceLive endpoint (Azure AI Services direct).')
 param azureVoiceLiveEndpoint string = 'https://zimax.services.ai.azure.com'
 
+@description('Azure Speech Service Region (e.g., westus2 for Avatar).')
+param azureSpeechRegion string = 'westus2'
+
 @description('Key Vault URI.')
 param keyVaultUri string
 
@@ -170,6 +173,11 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'voicelive-api-key'
           keyVaultUrl: '${keyVaultUri}secrets/voicelive-api-key'
+          identity: identityResourceId
+        }
+        {
+          name: 'azure-speech-key'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-speech-key'
           identity: identityResourceId
         }
         {
@@ -326,6 +334,14 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'AZURE_VOICELIVE_API_VERSION'
               value: '2025-10-01'  // Latest version with 140+ languages, Neural HD voices, improved VAD, 4K avatars
+            }
+            {
+              name: 'AZURE_SPEECH_KEY'
+              secretRef: 'azure-speech-key'
+            }
+            {
+              name: 'AZURE_SPEECH_REGION'
+              value: azureSpeechRegion
             }
             {
               name: 'CORS_ORIGINS'

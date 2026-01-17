@@ -123,6 +123,15 @@ param githubToken string = ''
 @secure()
 param voiceliveApiKey string = ''
 
+@description('Azure Speech Service Key for Avatar.')
+@secure()
+param azureSpeechKey string = ''
+
+@description('Azure Speech Service Region (e.g., westus2 for Avatar).')
+param azureSpeechRegion string = 'westus2'
+
+
+
 @description('Postgres SKU Name (e.g., Standard_B2ms, Standard_D4ds_v4).')
 param postgresSku string = 'Standard_B2s'
 
@@ -454,6 +463,7 @@ module keyVaultSecrets 'modules/keyvault-secrets.bicep' = {
     geminiApiKey: geminiApiKey
     githubToken: githubToken
     voiceliveApiKey: voiceliveApiKey
+    azureSpeechKey: azureSpeechKey
   }
 }
 
@@ -598,6 +608,7 @@ module backendModule 'modules/backend-aca.bicep' = {
     azureAiProjectName: azureAiProjectName
     azureAiModelRouter: azureAiModelRouter
     azureVoiceLiveEndpoint: 'https://zimax.services.ai.azure.com'
+    azureSpeechRegion: azureSpeechRegion
     registryUsername: registryUsername
     registryPassword: registryPassword
     keyVaultUri: keyVaultModule.outputs.keyVaultUri

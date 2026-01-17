@@ -56,6 +56,10 @@ param githubToken string = ''
 @secure()
 param voiceliveApiKey string = ''
 
+@description('Azure Speech Service Key for Avatar.')
+@secure()
+param azureSpeechKey string = ''
+
 // Reference existing Key Vault
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
