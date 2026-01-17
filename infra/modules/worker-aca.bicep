@@ -68,6 +68,7 @@ resource workerApp 'Microsoft.App/containerApps@2023-05-01' = {
       dapr: {
         enabled: false
       }
+      activeRevisionsMode: 'Single'
       secrets: [
         {
           name: 'postgres-password'

@@ -397,9 +397,16 @@ export default function VoiceChat({
               setError(`Authentication failed: ${reason}. Please refresh and try again.`);
             } else if (event.code !== 1000) {
               // 1000 is normal closure, others are errors
-              const reason = event.reason || 'Unknown reason';
-              console.error(`Voice WebSocket closed with error: ${reason} (code: ${event.code})`);
-              setError(`Connection closed: ${reason}`);
+              const reason = event.reason;
+              console.error(`Voice WebSocket closed with error: ${reason || 'Unknown'} (code: ${event.code})`);
+
+              if (reason) {
+                setError(`Connection closed: ${reason}`);
+              } else {
+                // Determine if we should set a generic error
+                // Use functional update to check if we already have a more specific error from onmessage
+                setError(prev => prev || `Connection closed: Unknown reason (code: ${event.code})`);
+              }
             }
             onStatusChangeRef.current?.('error');
           }

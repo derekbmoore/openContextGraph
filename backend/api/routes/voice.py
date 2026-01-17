@@ -907,7 +907,7 @@ async def voicelive_websocket(websocket: WebSocket, session_id: str):
             "type": "error",
             "message": "VoiceLive SDK not installed. Install with: pip install azure-ai-voicelive[aiohttp]",
         })
-        await websocket.close()
+        await websocket.close(code=1011, reason="VoiceLive SDK not installed")
     
     except Exception as e:
         error_msg = str(e)
@@ -954,7 +954,11 @@ async def voicelive_websocket(websocket: WebSocket, session_id: str):
                 "type": "error",
                 "message": f"Voice connection failed: {error_msg}",
             })
-        await websocket.close()
+        # Close with reason to ensure frontend captures it even if JSON is missed
+        # Truncate reason to safe length for WebSocket frame (max 123 bytes)
+        safe_reason = (error_msg or "Unknown error")[:100]
+        # Use 1011 (Internal Error) for exceptions
+        await websocket.close(code=1011, reason=safe_reason)
     
     finally:
         session_manager.remove_session(session_id)
