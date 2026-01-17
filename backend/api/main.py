@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
 
 from core import get_settings
-from .routes import health, chat, memory, etl, stories, voice
+from .routes import health, chat, memory, etl, stories, voice, images
 from .middleware.cors_preflight import CORSPreflightMiddleware
 
 logging.basicConfig(level=logging.INFO)
@@ -114,6 +114,7 @@ def create_app() -> FastAPI:
     app.include_router(etl.router, prefix="/api/v1/etl", tags=["ETL"])
     app.include_router(stories.router, prefix="/api/v1/story", tags=["Story"])
     app.include_router(voice.router, prefix="/api/v1/voice", tags=["Voice"])
+    app.include_router(images.router, prefix="/api/v1/images", tags=["Images"])
 
     @app.get("/")
     async def root():

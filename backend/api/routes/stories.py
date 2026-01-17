@@ -2,10 +2,12 @@
 Story API Router
 
 Endpoints for Sage Meridian's story generation and diagram creation.
+Supports both local filesystem and Azure Blob Storage for persistence.
 """
 
 import json
 import logging
+import io
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -19,6 +21,141 @@ from core import SecurityContext, get_settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["story"])
+
+
+# =============================================================================
+# Azure Blob Storage Helpers
+# =============================================================================
+
+
+async def _get_blob_service():
+    """Get Azure Blob Service client if configured."""
+    settings = get_settings()
+    if not settings.azure_storage_connection_string:
+        return None
+    try:
+        from azure.storage.blob.aio import BlobServiceClient
+        return BlobServiceClient.from_connection_string(
+            settings.azure_storage_connection_string
+        )
+    except ImportError:
+        logger.warning("azure-storage-blob not installed")
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to create blob service client: {e}")
+        return None
+
+
+async def _list_stories_from_blob() -> list[dict]:
+    """List stories from Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return []
+    
+    stories = []
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_stories_container or "stories"
+            container_client = blob_service.get_container_client(container_name)
+            
+            async for blob in container_client.list_blobs():
+                if blob.name.endswith(".md"):
+                    story_id = blob.name.replace(".md", "")
+                    stories.append({
+                        "story_id": story_id,
+                        "name": blob.name,
+                        "last_modified": blob.last_modified,
+                        "source": "blob"
+                    })
+    except Exception as e:
+        logger.warning(f"Failed to list stories from blob: {e}")
+    
+    return stories
+
+
+async def _get_story_from_blob(story_id: str) -> Optional[str]:
+    """Get story content from Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return None
+    
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_stories_container or "stories"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(f"{story_id}.md")
+            
+            if await blob_client.exists():
+                download = await blob_client.download_blob()
+                content = await download.readall()
+                return content.decode("utf-8")
+    except Exception as e:
+        logger.warning(f"Failed to get story from blob: {e}")
+    
+    return None
+
+
+async def _save_story_to_blob(story_id: str, content: str) -> bool:
+    """Save story content to Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return False
+    
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_stories_container or "stories"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(f"{story_id}.md")
+            
+            await blob_client.upload_blob(content.encode("utf-8"), overwrite=True)
+            return True
+    except Exception as e:
+        logger.error(f"Failed to save story to blob: {e}")
+    
+    return False
+
+
+async def _save_image_to_blob(filename: str, content: bytes) -> bool:
+    """Save image to Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return False
+    
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_images_container or "images"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(filename)
+            
+            await blob_client.upload_blob(content, overwrite=True)
+            return True
+    except Exception as e:
+        logger.error(f"Failed to save image to blob: {e}")
+    
+    return False
+
+
+async def _check_image_in_blob(filename: str) -> bool:
+    """Check if image exists in Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return False
+    
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_images_container or "images"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(filename)
+            return await blob_client.exists()
+    except Exception as e:
+        logger.warning(f"Failed to check image in blob: {e}")
+    
+    return False
 
 
 # =============================================================================
@@ -297,59 +434,86 @@ async def upload_architecture_image(
 
 @router.get("/{story_id}", response_model=StoryResponse)
 async def get_story(story_id: str, user: SecurityContext = Depends(get_current_user)):
-    """Get a specific story by ID."""
+    """Get a specific story by ID from filesystem or blob storage."""
     stories_dir = _get_stories_dir()
     story_path = stories_dir / f"{story_id}.md"
     
-    if not story_path.exists():
+    story_content = None
+    created_at = None
+    story_path_str = None
+    
+    # Try local filesystem first
+    if story_path.exists():
+        story_content = story_path.read_text()
+        created_at = datetime.fromtimestamp(story_path.stat().st_mtime).isoformat()
+        story_path_str = str(story_path)
+    else:
+        # Try blob storage
+        story_content = await _get_story_from_blob(story_id)
+        if story_content:
+            created_at = datetime.now().isoformat()  # Blob doesn't give us easy access to modified time here
+            story_path_str = f"blob://{story_id}.md"
+    
+    if not story_content:
         raise HTTPException(status_code=404, detail=f"Story not found: {story_id}")
     
-    # Try to load corresponding diagram
+    # Try to load corresponding diagram (local only for now)
     diagrams_dir = _get_diagrams_dir()
     diagram_path = diagrams_dir / f"{story_id}.json"
     diagram_spec = None
     if diagram_path.exists():
         diagram_spec = json.loads(diagram_path.read_text())
     
-    # Check for Imagen-generated image
+    # Check for Imagen-generated image (local first, then blob)
     images_dir = _get_images_dir()
     image_path_str = None
     if (images_dir / f"{story_id}.png").exists():
         image_path_str = f"/api/v1/images/{story_id}.png"
+    elif await _check_image_in_blob(f"{story_id}.png"):
+        image_path_str = f"/api/v1/images/{story_id}.png"
     
-    # Check for uploaded architecture image (try all extensions)
+    # Check for uploaded architecture image (try all extensions, local first then blob)
     architecture_image_path_str = None
     for ext in ["png", "jpg", "webp"]:
         arch_image = images_dir / f"{story_id}-architecture.{ext}"
         if arch_image.exists():
             architecture_image_path_str = f"/api/v1/images/{story_id}-architecture.{ext}"
             break
+        elif await _check_image_in_blob(f"{story_id}-architecture.{ext}"):
+            architecture_image_path_str = f"/api/v1/images/{story_id}-architecture.{ext}"
+            break
     
     return StoryResponse(
         story_id=story_id,
         topic=story_id.split("-", 2)[-1].replace("-", " ") if "-" in story_id else story_id,
-        story_content=story_path.read_text(),
-        story_path=str(story_path),
+        story_content=story_content,
+        story_path=story_path_str,
         diagram_spec=diagram_spec,
         diagram_path=str(diagram_path) if diagram_path.exists() else None,
         image_path=image_path_str,
         architecture_image_path=architecture_image_path_str,
-        created_at=datetime.fromtimestamp(story_path.stat().st_mtime).isoformat(),
+        created_at=created_at,
     )
 
 
 @router.get("/", response_model=list[StoryListItem])
 async def list_stories(user: SecurityContext = Depends(get_current_user)):
-    """List all available stories."""
+    """List all available stories from filesystem and blob storage."""
     stories_dir = _get_stories_dir()
     
     stories = []
+    seen_ids = set()
+    
+    # First, get stories from local filesystem
     for story_file in sorted(stories_dir.glob("*.md"), reverse=True):
         story_id = story_file.stem
+        seen_ids.add(story_id)
         
-        # Check for image
+        # Check for image (local first, then blob)
         image_path_str = None
         if (stories_dir.parent / "images" / f"{story_id}.png").exists():
+            image_path_str = f"/api/v1/images/{story_id}.png"
+        elif await _check_image_in_blob(f"{story_id}.png"):
             image_path_str = f"/api/v1/images/{story_id}.png"
             
         stories.append(StoryListItem(
@@ -359,4 +523,27 @@ async def list_stories(user: SecurityContext = Depends(get_current_user)):
             story_path=str(story_file),
             image_path=image_path_str
         ))
+    
+    # Then, get stories from blob storage (if not already in local)
+    blob_stories = await _list_stories_from_blob()
+    for blob_story in blob_stories:
+        story_id = blob_story["story_id"]
+        if story_id in seen_ids:
+            continue
+        
+        # Check for image in blob
+        image_path_str = None
+        if await _check_image_in_blob(f"{story_id}.png"):
+            image_path_str = f"/api/v1/images/{story_id}.png"
+        
+        stories.append(StoryListItem(
+            story_id=story_id,
+            topic=story_id.split("-", 2)[-1].replace("-", " ") if "-" in story_id else story_id,
+            created_at=blob_story["last_modified"].isoformat() if blob_story.get("last_modified") else datetime.now().isoformat(),
+            story_path=f"blob://{story_id}.md",
+            image_path=image_path_str
+        ))
+    
+    # Sort by created_at descending
+    stories.sort(key=lambda x: x.created_at, reverse=True)
     return stories

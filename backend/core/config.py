@@ -115,6 +115,13 @@ class Settings(BaseSettings):
     onedrive_docs_path: str = Field("docs", alias="ONEDRIVE_DOCS_PATH")
 
     # ==========================================================================
+    # Azure Blob Storage (for persistent story/image storage)
+    # ==========================================================================
+    azure_storage_connection_string: Optional[str] = Field(None, alias="AZURE_STORAGE_CONNECTION_STRING")
+    azure_storage_stories_container: str = Field("stories", alias="AZURE_STORAGE_STORIES_CONTAINER")
+    azure_storage_images_container: str = Field("images", alias="AZURE_STORAGE_IMAGES_CONTAINER")
+
+    # ==========================================================================
     # Microsoft Entra ID (Authentication)
     # ==========================================================================
     azure_tenant_id: Optional[str] = Field(None, alias="AZURE_AD_TENANT_ID")

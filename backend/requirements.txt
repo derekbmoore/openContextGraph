@@ -10,9 +10,10 @@ pydantic-settings>=2.1.0
 python-jose[cryptography]>=3.3.0
 httpx>=0.26.0
 
-# Azure Services (for VoiceLive)
+# Azure Services (for VoiceLive and Blob Storage)
 azure-identity>=1.15.0
 azure-core>=1.29.5
+azure-storage-blob>=12.19.0
 
 # Azure AI VoiceLive (Real-time Voice) - Optional
 # azure-ai-voicelive[aiohttp]>=1.0.0  # Uncomment if VoiceLive is needed
