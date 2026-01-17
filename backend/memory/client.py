@@ -556,6 +556,9 @@ class ZepMemoryClient:
     ) -> list[dict]:
         """
         List conversation sessions with user and tenant filtering.
+        
+        Note: Legacy sessions may have metadata=None or user_id=None.
+        These are included in results for backwards compatibility.
         """
         try:
             result = await self._request("GET", "/api/v1/sessions")
@@ -563,14 +566,24 @@ class ZepMemoryClient:
             if result and isinstance(result, list):
                 sessions = result
                 
+                # Helper to safely get metadata field
+                def get_metadata_field(session: dict, field: str) -> Optional[str]:
+                    metadata = session.get("metadata")
+                    if metadata is None:
+                        return None
+                    return metadata.get(field)
+                
                 # SECURITY: Filter by tenant_id first (highest priority)
+                # Allow sessions with no tenant_id (legacy) to pass through
                 if tenant_id:
                     sessions = [
                         s for s in sessions 
-                        if s.get("metadata", {}).get("tenant_id") == tenant_id
-                        or s.get("metadata", {}).get("tenant_id") is None  # Legacy sessions
+                        if get_metadata_field(s, "tenant_id") == tenant_id
+                        or get_metadata_field(s, "tenant_id") is None  # Legacy sessions
                     ]
 
+                # Filter by user_id
+                # Allow sessions with no user_id (legacy) to pass through
                 if user_id:
                     sessions = [
                         s for s in sessions 
