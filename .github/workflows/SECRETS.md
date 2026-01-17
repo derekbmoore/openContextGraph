@@ -7,18 +7,61 @@ This document describes how secrets are managed for the OpenContextGraph CI/CD p
 ### GitHub Secrets (Repository Settings → Secrets and variables → Actions)
 
 **Required for CI/CD:**
-- `AZURE_CLIENT_ID` - Service Principal Client ID for Azure authentication
-- `AZURE_TENANT_ID` - Azure AD Tenant ID  
+
+**Option 1: AZURE_CREDENTIALS (Recommended - matches engram pattern)**
+- `AZURE_CREDENTIALS` - Service Principal JSON containing clientId, clientSecret, subscriptionId, tenantId
+
+**Option 2: Individual Secrets (Alternative)**
+- `AZURE_CLIENT_ID` - Service Principal Client ID
+- `AZURE_TENANT_ID` - Azure AD Tenant ID
 - `AZURE_SUBSCRIPTION_ID` - Azure Subscription ID
-- `AZURE_CLIENT_SECRET` - Service Principal Client Secret (if using password auth)
+- `AZURE_CLIENT_SECRET` - Service Principal Client Secret
+
+**Creating AZURE_CREDENTIALS:**
+```bash
+# Login to Azure
+az login
+
+# Set variables
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+RESOURCE_GROUP="ctxeco-rg"
+SP_NAME="opencontextgraph-github-actions"
+
+# Create service principal with contributor role
+az ad sp create-for-rbac \
+  --name "$SP_NAME" \
+  --role contributor \
+  --scopes "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP" \
+  --sdk-auth
+
+# Output JSON should be saved as AZURE_CREDENTIALS secret
+```
 
 **Note:** If you prefer using OpenID Connect (federated credentials) instead of service principal secrets, you can configure it in Azure AD. See [Azure Federated Identity Credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/workload-identity-federation-create-trust-github) for setup instructions.
+
+**Required for Deployment (passed to Bicep templates):**
+- `POSTGRES_PASSWORD` - PostgreSQL admin password (stored in Key Vault during deployment)
+- `CR_PAT` - GitHub Container Registry Personal Access Token
 
 **Optional for CI/CD (with defaults):**
 - `AZURE_RESOURCE_GROUP` - Resource group name (default: `ctxeco-rg`)
 - `AZURE_BACKEND_APP_NAME` - Backend Container App name (default: `ctxeco-api`)
 - `AZURE_WORKER_APP_NAME` - Worker Container App name (default: `ctxeco-worker`)
 - `AZURE_KEY_VAULT_NAME` - Key Vault name for fetching config (optional)
+
+**Optional for Deployment (passed to Bicep templates):**
+- `ZEP_API_KEY` - Zep API key (stored in Key Vault, optional)
+- `AZURE_AI_ENDPOINT` or `AZURE_OPENAI_ENDPOINT` - Azure AI endpoint URL
+- `AZURE_OPENAI_KEY` - Azure OpenAI API key (alternative to APIM key)
+- `AZURE_AI_PROJECT_NAME` - Azure AI project name (optional)
+- `AZURE_AD_TENANT_ID` - Azure AD tenant ID for authentication
+- `AZURE_AD_CLIENT_ID` - Azure AD client ID for frontend app
+- `AZURE_AD_EXTERNAL_ID` - Whether using Entra External ID (CIAM), set to 'true' if using
+- `AZURE_AD_EXTERNAL_DOMAIN` - Entra External ID tenant domain
+- `AZURE_FOUNDRY_AGENT_ENDPOINT` - Azure AI Foundry agent endpoint
+- `AZURE_FOUNDRY_AGENT_PROJECT` - Azure AI Foundry agent project
+- `AZURE_FOUNDRY_AGENT_KEY` - Azure AI Foundry agent API key
+- `ELENA_FOUNDRY_AGENT_ID` - Elena Foundry agent ID
 
 ### Azure Key Vault
 
