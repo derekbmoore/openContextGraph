@@ -90,3 +90,54 @@ jobs:
           path: ./backend
           fail-build: false  # Don't block deploy on scan for now
           severity-cutoff: high
+
+  # Deploy to Azure Container Apps
+  deploy-azure:
+    name: Deploy to Azure Container Apps
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update Backend Container App
+        run: |
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
+          RESOURCE_GROUP="${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}"
+          BACKEND_APP_NAME="${{ secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}"
+          
+          echo "Updating Container App: $BACKEND_APP_NAME with image: $IMAGE_TAG"
+          
+          az containerapp update \
+            --name "$BACKEND_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE_TAG" \
+            --query "properties.template.containers[0].image" \
+            -o tsv
+
+      - name: Update Worker Container App
+        run: |
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
+          RESOURCE_GROUP="${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}"
+          WORKER_APP_NAME="${{ secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}"
+          
+          echo "Updating Container App: $WORKER_APP_NAME with image: $IMAGE_TAG"
+          
+          az containerapp update \
+            --name "$WORKER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE_TAG" \
+            --query "properties.template.containers[0].image" \
+            -o tsv
