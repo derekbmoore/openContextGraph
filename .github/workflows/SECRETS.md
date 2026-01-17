@@ -8,8 +8,11 @@ This document describes how secrets are managed for the OpenContextGraph CI/CD p
 
 **Required for CI/CD:**
 - `AZURE_CLIENT_ID` - Service Principal Client ID for Azure authentication
-- `AZURE_TENANT_ID` - Azure AD Tenant ID
+- `AZURE_TENANT_ID` - Azure AD Tenant ID  
 - `AZURE_SUBSCRIPTION_ID` - Azure Subscription ID
+- `AZURE_CLIENT_SECRET` - Service Principal Client Secret (if using password auth)
+
+**Note:** If you prefer using OpenID Connect (federated credentials) instead of service principal secrets, you can configure it in Azure AD. See [Azure Federated Identity Credentials](https://learn.microsoft.com/en-us/azure/active-directory/develop/workload-identity-federation-create-trust-github) for setup instructions.
 
 **Optional for CI/CD (with defaults):**
 - `AZURE_RESOURCE_GROUP` - Resource group name (default: `ctxeco-rg`)
