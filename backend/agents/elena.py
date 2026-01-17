@@ -134,9 +134,13 @@ Tenant: {tenant_id}
         import httpx
         
         llm_provider = os.getenv("LLM_PROVIDER", "openai")
-        llm_api_base = os.getenv("LLM_API_BASE", "https://api.openai.com/v1")
-        llm_api_key = os.getenv("LLM_API_KEY", "")
-        llm_model = os.getenv("LLM_MODEL", "gpt-4o")
+        # Use AZURE_AI_ENDPOINT first (matches container app config), then LLM_API_BASE for backwards compatibility
+        llm_api_base = os.getenv("AZURE_AI_ENDPOINT") or os.getenv("LLM_API_BASE", "")
+        if not llm_api_base:
+            raise ValueError("AZURE_AI_ENDPOINT or LLM_API_BASE must be configured for LLM calls")
+        llm_api_key = os.getenv("AZURE_AI_KEY") or os.getenv("LLM_API_KEY", "")
+        # Use AZURE_AI_DEPLOYMENT for model name if available, otherwise LLM_MODEL
+        llm_model = os.getenv("AZURE_AI_DEPLOYMENT") or os.getenv("LLM_MODEL", "gpt-4o")
         
         # Build request
         messages = [
@@ -156,16 +160,20 @@ Tenant: {tenant_id}
         payload = {
             "model": llm_model,
             "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 2000,
+            # Note: GPT-5.x doesn't support custom temperature, uses default (1)
+            # Note: GPT-5.x requires max_completion_tokens instead of max_tokens
+            "max_completion_tokens": 2000,
         }
         
         headers = {
             "Content-Type": "application/json",
         }
         
+        # Support both APIM (Ocp-Apim-Subscription-Key) and OpenAI (Authorization: Bearer)
         if llm_api_key:
-            headers["Authorization"] = f"Bearer {llm_api_key}"
+            headers["Ocp-Apim-Subscription-Key"] = llm_api_key  # Azure APIM
+            headers["api-key"] = llm_api_key  # Azure OpenAI
+            headers["Authorization"] = f"Bearer {llm_api_key}"  # OpenAI
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(

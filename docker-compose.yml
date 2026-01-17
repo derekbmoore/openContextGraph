@@ -15,7 +15,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ctxEco"]
+      test: [ "CMD-SHELL", "pg_isready -U ctxEco" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,6 +76,14 @@ services:
       - POSTGRES_HOST=postgres
       - ZEP_API_URL=http://zep:8000
       - TEMPORAL_HOST=temporal:7233
+      # Azure AI Configuration
+      - AZURE_AI_ENDPOINT=${AZURE_AI_ENDPOINT}
+      - AZURE_AI_KEY=${AZURE_AI_KEY}
+      - AZURE_AI_DEPLOYMENT=${AZURE_AI_DEPLOYMENT:-gpt-5.2-chat}
+      - AZURE_AI_MODEL_ROUTER=${AZURE_AI_MODEL_ROUTER:-model-router}
+      # Auth
+      - AUTH_REQUIRED=${AUTH_REQUIRED:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "8082:8082"
     depends_on:
