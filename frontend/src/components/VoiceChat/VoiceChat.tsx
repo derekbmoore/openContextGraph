@@ -731,6 +731,7 @@ export default function VoiceChat({
           <div
             className="voice-ring"
             style={{
+              // eslint-disable-next-line react-dom/no-unsafe-innerhtml
               '--scale': 1 + audioLevel * 0.5,
               '--opacity': isListening ? 0.8 : 0
             } as React.CSSProperties}

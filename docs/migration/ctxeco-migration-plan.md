@@ -113,6 +113,18 @@
     --location eastus2
   ```
 
+- [ ] **1.6 Create Azure AI Speech (Avatar Requirement)**
+  > **Note:** Real-time Avatar features require `westus2`, `northeurope`, or `southeastasia`.
+
+  ```bash
+  az cognitiveservices account create \
+    --resource-group ctxeco-rg \
+    --name ctxeco-speech \
+    --location westus2 \
+    --kind SpeechServices \
+    --sku S0
+  ```
+
 - [ ] **1.6 Create Managed Identities**
 
   ```bash
