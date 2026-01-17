@@ -10,8 +10,8 @@
 
 **Optional (with defaults):**
 - `AZURE_RESOURCE_GROUP` - Default: `ctxeco-rg`
-- `AZURE_BACKEND_APP_NAME` - Default: `ctxEco-env-api`
-- `AZURE_WORKER_APP_NAME` - Default: `ctxEco-env-worker`
+- `AZURE_BACKEND_APP_NAME` - Default: `ctxeco-api`
+- `AZURE_WORKER_APP_NAME` - Default: `ctxeco-worker`
 
 ### 2. Verify Container App Names
 

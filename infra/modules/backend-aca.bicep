@@ -120,7 +120,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8080
+        targetPort: 8082
         transport: 'http'
         allowInsecure: false
         customDomains: enableCustomDomain ? [
@@ -383,7 +383,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               type: 'Startup'
               httpGet: {
-                port: 8080
+                port: 8082
                 path: '/health'
               }
               initialDelaySeconds: 60  // Backend starts THIRD (priority 3) - wait for Temporal+Zep
@@ -393,7 +393,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               type: 'Readiness'
               httpGet: {
-                port: 8080
+                port: 8082
                 path: '/health'
               }
               initialDelaySeconds: 5   // Reduced - startup probe handles initial wait
@@ -403,7 +403,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               type: 'Liveness'
               httpGet: {
-                port: 8080
+                port: 8082
                 path: '/health'
               }
               initialDelaySeconds: 60  // Max allowed (after startup probe completes)
