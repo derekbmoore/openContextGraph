@@ -330,6 +330,10 @@ class ZepMemoryClient:
     # NIST AI RMF: MEASURE 2.1 - Search quality measurement
     # =========================================================================
     
+    async def search_memory(
+        self,
+        query: str,
+        user_id: str,
         session_id: Optional[str] = None,
         tenant_id: Optional[str] = None,
         groups: list[str] = None,

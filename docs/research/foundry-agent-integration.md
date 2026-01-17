@@ -51,7 +51,7 @@ We have successfully integrated Elena, Marcus, and Sage as **Azure AI Foundry Ag
 
 ### 3. Multi-Model Pipeline
 
-```
+```text
 Foundry Agent (gpt-5.2) → MCP → Temporal Workflow
                                     ├── Claude (story generation)
                                     ├── Gemini (diagram generation)
@@ -60,7 +60,7 @@ Foundry Agent (gpt-5.2) → MCP → Temporal Workflow
 
 ### 4. Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                Azure AI Foundry (Agent Orchestration)           │
 │                Elena / Marcus / Sage (gpt-5.2-chat)             │
@@ -88,30 +88,116 @@ Foundry Agent (gpt-5.2) → MCP → Temporal Workflow
 
 ## What Still Needs to Be Done ⏳
 
-### Phase 2.5: Deployment & Verification
+### Phase 2.5: Deployment & Verification (Current)
 
-- [ ] **Deploy Backend** to `ctxeco.com` with MCP router
-- [ ] **Verify MCP** from live Foundry agents
-- [ ] **Test Story Generation** end-to-end (Sage → MCP → Temporal → Claude)
+| Task | Owner | Dependency | Status |
+| :--- | :--- | :--- | :--- |
+| Fix `azure-ai-projects` version in requirements.txt | - | - | ✅ Done |
+| Deploy backend to ctxeco.com | DevOps | CI/CD | 🔄 In Progress |
+| Verify MCP endpoint responds to `tools/list` | QA | Deployment | ⏳ Blocked |
+| Test Sage → `generate_story` → Claude | QA | Temporal online | ⏳ Blocked |
+| Enrich memory with Foundry integration episode | Sage | Backend online | ⏳ Blocked |
+
+**Acceptance Criteria:**
+
+```bash
+curl -X POST https://ctxeco.com/mcp \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: mcp_sage_..." \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+# Returns: {"result":{"tools":[...8 tools...]}}
+```
+
+---
 
 ### Phase 3: Built-in Tools & M365 Integration
 
-- [ ] **Elena M365 Access:** Add SharePoint/OneDrive built-in tools
-- [ ] **Marcus Code Tools:** Implement real `search_codebase` (ripgrep)
-- [ ] **Marcus GitHub:** Implement `create_github_issue`, `get_project_status`
+| Task | Description | Files to Modify |
+| :--- | :--- | :--- |
+| **3.1 Elena SharePoint** | Add Foundry built-in SharePoint tool to Elena agent definition | Foundry Portal |
+| **3.2 Marcus ripgrep** | Implement real `search_codebase` using subprocess ripgrep | `mcp.py` dispatch |
+| **3.3 Marcus GitHub Issues** | Implement `create_github_issue` via GitHub App API | `mcp.py` + GitHub App |
+| **3.4 Marcus Project Status** | Implement `get_project_status` via GitHub Projects API | `mcp.py` |
+| **3.5 Elena trigger_ingestion** | Wire `trigger_ingestion` to ETL router | `mcp.py` → `etl.ingest()` |
+
+**Implementation Details:**
+
+```python
+# 3.2 search_codebase - Real implementation
+import subprocess
+result = subprocess.run(
+    ["rg", "--json", query, "--max-count", "20"],
+    capture_output=True, text=True, cwd="/app"
+)
+return json.loads(result.stdout)
+
+# 3.3 create_github_issue - GitHub App
+from github import Github
+gh = Github(os.getenv("GITHUB_APP_TOKEN"))
+repo = gh.get_repo("derekbmoore/openContextGraph")
+issue = repo.create_issue(title=args["title"], body=args["body"])
+return {"issue_number": issue.number, "url": issue.html_url}
+```
+
+---
 
 ### Phase 4: Enterprise Governance
 
-- [ ] **Retention Policy:** Daily purge job for expired threads
-- [ ] **Audit Logging:** Log `tool_call_id` and `decision` to `tool_invocations` table
-- [ ] **Key Vault:** Move MCP agent keys to Azure Key Vault
-- [ ] **APIM Gateway:** Expose MCP via APIM V2 with rate limiting
+| Task | Description | Priority |
+| :--- | :--- | :--- |
+| **4.1 Key Vault Integration** | Move MCP keys from code to Azure Key Vault references | P0 |
+| **4.2 Audit Logging** | Log all `tools/call` to `tool_invocations` table | P1 |
+| **4.3 Retention Policy** | Daily job to purge threads older than 30 days | P2 |
+| **4.4 APIM Gateway** | Route MCP through Azure API Management V2 | P2 |
+
+**4.1 Key Vault Implementation:**
+
+```python
+# Replace hardcoded keys with:
+from azure.keyvault.secrets import SecretClient
+from azure.identity import DefaultAzureCredential
+
+client = SecretClient(vault_url="https://ctxeco-kv.vault.azure.net/", credential=DefaultAzureCredential())
+MCP_KEY_MARCUS = client.get_secret("mcp-key-marcus").value
+```
+
+**4.2 Audit Schema:**
+
+```sql
+INSERT INTO tool_invocations (
+    run_id, tool_call_id, tenant_id, actor_object_id,
+    actor_type, tool_name, decision, inputs_hash, created_at
+) VALUES (
+    :run_id, :tool_call_id, :tenant_id, :agent_id,
+    'autonomous', :tool_name, 'ALLOW', :hash, NOW()
+);
+```
+
+---
 
 ### Phase 5: Identity Boundary (BYOI)
 
-- [ ] **Publish Agents** in Foundry with Service Principal identities
-- [ ] **Test OBO Flows:** Elena accessing user's OneDrive via delegated token
-- [ ] **RBAC Enforcement:** Marcus denied M365 access, Elena denied GitHub
+| Task | Description | Validation |
+| :--- | :--- | :--- |
+| **5.1 Publish Agents** | Convert agents from Draft to Published with Service Principals | Portal check |
+| **5.2 Elena OBO Test** | Elena reads user's OneDrive file via delegated token | File content returned |
+| **5.3 RBAC Deny Test** | Marcus attempts M365 access → Denied | 403 response |
+| **5.4 Elena GitHub Deny** | Elena attempts GitHub issue creation → Denied | 403 response |
+
+**Test Script:**
+
+```bash
+# 5.2 - Elena OBO (should succeed)
+curl -X POST https://ctxeco.com/mcp \
+  -H "x-api-key: mcp_elena_..." \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_onedrive","arguments":{"path":"/Documents/test.txt"}},"id":1}'
+
+# 5.3 - Marcus M365 (should fail)
+curl -X POST https://ctxeco.com/mcp \
+  -H "x-api-key: mcp_marcus_..." \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_onedrive","arguments":{"path":"/Documents/test.txt"}},"id":1}'
+# Expected: {"error":{"code":-32603,"message":"RBAC: Marcus denied access to M365 tools"}}
+```
 
 ---
 
@@ -119,7 +205,7 @@ Foundry Agent (gpt-5.2) → MCP → Temporal Workflow
 
 ### MCP Server Endpoint
 
-```
+```text
 URL: https://ctxeco.com/mcp
 Method: POST
 Content-Type: application/json
@@ -127,12 +213,12 @@ Content-Type: application/json
 
 ### API Key Authentication
 
-```
+```text
 Header: x-api-key
-Values:
-  - Elena: mcp_elena_Rn4LawobZttIbI-5zQIqrk16RA6553-r-V1WpzcLqUc
-  - Marcus: mcp_marcus_A8m6ZCiSu_UFqWPvyY8e8qijAI0bXj1zdFk57YNhyIM
-  - Sage:   mcp_sage_cr3P69wVNaM7PEihwwttSZgo0P27Fvx8L0Y2ySi9Ils
+Values: (stored in Azure Key Vault - use env vars)
+  - Elena: $MCP_KEY_ELENA
+  - Marcus: $MCP_KEY_MARCUS
+  - Sage:   $MCP_KEY_SAGE
 ```
 
 ### Environment Variables (Production)
