@@ -328,7 +328,7 @@ resource backendApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'CORS_ORIGINS'
-              value: '["https://ctxEco.work","http://localhost:5173","http://localhost:5174"]'
+              value: '["https://ctxeco.com","https://www.ctxeco.com","https://ctxEco.work","https://*.azurestaticapps.net","http://localhost:5173","http://localhost:5174"]'
             }
             {
               name: 'AUTH_REQUIRED'

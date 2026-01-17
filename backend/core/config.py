@@ -1,0 +1,305 @@
+"""
+OpenContextGraph Configuration Management
+
+Centralizes all configuration with support for:
+- Environment variables
+- Azure Key Vault secrets
+- Local development overrides
+"""
+
+from functools import lru_cache
+from typing import Optional
+import json
+
+from pydantic import Field, ConfigDict, field_validator
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings with environment variable support"""
+
+    # ==========================================================================
+    # Application
+    # ==========================================================================
+    app_name: str = "openContextGraph"
+    app_version: str = "0.1.0"
+    environment: str = Field("development", alias="ENVIRONMENT")
+    debug: bool = Field(False, alias="DEBUG")
+
+    # ==========================================================================
+    # Azure Speech Service (for ICE/TURN relay tokens - avatar video)
+    # ==========================================================================
+    azure_speech_key: Optional[str] = Field(None, alias="AZURE_SPEECH_KEY")
+    azure_speech_region: str = Field("westus2", alias="AZURE_SPEECH_REGION")
+
+    # ==========================================================================
+    # Azure OpenAI (Legacy / Chat)
+    # ==========================================================================
+    azure_keyvault_url: Optional[str] = Field(None, alias="AZURE_KEYVAULT_URL")
+
+    # ==========================================================================
+    # Database (PostgreSQL)
+    # ==========================================================================
+    postgres_host: str = Field("localhost", alias="POSTGRES_HOST")
+    postgres_port: int = Field(5432, alias="POSTGRES_PORT")
+    postgres_user: str = Field("postgres", alias="POSTGRES_USER")
+    postgres_password: str = Field("password", alias="POSTGRES_PASSWORD")
+    postgres_db: str = Field("ctxEco", alias="POSTGRES_DB")
+
+    @property
+    def postgres_dsn(self) -> str:
+        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+    # ==========================================================================
+    # Zep Memory Service (Self-hosted in Azure Container Apps)
+    # ==========================================================================
+    # ZEP_API_URL must be set to the Zep Container App internal FQDN (e.g., http://zep-app-name.internal:8000)
+    # In ACA, internal services use: http://{app-name}.internal:{port} or the ingress FQDN
+    zep_api_url: str = Field("", alias="ZEP_API_URL")  # Must be provided via environment variable
+    zep_api_key: Optional[str] = Field(None, alias="ZEP_API_KEY")
+    zep_mode: str = Field("selfhost", alias="ZEP_MODE")  # Always self-hosted for enterprise
+
+    # ==========================================================================
+    # Temporal Orchestration
+    # ==========================================================================
+    temporal_host: str = Field("localhost:7233", alias="TEMPORAL_HOST")
+    temporal_namespace: str = Field("default", alias="TEMPORAL_NAMESPACE")
+    temporal_task_queue: str = Field("ctxEco-agents", alias="TEMPORAL_TASK_QUEUE")
+
+    # ==========================================================================
+    # Chat API Gateway (OpenAI-compatible)
+    # ==========================================================================
+    azure_ai_endpoint: Optional[str] = Field("https://zimax-gw.azure-api.net/zimax/openai/v1", alias="AZURE_AI_ENDPOINT")
+    azure_ai_project_name: Optional[str] = Field(None, alias="AZURE_AI_PROJECT_NAME")
+    azure_ai_key: Optional[str] = Field(None, alias="AZURE_AI_KEY")
+    azure_ai_deployment: str = Field("gpt-5.2-chat", alias="AZURE_AI_DEPLOYMENT")
+    azure_ai_api_version: str = Field("2024-05-01-preview", alias="AZURE_AI_API_VERSION")
+    # Model Router: If set, use Azure AI Foundry Model Router instead of direct deployment
+    # Set to the Model Router deployment name (e.g., "model-router-prod")
+    azure_ai_model_router: Optional[str] = Field(None, alias="AZURE_AI_MODEL_ROUTER")
+
+    # Elena voice configuration
+    elena_voice_name: str = Field("en-US-JennyNeural", alias="ELENA_VOICE_NAME")
+    # Marcus voice configuration
+    marcus_voice_name: str = Field("en-US-GuyNeural", alias="MARCUS_VOICE_NAME")
+    # Sage voice configuration
+    sage_voice_name: str = Field("en-US-DavisNeural", alias="SAGE_VOICE_NAME")
+
+    # ==========================================================================
+    # Azure VoiceLive (Real-time Voice) - Direct Azure AI Services
+    # ==========================================================================
+    # Authentication: DefaultAzureCredential (Managed Identity) for enterprise
+    # Falls back to API key for POC/staging if AZURE_VOICELIVE_KEY is set
+    azure_voicelive_endpoint: Optional[str] = Field(None, alias="AZURE_VOICELIVE_ENDPOINT")
+    azure_voicelive_key: Optional[str] = Field(None, alias="AZURE_VOICELIVE_KEY")  # Optional for POC
+    azure_voicelive_model: str = Field("gpt-realtime", alias="AZURE_VOICELIVE_MODEL")
+    azure_voicelive_voice: str = Field("en-US-Ava:DragonHDLatestNeural", alias="AZURE_VOICELIVE_VOICE")
+    # Marcus voice configuration for VoiceLive
+    marcus_voicelive_voice: str = Field("en-US-Ollie:DragonHDLatestNeural", alias="MARCUS_VOICELIVE_VOICE")
+    # Sage voice configuration for VoiceLive
+    sage_voicelive_voice: str = Field("en-US-Brian:DragonHDLatestNeural", alias="SAGE_VOICELIVE_VOICE")
+    # Project name for unified endpoints (optional, used for project-based endpoints)
+    # When using Azure AI Foundry projects, set this to the project name (e.g., "zimax")
+    azure_voicelive_project_name: Optional[str] = Field("zimax", alias="AZURE_VOICELIVE_PROJECT_NAME")
+    # Use "2024-10-01-preview" for Realtime API public preview
+    azure_voicelive_api_version: str = Field("2024-10-01-preview", alias="AZURE_VOICELIVE_API_VERSION")
+
+    # ==========================================================================
+    # Multi-Model LLM Integration (Sage Agent)
+    # ==========================================================================
+    # Anthropic Claude for story generation
+    anthropic_api_key: Optional[str] = Field(None, alias="ANTHROPIC_API_KEY")
+    # Google Gemini for diagram generation via Nano Banana Pro
+    gemini_api_key: Optional[str] = Field(None, alias="GEMINI_API_KEY")
+    # OneDrive docs path (local folder that syncs)
+    onedrive_docs_path: str = Field("docs", alias="ONEDRIVE_DOCS_PATH")
+
+    # ==========================================================================
+    # Microsoft Entra ID (Authentication)
+    # ==========================================================================
+    azure_tenant_id: Optional[str] = Field(None, alias="AZURE_AD_TENANT_ID")
+    # Entra/App Registration client ID (audience validation for API tokens)
+    # NOTE: This is intentionally NOT AZURE_CLIENT_ID, because that env var is
+    # used by Azure SDKs (DefaultAzureCredential) to select a user-assigned
+    # Managed Identity. See: auth SOP.
+    azure_client_id: Optional[str] = Field(None, alias="AZURE_AD_CLIENT_ID")
+    azure_client_secret: Optional[str] = Field(None, alias="AZURE_CLIENT_SECRET")
+
+    # User-assigned Managed Identity client ID for Azure SDKs (DefaultAzureCredential)
+    # This is consumed by azure-identity; we keep it available for diagnostics.
+    azure_managed_identity_client_id: Optional[str] = Field(None, alias="AZURE_CLIENT_ID")
+
+    # POC / validation switch: when false, API auth is bypassed (DO NOT use in prod)
+    auth_required: bool = Field(True, alias="AUTH_REQUIRED")
+
+    @property
+    def entra_authority_url(self) -> Optional[str]:
+        if self.azure_tenant_id:
+            return f"https://login.microsoftonline.com/{self.azure_tenant_id}"
+        return None
+
+    # ==========================================================================
+    # CORS & Security
+    # ==========================================================================
+    cors_origins: list[str] = Field(default=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"], alias="CORS_ORIGINS")
+    api_key_header: str = "X-API-Key"
+    
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from JSON string or comma-separated list"""
+        if isinstance(v, str):
+            # Try parsing as JSON first
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                pass
+            # Fall back to comma-separated
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    # ==========================================================================
+    # Observability
+    # ==========================================================================
+    appinsights_connection_string: Optional[str] = Field(None, alias="APPLICATIONINSIGHTS_CONNECTION_STRING")
+    log_level: str = Field("INFO", alias="LOG_LEVEL")
+
+    # ==========================================================================
+    # Rate Limiting
+    # ==========================================================================
+    rate_limit_requests: int = Field(100, alias="RATE_LIMIT_REQUESTS")
+    rate_limit_window_seconds: int = Field(60, alias="RATE_LIMIT_WINDOW_SECONDS")
+
+    # ==========================================================================
+    # GitHub Integration (for Project Tracking)
+    # ==========================================================================
+    github_token: Optional[str] = Field(None, alias="GITHUB_TOKEN")
+    github_repo_owner: str = Field("zimaxnet", alias="GITHUB_REPO_OWNER")
+    github_repo_name: str = Field("ctxEco", alias="GITHUB_REPO_NAME")
+
+    # ==========================================================================
+    # Microsoft Graph API (Elena Email, OneDrive, Calendar)
+    # ==========================================================================
+    # Register app at https://portal.azure.com → App registrations
+    # Required application permissions: Mail.Send, Mail.Read, Files.ReadWrite.All
+    ms_graph_tenant_id: Optional[str] = Field(None, alias="MS_GRAPH_TENANT_ID")
+    ms_graph_client_id: Optional[str] = Field(None, alias="MS_GRAPH_CLIENT_ID")
+    ms_graph_client_secret: Optional[str] = Field(None, alias="MS_GRAPH_CLIENT_SECRET")
+    ms_graph_user_email: str = Field("elena@zimax.net", alias="MS_GRAPH_USER_EMAIL")
+
+    # ==========================================================================
+    # Azure AI Foundry Agent Service (Optional - POC)
+    # ==========================================================================
+    # Azure AI Foundry Agent Service endpoint (e.g., https://<account>.services.ai.azure.com)
+    azure_foundry_agent_endpoint: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_ENDPOINT")
+    # Foundry project name for Agent Service
+    azure_foundry_agent_project: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_PROJECT")
+    # Optional API key (falls back to Managed Identity if not provided)
+    azure_foundry_agent_key: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_KEY")
+    # API version for Agent Service REST API
+    azure_foundry_agent_api_version: str = Field("2025-11-15-preview", alias="AZURE_FOUNDRY_AGENT_API_VERSION")
+    
+    # Feature flags - all disabled by default (zero production impact)
+    # Enable Foundry thread management (replaces in-memory sessions)
+    use_foundry_threads: bool = Field(False, alias="USE_FOUNDRY_THREADS")
+    # Enable Foundry file storage (additive, doesn't replace existing ingestion)
+    use_foundry_files: bool = Field(False, alias="USE_FOUNDRY_FILES")
+    # Enable Foundry vector stores (not recommended initially - keep Zep)
+    use_foundry_vectors: bool = Field(False, alias="USE_FOUNDRY_VECTORS")
+    # Enable Foundry tool registration (optional observability only)
+    use_foundry_tools: bool = Field(False, alias="USE_FOUNDRY_TOOLS")
+    # Enable Foundry IQ for enterprise document search (hybrid with openContextGraph tri-search)
+    use_foundry_iq: bool = Field(False, alias="USE_FOUNDRY_IQ")
+    
+    # Foundry Agent IDs (for agents created in Foundry)
+    elena_foundry_agent_id: Optional[str] = Field(None, alias="ELENA_FOUNDRY_AGENT_ID")
+    # Enable Foundry Elena (uses Foundry agent runtime instead of LangGraph)
+    use_foundry_elena: bool = Field(False, alias="USE_FOUNDRY_ELENA")
+    
+    # Foundry IQ Configuration
+    foundry_iq_knowledge_base_id: Optional[str] = Field(None, alias="FOUNDRY_IQ_KB_ID")
+
+    model_config = ConfigDict(
+        env_file=[".env", "../.env"],
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",  # Ignore extra fields from .env that aren't in this model
+    )
+
+
+class KeyVaultSettings:
+    """
+    Loads secrets from Azure Key Vault.
+    Used in production to override Settings with secure values.
+    """
+
+    def __init__(self, vault_url: str):
+        self.vault_url = vault_url
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.secrets import SecretClient
+
+            credential = DefaultAzureCredential()
+            self._client = SecretClient(vault_url=self.vault_url, credential=credential)
+        return self._client
+
+    def get_secret(self, name: str) -> Optional[str]:
+        """Get a secret from Key Vault"""
+        try:
+            secret = self.client.get_secret(name)
+            return secret.value
+        except Exception:
+            return None
+
+    def apply_to_settings(self, settings: Settings) -> Settings:
+        """Override settings with Key Vault secrets"""
+        secret_mappings = {
+            "zep-api-key": "zep_api_key",
+            "azure-ai-key": "azure_ai_key",
+            "azure-ai-endpoint": "azure_ai_endpoint",
+            "azure-ai-project-name": "azure_ai_project_name",
+            "azure-client-secret": "azure_client_secret",
+            "azure-client-id": "azure_client_id",
+            "azure-tenant-id": "azure_tenant_id",
+            "appinsights-connection-string": "appinsights_connection_string",
+            # Foundry Agent Service secrets
+            "azure-foundry-agent-endpoint": "azure_foundry_agent_endpoint",
+            "azure-foundry-agent-project": "azure_foundry_agent_project",
+            "azure-foundry-agent-key": "azure_foundry_agent_key",
+            "elena-foundry-agent-id": "elena_foundry_agent_id",
+            # Azure Speech Service Key (Regional)
+            "azure-speech-key": "azure_speech_key",
+        }
+
+        for secret_name, setting_attr in secret_mappings.items():
+            value = self.get_secret(secret_name)
+            if value and hasattr(settings, setting_attr):
+                try:
+                    setattr(settings, setting_attr, value)
+                except AttributeError:
+                    # Skip read-only properties
+                    continue
+
+        return settings
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """
+    Get application settings.
+    Cached for performance - only loaded once.
+    """
+    settings = Settings()
+
+    # In production, overlay Key Vault secrets
+    if settings.azure_keyvault_url and settings.environment != "development":
+        kv_settings = KeyVaultSettings(settings.azure_keyvault_url)
+        settings = kv_settings.apply_to_settings(settings)
+
+    return settings

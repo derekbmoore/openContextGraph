@@ -11,7 +11,23 @@ from memory.client import (
     get_memory_client,
 )
 
+# Singleton client instance (for compatibility with voice router)
+memory_client = get_memory_client()
+
+
+async def persist_conversation(context) -> None:
+    """
+    Persist conversation to memory.
+    
+    Convenience function that calls ZepMemoryClient.persist_conversation().
+    """
+    client = get_memory_client()
+    await client.persist_conversation(context)
+
+
 __all__ = [
     "ZepMemoryClient",
     "get_memory_client",
+    "memory_client",
+    "persist_conversation",
 ]

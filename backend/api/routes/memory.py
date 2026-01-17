@@ -5,18 +5,21 @@ Provides endpoints for:
 - Hybrid memory search (keyword + vector + graph)
 - Fact retrieval from knowledge graph
 - Session listing
+- Episode listing and transcripts
 
 OpenContextGraph - API Layer
 NIST AI RMF: MANAGE 2.3 (Data Governance), MAP 1.1 (Context)
 """
 
 import logging
-from fastapi import APIRouter, Depends
+from datetime import datetime
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from typing import Optional
 
 from api.middleware.auth import get_current_user
-from core.context import SecurityContext, Fact
+from core import SecurityContext, get_settings
+from core.context import Fact
 from memory import get_memory_client
 
 logger = logging.getLogger(__name__)
@@ -209,3 +212,114 @@ async def list_sessions(
     except Exception as e:
         logger.error(f"Failed to list sessions: {e}")
         return []
+
+
+# =============================================================================
+# Episodes Routes
+# =============================================================================
+
+
+class Episode(BaseModel):
+    id: str
+    summary: str
+    turn_count: int
+    agent_id: str
+    started_at: datetime
+    ended_at: Optional[datetime]
+    topics: list[str] = []
+
+
+class EpisodeListResponse(BaseModel):
+    episodes: list[Episode]
+    total_count: int
+
+
+@router.get("/episodes", response_model=EpisodeListResponse)
+async def list_episodes(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    user: SecurityContext = Depends(get_current_user),
+):
+    """
+    List conversation episodes from memory.
+
+    Episodes are discrete conversation sessions that have been
+    processed and stored in the knowledge graph.
+    """
+    try:
+        memory_client = get_memory_client()
+        
+        # Use list_sessions to get episodes
+        # Episodes are sessions with metadata indicating they're episodes
+        sessions = await memory_client.list_sessions(
+            user_id=user.user_id,
+            tenant_id=user.tenant_id,
+            limit=limit,
+            offset=offset,
+        )
+
+        episodes = []
+        for s in sessions:
+            metadata = s.get("metadata", {})
+            # Filter for episodes (exclude stories)
+            if metadata.get("type") != "story":
+                episodes.append(
+                    Episode(
+                        id=s["session_id"],
+                        summary=metadata.get("summary", "No summary available"),
+                        turn_count=metadata.get("turn_count", 0),
+                        agent_id=metadata.get("agent_id", "unknown"),
+                        started_at=(
+                            datetime.fromisoformat(s["created_at"]) if isinstance(s["created_at"], str) else s["created_at"]
+                        ),
+                        ended_at=(
+                            datetime.fromisoformat(s["updated_at"]) if isinstance(s["updated_at"], str) else s["updated_at"]
+                        ) if s.get("updated_at") else None,
+                        topics=metadata.get("topics", []),
+                    )
+                )
+
+        return EpisodeListResponse(
+            episodes=episodes,
+            total_count=len(episodes),
+        )
+    except Exception as e:
+        logger.error(f"Failed to list episodes: {e}")
+        # In test, raise to avoid masking issues
+        settings = get_settings()
+        if settings.environment == "test":
+            raise
+        # Fallback return empty
+        return EpisodeListResponse(episodes=[], total_count=0)
+
+
+class EpisodeTranscriptResponse(BaseModel):
+    id: str
+    transcript: list[dict]
+
+
+@router.get("/episodes/{session_id}", response_model=EpisodeTranscriptResponse)
+async def get_episode_transcript(session_id: str, user: SecurityContext = Depends(get_current_user)):
+    """
+    Get the detailed transcript for a specific episode.
+    """
+    try:
+        memory_client = get_memory_client()
+        
+        # Get session messages as transcript
+        messages = await memory_client.get_session_messages(session_id, limit=1000)
+        
+        transcript = [
+            {
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", ""),
+                "metadata": msg.get("metadata", {}),
+            }
+            for msg in messages
+        ]
+
+        return EpisodeTranscriptResponse(id=session_id, transcript=transcript)
+    except Exception as e:
+        logger.error(f"Failed to get episode transcript: {e}")
+        # Fallback
+        return EpisodeTranscriptResponse(id=session_id, transcript=[])

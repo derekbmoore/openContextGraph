@@ -163,6 +163,25 @@ class ZepMemoryClient:
     # NIST AI RMF: MAP 1.1 - Sessions capture system interaction context
     # =========================================================================
     
+    async def get_session(self, session_id: str) -> Optional[dict]:
+        """
+        Get a conversation session by ID.
+        
+        Returns None if session doesn't exist.
+        
+        Args:
+            session_id: Unique session identifier
+        
+        Returns:
+            Session dict or None if not found
+        """
+        try:
+            result = await self._request("GET", f"/api/v1/sessions/{session_id}")
+            return result
+        except Exception as e:
+            logger.debug(f"Session {session_id} not found: {e}")
+            return None
+    
     async def get_or_create_session(
         self, 
         session_id: str, 
@@ -194,24 +213,21 @@ class ZepMemoryClient:
             logger.warning(f"Failed to ensure user exists: {e}")
         
         # Try to get existing session
-        try:
-            existing = await self._request("GET", f"/api/v1/sessions/{session_id}")
-            if existing:
-                # Update metadata if provided
-                if metadata:
-                    try:
-                        existing_meta = existing.get("metadata", {}) or {}
-                        merged = {**existing_meta, **metadata}
-                        await self._request(
-                            "PATCH", 
-                            f"/api/v1/sessions/{session_id}", 
-                            json={"metadata": merged}
-                        )
-                    except Exception:
-                        pass
-                return existing
-        except Exception:
-            pass
+        existing = await self.get_session(session_id)
+        if existing:
+            # Update metadata if provided
+            if metadata:
+                try:
+                    existing_meta = existing.get("metadata", {}) or {}
+                    merged = {**existing_meta, **metadata}
+                    await self._request(
+                        "PATCH", 
+                        f"/api/v1/sessions/{session_id}", 
+                        json={"metadata": merged}
+                    )
+                except Exception:
+                    pass
+            return existing
         
         # Create new session
         payload = {
@@ -654,6 +670,82 @@ class ZepMemoryClient:
         context.semantic.facts.extend(facts)
         
         return context
+    
+    async def persist_conversation(self, context: EnterpriseContext) -> None:
+        """
+        Persist the current conversation to Zep.
+
+        Called after each turn to update episodic memory.
+        """
+        session_id = context.episodic.conversation_id
+        user_id = context.security.user_id
+
+        # Convert recent turns to Zep format
+        messages = []
+        agent_id = None
+        for turn in context.episodic.recent_turns[-2:]:  # Last 2 turns (user + assistant)
+            messages.append(
+                {
+                    "role": turn.role.value,
+                    "content": turn.content,
+                    "metadata": {
+                        "agent_id": turn.agent_id,
+                        "timestamp": turn.timestamp.isoformat(),
+                    },
+                }
+            )
+            # Track the most recent agent_id from assistant turns
+            if turn.role.value == "assistant" and turn.agent_id:
+                agent_id = turn.agent_id
+
+        # Update session metadata with agent_id, summary, turn_count, and user identity
+        # This ensures episodes show correct agent, summary, and user attribution
+        # CRITICAL: Include user identity metadata for proper project/department boundaries
+        session_metadata = {
+            "turn_count": context.episodic.total_turns,
+            "tenant_id": context.security.tenant_id,
+        }
+        
+        # Include user identity metadata for proper attribution
+        if context.security.email:
+            session_metadata["email"] = context.security.email
+        if context.security.display_name:
+            session_metadata["display_name"] = context.security.display_name
+        
+        # Set agent_id if we have one
+        if agent_id:
+            session_metadata["agent_id"] = agent_id
+        
+        # Include project_id for project-based access control
+        if context.security.project_id:
+            session_metadata["project_id"] = context.security.project_id
+        elif context.episodic.metadata and context.episodic.metadata.get("project_id"):
+            session_metadata["project_id"] = context.episodic.metadata.get("project_id")
+        
+        # Set summary if available, otherwise generate a simple one
+        if context.episodic.summary:
+            session_metadata["summary"] = context.episodic.summary
+        elif context.episodic.recent_turns:
+            # Generate a simple summary from recent turns
+            recent_content = " ".join([turn.content[:100] for turn in context.episodic.recent_turns[-3:]])
+            session_metadata["summary"] = recent_content[:200] + ("..." if len(recent_content) > 200 else "")
+        
+        # Ensure session exists and update metadata
+        try:
+            await self.get_or_create_session(
+                session_id=session_id,
+                user_id=user_id,
+                metadata=session_metadata
+            )
+        except Exception as e:
+            logger.warning(f"Failed to update session metadata for {session_id}: {e}")
+
+        if messages:
+            await self.add_memory(
+                session_id=session_id,
+                messages=messages,
+                metadata={"turn_count": context.episodic.total_turns},
+            )
 
 
 # Singleton instance
