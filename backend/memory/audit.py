@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 # Dedicated audit logger - can be forwarded to SIEM/Azure Monitor
-logger = logging.getLogger("engram.memory.audit")
+logger = logging.getLogger("ctxeco.memory.audit")
 
 
 async def log_memory_access(

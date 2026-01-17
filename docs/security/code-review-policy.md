@@ -236,11 +236,11 @@ If a deployment causes issues, use the rollback script:
 
 ## Promotion from Dev
 
-Features should be promoted from the dev repository (engram) after testing:
+Features should be promoted from the legacy dev repository (engram) after testing:
 
 ```mermaid
 flowchart LR
-    A[engram<br/>Dev/Test] -->|Test & Validate| B{Passes?}
+    A[engram<br/>Legacy Dev] -->|Test & Validate| B{Passes?}
     B -->|Yes| C[openContextGraph<br/>UAT]
     B -->|No| D[Fix in Dev]
     D --> A
@@ -249,7 +249,7 @@ flowchart LR
 
 ### Promotion Checklist
 
-Before promoting code from engram to openContextGraph:
+Before promoting code from legacy engram to openContextGraph:
 
 - [ ] Feature fully tested in dev environment
 - [ ] All pre-commit hooks pass

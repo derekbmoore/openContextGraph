@@ -1,12 +1,12 @@
 # ctxEco.com Migration Plan
 
-**From:** `engram-rg` (engram.work) → **To:** `ctxeco-rg` (ctxeco.com)
+**From:** `engram-rg` (Legacy/Deleted) → **To:** `ctxeco-rg` (ctxeco.com)
 **Repository:** `/Users/derek/Library/CloudStorage/OneDrive-zimaxnet/code/openContextGraph`
 **Date:** 2026-01-16
 
 ---
 
-## Current State: engram-rg Inventory
+## Current State: engram-rg Inventory (Legacy - Deleted from Azure)
 
 | Resource Type | Resource Name | Purpose | Migration Priority |
 |---------------|---------------|---------|-------------------|

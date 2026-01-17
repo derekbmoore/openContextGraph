@@ -183,7 +183,7 @@ class Settings(BaseSettings):
     # GitHub Integration (for Project Tracking)
     # ==========================================================================
     github_token: Optional[str] = Field(None, alias="GITHUB_TOKEN")
-    github_repo_owner: str = Field("zimaxnet", alias="GITHUB_REPO_OWNER")
+    github_repo_owner: str = Field("derekbmoore", alias="GITHUB_REPO_OWNER")
     github_repo_name: str = Field("ctxEco", alias="GITHUB_REPO_NAME")
 
     # ==========================================================================
