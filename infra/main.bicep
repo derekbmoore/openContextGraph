@@ -68,7 +68,7 @@ param enableAksPrivateCluster bool = true
 // param azureOpenAiKey removed
 // param azureSpeechKey removed
 
-@description('Azure AI Services APIM Gateway endpoint for Chat (Azure OpenAI format).')
+@description('Azure AI Services APIM Gateway endpoint or direct Foundry endpoint.')
 param azureAiEndpoint string = 'https://zimax-gw.azure-api.net/zimax'
 
 
@@ -122,6 +122,9 @@ param githubToken string = ''
 @description('Azure/Zimax VoiceLive API Key.')
 @secure()
 param voiceliveApiKey string = ''
+
+@description('Endpoint for VoiceLive Service (Default: Zimax SaaS).')
+param azureVoiceLiveEndpoint string = 'https://zimax.services.ai.azure.com'
 
 @description('Azure Speech Service Key for Avatar.')
 @secure()
@@ -607,7 +610,7 @@ module backendModule 'modules/backend-aca.bicep' = {
     azureAiEndpoint: azureAiEndpoint
     azureAiProjectName: azureAiProjectName
     azureAiModelRouter: azureAiModelRouter
-    azureVoiceLiveEndpoint: 'https://zimax.services.ai.azure.com'
+    azureVoiceLiveEndpoint: azureVoiceLiveEndpoint
     azureSpeechRegion: azureSpeechRegion
     registryUsername: registryUsername
     registryPassword: registryPassword
