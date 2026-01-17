@@ -551,7 +551,7 @@ module zepModule 'modules/zep-aca.bicep' = {
     acaEnvId: acaEnv.id
     acaEnvName: acaEnv.name
     enableCustomDomain: true
-    customDomainBindingType: 'Disabled' // Stage 1: Bind Hostname first
+    customDomainBindingType: 'SniEnabled' // Stage 2: Enable Cert
     customDomainName: 'zep.ctxeco.com'
     appName: '${envName}-zep'
     zepPostgresFqdn: postgres.properties.fullyQualifiedDomainName
@@ -586,7 +586,7 @@ module backendModule 'modules/backend-aca.bicep' = {
     acaEnvName: acaEnv.name
     appName: '${envName}-api'
     enableCustomDomain: true
-    customDomainBindingType: 'Disabled' // Stage 1: Bind Hostname first
+    customDomainBindingType: 'SniEnabled' // Stage 2: Enable Cert
     customDomainName: 'api.ctxeco.com'
     containerImage: backendImage
     postgresFqdn: postgres.properties.fullyQualifiedDomainName

@@ -58,6 +58,29 @@ class OIDCAuth:
         self._issuer_url = os.getenv("OIDC_ISSUER_URL", "")
         self._client_id = os.getenv("OIDC_CLIENT_ID", "")
         self._audience = os.getenv("OIDC_AUDIENCE", self._client_id)
+        
+        # Azure AD Autoconfiguration
+        if not self._issuer_url:
+            tenant_id = os.getenv("AZURE_AD_TENANT_ID")
+            external_domain = os.getenv("AZURE_AD_EXTERNAL_DOMAIN")
+            is_external = os.getenv("AZURE_AD_EXTERNAL_ID", "false").lower() == "true"
+            
+            if tenant_id:
+                if is_external and external_domain:
+                    # Azure External ID (CIAM) format
+                    # Authority: https://{domain}.ciamlogin.com/{tenant_id}/v2.0
+                    self._issuer_url = f"https://{external_domain}.ciamlogin.com/{tenant_id}/v2.0"
+                else:
+                    # Standard Azure AD / Workforce format
+                    self._issuer_url = f"https://login.microsoftonline.com/{tenant_id}/v2.0"
+                
+                logger.info(f"Autoconfigured OIDC Issuer: {self._issuer_url}")
+
+        if not self._client_id:
+            self._client_id = os.getenv("AZURE_AD_CLIENT_ID", "")
+            if not self._audience:
+                self._audience = self._client_id
+
         self._jwks: Optional[dict] = None
         self._jwks_uri: Optional[str] = None
     
