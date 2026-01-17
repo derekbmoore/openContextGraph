@@ -121,6 +121,7 @@ class AntigravityRouter:
         force_class: Optional[DataClass] = None,
         user_id: Optional[str] = None,
         tenant_id: Optional[str] = None,
+        acl_groups: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Ingest a document through the appropriate engine.
@@ -136,6 +137,7 @@ class AntigravityRouter:
             force_class: Override automatic classification
             user_id: User performing the ingestion
             tenant_id: Tenant for data isolation
+            acl_groups: List of security groups authorized to view this data
         
         Returns:
             List of chunks with text and metadata
@@ -170,6 +172,7 @@ class AntigravityRouter:
                 "decay_rate": self._get_decay_rate(data_class),
                 "user_id": user_id,
                 "tenant_id": tenant_id,
+                "acl_groups": acl_groups or [],
             })
         
         logger.info(
@@ -186,6 +189,7 @@ class AntigravityRouter:
         force_class: Optional[DataClass] = None,
         user_id: Optional[str] = None,
         tenant_id: Optional[str] = None,
+        acl_groups: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Ingest document from bytes (e.g., from file upload).
@@ -209,6 +213,7 @@ class AntigravityRouter:
                 force_class=force_class,
                 user_id=user_id,
                 tenant_id=tenant_id,
+                acl_groups=acl_groups,
             )
         finally:
             # Clean up temp file

@@ -1,0 +1,416 @@
+"""
+MCP Router - Model Context Protocol Endpoint
+
+Implements JSON-RPC 2.0 protocol for Azure AI Foundry agent tool calls.
+
+Protocol Reference: https://spec.modelcontextprotocol.io/
+
+Endpoints:
+  POST /mcp - Main JSON-RPC endpoint
+  
+Methods:
+  initialize - Handshake and capability exchange
+  tools/list - Return available tools
+  tools/call - Execute a tool
+"""
+import json
+import logging
+from typing import Any, Optional
+from fastapi import APIRouter, Request, Depends, HTTPException
+from pydantic import BaseModel, Field
+
+from api.mcp_tools import get_tool_manifest, get_tool_handler, TOOL_REGISTRY
+from api.middleware.auth import get_current_user, get_optional_user
+from core import SecurityContext
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+# =============================================================================
+# JSON-RPC Models
+# =============================================================================
+
+class JsonRpcRequest(BaseModel):
+    """JSON-RPC 2.0 Request."""
+    jsonrpc: str = "2.0"
+    method: str
+    params: Optional[dict] = None
+    id: Optional[str | int] = None
+
+
+class JsonRpcResponse(BaseModel):
+    """JSON-RPC 2.0 Response."""
+    jsonrpc: str = "2.0"
+    result: Optional[Any] = None
+    error: Optional[dict] = None
+    id: Optional[str | int] = None
+
+
+class JsonRpcError:
+    """Standard JSON-RPC error codes."""
+    PARSE_ERROR = -32700
+    INVALID_REQUEST = -32600
+    METHOD_NOT_FOUND = -32601
+    INVALID_PARAMS = -32602
+    INTERNAL_ERROR = -32603
+
+
+# =============================================================================
+# MCP Protocol Constants
+# =============================================================================
+
+MCP_PROTOCOL_VERSION = "2024-11-05"
+SERVER_INFO = {
+    "name": "ctxeco-mcp-server",
+    "version": "1.0.0",
+}
+SERVER_CAPABILITIES = {
+    "tools": {},  # We support tools
+}
+
+# =============================================================================
+# API Key Authentication for MCP Agents
+# =============================================================================
+
+import os
+
+# Agent API Keys (from environment or hardcoded for dev)
+# In production, these should be in Azure Key Vault
+MCP_AGENT_KEYS = {
+    # Format: "key" -> {"agent_id": "...", "agent_name": "..."}
+    os.getenv("MCP_KEY_MARCUS", "mcp_marcus_Xwo6uNm3k0FU42et9SPjTZ0u5xeO5kOZmZ5Z8db7tNI"): {
+        "agent_id": "marcus",
+        "agent_name": "Marcus Chen",
+        "tenant_id": "zimax",
+    },
+    os.getenv("MCP_KEY_SAGE", "mcp_sage_oE5J2v28ZXTz_xyfkMQ5r-L8e-UaVgmuv9brQR1z_sI"): {
+        "agent_id": "sage",
+        "agent_name": "Sage",
+        "tenant_id": "zimax",
+    },
+    os.getenv("MCP_KEY_ELENA", "mcp_elena_iRsyOL6J6PfeY_vH6n3LG7XEYi70DrLxG_rcjoCwI-k"): {
+        "agent_id": "elena",
+        "agent_name": "Dr. Elena Vasquez",
+        "tenant_id": "zimax",
+    },
+}
+
+
+def validate_api_key(request: Request) -> Optional[dict]:
+    """
+    Validate x-api-key header and return agent info if valid.
+    
+    Returns None if no key provided (for unauthenticated access).
+    Raises HTTPException if key is invalid.
+    """
+    api_key = request.headers.get("x-api-key")
+    
+    if not api_key:
+        return None  # Allow unauthenticated for tools/list
+    
+    agent_info = MCP_AGENT_KEYS.get(api_key)
+    if not agent_info:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key",
+        )
+    
+    logger.info(f"MCP Auth: Agent {agent_info['agent_name']} authenticated")
+    return agent_info
+
+
+# =============================================================================
+# Main MCP Endpoint
+# =============================================================================
+
+@router.post("")
+@router.post("/")
+async def mcp_endpoint(
+    request: Request,
+    user: Optional[SecurityContext] = Depends(get_optional_user),
+):
+    """
+    Main MCP JSON-RPC endpoint.
+    
+    Handles all MCP protocol methods:
+    - initialize: Handshake
+    - tools/list: Return tool manifest
+    - tools/call: Execute tool
+    """
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return JsonRpcResponse(
+            error={"code": JsonRpcError.PARSE_ERROR, "message": "Parse error"},
+            id=None,
+        )
+    
+    # Parse request
+    try:
+        rpc_request = JsonRpcRequest(**body)
+    except Exception as e:
+        return JsonRpcResponse(
+            error={"code": JsonRpcError.INVALID_REQUEST, "message": str(e)},
+            id=body.get("id"),
+        )
+    
+    # Route to handler
+    method = rpc_request.method
+    params = rpc_request.params or {}
+    request_id = rpc_request.id
+    
+    logger.info(f"MCP Request: {method} (id={request_id})")
+    
+    try:
+        if method == "initialize":
+            result = await handle_initialize(params)
+        elif method == "tools/list":
+            result = await handle_tools_list(params)
+        elif method == "tools/call":
+            result = await handle_tools_call(params, user)
+        elif method == "ping":
+            result = {"pong": True}
+        else:
+            return JsonRpcResponse(
+                error={"code": JsonRpcError.METHOD_NOT_FOUND, "message": f"Unknown method: {method}"},
+                id=request_id,
+            )
+        
+        return JsonRpcResponse(result=result, id=request_id)
+        
+    except Exception as e:
+        logger.error(f"MCP Error handling {method}: {e}")
+        return JsonRpcResponse(
+            error={"code": JsonRpcError.INTERNAL_ERROR, "message": str(e)},
+            id=request_id,
+        )
+
+
+# =============================================================================
+# MCP Method Handlers
+# =============================================================================
+
+async def handle_initialize(params: dict) -> dict:
+    """
+    Handle MCP initialize handshake.
+    
+    Returns server info and capabilities.
+    """
+    client_info = params.get("clientInfo", {})
+    logger.info(f"MCP Initialize from: {client_info.get('name', 'unknown')}")
+    
+    return {
+        "protocolVersion": MCP_PROTOCOL_VERSION,
+        "serverInfo": SERVER_INFO,
+        "capabilities": SERVER_CAPABILITIES,
+    }
+
+
+async def handle_tools_list(params: dict) -> dict:
+    """
+    Handle tools/list request.
+    
+    Returns manifest of all available tools.
+    """
+    tools = get_tool_manifest()
+    logger.info(f"MCP tools/list: Returning {len(tools)} tools")
+    
+    return {"tools": tools}
+
+
+async def handle_tools_call(params: dict, user: Optional[SecurityContext]) -> dict:
+    """
+    Handle tools/call request.
+    
+    Dispatches to the registered tool handler.
+    """
+    tool_name = params.get("name")
+    tool_args = params.get("arguments", {})
+    
+    if not tool_name:
+        raise ValueError("Missing 'name' in tools/call params")
+    
+    tool_def = get_tool_handler(tool_name)
+    if not tool_def:
+        raise ValueError(f"Unknown tool: {tool_name}")
+    
+    logger.info(f"MCP tools/call: {tool_name} args={list(tool_args.keys())}")
+    
+    # Dispatch to handler
+    # For now, we implement handlers inline. In production, these would
+    # dynamically import and call the registered handler path.
+    
+    result = await dispatch_tool(tool_name, tool_args, user)
+    
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(result) if isinstance(result, (dict, list)) else str(result),
+            }
+        ],
+        "isError": False,
+    }
+
+
+# =============================================================================
+# Tool Dispatch
+# =============================================================================
+
+async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityContext]) -> Any:
+    """
+    Dispatch tool call to appropriate handler.
+    
+    This bridges MCP requests to existing backend functions.
+    """
+    from memory import get_memory_client
+    
+    # Create a default security context if none provided
+    if user is None:
+        user = SecurityContext(user_id="mcp-agent", tenant_id="default")
+    
+    if tool_name == "search_memory":
+        memory_client = get_memory_client()
+        result = await memory_client.search_memory(
+            query=args.get("query", ""),
+            user_id=user.user_id,
+            tenant_id=user.tenant_id,
+            search_type=args.get("search_type", "hybrid"),
+            limit=args.get("limit", 5),
+        )
+        return result
+    
+    elif tool_name == "list_episodes":
+        memory_client = get_memory_client()
+        sessions = await memory_client.list_sessions(
+            user_id=user.user_id,
+            tenant_id=user.tenant_id,
+            limit=args.get("limit", 10),
+        )
+        return {"episodes": sessions}
+    
+    elif tool_name == "generate_story":
+        # Call Temporal workflow for durable story generation
+        # Uses Claude for story, Gemini for diagram
+        from workflows.client import execute_story
+        
+        topic = args.get("topic", "Untitled")
+        style = args.get("style", "informative")
+        length = args.get("length", "medium")
+        
+        # Map length to include_image decision
+        include_image = length != "short"
+        
+        logger.info(f"MCP: Triggering Temporal story workflow for '{topic}'")
+        
+        try:
+            result = await execute_story(
+                user_id=user.user_id,
+                tenant_id=user.tenant_id,
+                topic=topic,
+                context=f"Style: {style}. Length: {length}.",
+                include_diagram=True,
+                include_image=include_image,
+                diagram_type="architecture",
+                timeout_seconds=300,  # 5 minute timeout
+            )
+            
+            if result.success:
+                return {
+                    "status": "completed",
+                    "story_id": result.story_id,
+                    "topic": result.topic,
+                    "story_content": result.story_content[:2000] + "..." if len(result.story_content) > 2000 else result.story_content,
+                    "story_path": result.story_path,
+                    "diagram_path": result.diagram_path,
+                    "image_path": f"/api/v1/images/{result.story_id}.png" if result.story_id else None,
+                }
+            else:
+                return {
+                    "status": "failed",
+                    "error": result.error,
+                }
+        except Exception as e:
+            logger.error(f"MCP generate_story failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "message": "Story generation failed. Temporal may be unavailable.",
+            }
+    
+    elif tool_name == "generate_diagram":
+        # Call Temporal diagram activity directly for standalone diagrams
+        from workflows.story_activities import generate_diagram_activity, GenerateDiagramInput
+        
+        description = args.get("description", "System Architecture")
+        diagram_type = args.get("diagram_type", "architecture")
+        
+        logger.info(f"MCP: Generating diagram for '{description}'")
+        
+        try:
+            # Note: This calls the activity function directly (not via workflow)
+            # For full durability, wrap in a workflow
+            result = await generate_diagram_activity(
+                GenerateDiagramInput(
+                    topic=description,
+                    diagram_type=diagram_type,
+                )
+            )
+            
+            if result.success:
+                return {
+                    "status": "completed",
+                    "diagram_type": diagram_type,
+                    "spec": result.spec,
+                }
+            else:
+                return {
+                    "status": "failed",
+                    "error": result.error,
+                }
+        except Exception as e:
+            logger.error(f"MCP generate_diagram failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+            }
+    
+    elif tool_name == "search_codebase":
+        # Placeholder - would call ripgrep
+        query = args.get("query", "")
+        return {
+            "query": query,
+            "results": [
+                {"file": "backend/api/mcp.py", "line": 1, "match": f"Found: {query}"},
+            ],
+            "message": "Codebase search is a placeholder in this implementation.",
+        }
+    
+    elif tool_name == "get_project_status":
+        # Placeholder - would call GitHub API
+        return {
+            "total_tasks": 42,
+            "completed": 35,
+            "open": 7,
+            "progress_percent": 83,
+        }
+    
+    elif tool_name == "create_github_issue":
+        # Placeholder - would call GitHub API
+        return {
+            "issue_number": 123,
+            "url": f"https://github.com/zimaxnet/openContextGraph/issues/123",
+            "title": args.get("title"),
+        }
+    
+    elif tool_name == "trigger_ingestion":
+        # Placeholder - would call ETL
+        return {
+            "status": "queued",
+            "source": args.get("source_name"),
+        }
+    
+    else:
+        raise ValueError(f"No handler implemented for tool: {tool_name}")

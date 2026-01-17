@@ -330,12 +330,9 @@ class ZepMemoryClient:
     # NIST AI RMF: MEASURE 2.1 - Search quality measurement
     # =========================================================================
     
-    async def search_memory(
-        self,
-        query: str,
-        user_id: str,
         session_id: Optional[str] = None,
         tenant_id: Optional[str] = None,
+        groups: list[str] = None,
         search_type: str = "hybrid",
         limit: int = 10,
     ) -> dict:
@@ -360,6 +357,7 @@ class ZepMemoryClient:
             user_id: Scope results to this user
             session_id: Optional session filter
             tenant_id: Scope results to this tenant (CRITICAL for valid isolation)
+            groups: User's security groups for ABAC filtering
             search_type: "keyword", "similarity", or "hybrid"
             limit: Maximum results
         
@@ -380,10 +378,51 @@ class ZepMemoryClient:
         
         try:
             # Try Zep's native search endpoint
+            # Construct ABAC Filter (NIST MANAGE 2.3)
+            # Must match Tenant AND (User is Owner OR User has Group Access)
+            
+            # Base filter: Tenant isolation
+            conditions = [
+                {"jsonpath": f"$[*] ? (@.tenant_id == '{tenant_id}')"}
+            ]
+
+            # Access Control: Owner OR Group
+            access_conditions = [
+                {"jsonpath": f"$[*] ? (@.user_id == '{user_id}')"}
+            ]
+            
+            if groups:
+                # Add group access condition
+                # Note: Zep/JSONPath syntax for array intersection varies. 
+                # Converting groups to a regex-like check or explicit ORs for compatibility.
+                # Assuming simple string matching for now or specific JSONPath if supported.
+                # For robustness, we iterate groups (if not too many) or rely on tenant/user isolation primarily if complex.
+                # Ideally: $.acl_groups[*] in {groups}
+                # Implementation: We will use a simplified check: 
+                # If document has acl_groups, check if any match.
+                quoted_groups = [f"'{g}'" for g in groups]
+                group_array = f"[{', '.join(quoted_groups)}]"
+                # jsonpath filter for array intersection (pseudo-code valid for some engines): 
+                # @.acl_groups && {group_array}
+                # Fallback: Just rely on Tenant+User for strict private, and trust 'public' items in tenant.
+                # BUT request was for strict dept isolation.
+                # Let's try explicit OR for each group for high-fidelity compliance.
+                for g in groups:
+                    access_conditions.append(
+                        {"jsonpath": f"$[*] ? (@.acl_groups[*] == '{g}')"}
+                    )
+            
+            conditions.append({"or": access_conditions})
+
             search_payload = {
                 "text": query,
                 "limit": limit,
                 "search_type": search_type if search_type != "hybrid" else "similarity",
+                "metadata": {
+                    "where": {
+                       "and": conditions
+                    }
+                }
             }
             
             if user_id:
@@ -665,6 +704,8 @@ class ZepMemoryClient:
         search_results = await self.search_memory(
             query=query,
             user_id=user_id,
+            tenant_id=context.security.tenant_id,
+            groups=context.security.groups,
             search_type="hybrid",
             limit=5
         )

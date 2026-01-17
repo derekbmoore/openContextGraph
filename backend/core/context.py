@@ -54,6 +54,9 @@ class SecurityContext(BaseModel):
     display_name: Optional[str] = None
     token_expiry: Optional[datetime] = None
     
+    # NIST AI RMF: MANAGE 2.3 - Departmental/Project Isolation
+    groups: list[str] = Field(default_factory=list)  # OIDC 'groups' claim for data access (e.g., 'Dept:Finance')
+    
     def has_role(self, role: Role) -> bool:
         return role in self.roles or Role.ADMIN in self.roles
     

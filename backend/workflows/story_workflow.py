@@ -178,6 +178,8 @@ class StoryWorkflow:
                 GenerateStoryInput(
                     topic=input.topic,
                     context=input.context,
+                    user_id=input.user_id,
+                    tenant_id=input.tenant_id,
                 ),
                 start_to_close_timeout=timedelta(minutes=3),  # Claude can be slow
                 retry_policy=LLM_RETRY_POLICY,

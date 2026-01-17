@@ -27,6 +27,8 @@ class GenerateStoryInput:
     """Input for story generation activity"""
     topic: str
     context: Optional[str] = None
+    user_id: Optional[str] = "system"
+    tenant_id: Optional[str] = "default"
 
 
 @dataclass
@@ -135,10 +137,13 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
             from memory.client import memory_client
             
             # Using global-search or a specific session if we had one
+            # Using global-search or a specific session if we had one
             search_results = await memory_client.search_memory(
                 session_id="global-search",
                 query=input.topic,
-                limit=3
+                limit=3,
+                user_id=input.user_id,
+                tenant_id=input.tenant_id
             )
             
             if search_results:

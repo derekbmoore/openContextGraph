@@ -1,0 +1,254 @@
+{
+    "$schema": "https://nano-banana.pro/schema/v1/diagram.json",
+    "metadata": {
+        "title": "Azure AI Foundry Agent Integration",
+        "description": "Multi-model agent orchestration with MCP tools and Temporal workflows",
+        "author": "Antigravity IDE",
+        "created": "2026-01-17",
+        "version": "1.0",
+        "tags": [
+            "foundry",
+            "mcp",
+            "agents",
+            "temporal",
+            "multi-model"
+        ]
+    },
+    "diagram": {
+        "type": "architecture",
+        "layout": "hierarchical",
+        "direction": "top-down"
+    },
+    "nodes": [
+        {
+            "id": "user",
+            "label": "User",
+            "type": "actor",
+            "icon": "user",
+            "description": "End user interacting via ctxeco.com frontend"
+        },
+        {
+            "id": "frontend",
+            "label": "ctxeco.com",
+            "type": "application",
+            "icon": "browser",
+            "description": "React frontend with chat interface"
+        },
+        {
+            "id": "foundry",
+            "label": "Azure AI Foundry",
+            "type": "cloud-service",
+            "icon": "azure",
+            "description": "Agent orchestration service",
+            "children": [
+                {
+                    "id": "elena",
+                    "label": "Elena",
+                    "type": "agent",
+                    "icon": "agent",
+                    "model": "gpt-5.2-chat",
+                    "role": "Business Analyst",
+                    "description": "GTM Lead, M365 integration"
+                },
+                {
+                    "id": "marcus",
+                    "label": "Marcus",
+                    "type": "agent",
+                    "icon": "agent",
+                    "model": "gpt-5.2-chat",
+                    "role": "Lead Engineer",
+                    "description": "Code quality, infrastructure"
+                },
+                {
+                    "id": "sage",
+                    "label": "Sage",
+                    "type": "agent",
+                    "icon": "agent",
+                    "model": "gpt-5.2-chat",
+                    "role": "Storyteller",
+                    "description": "Narrative synthesis, diagrams"
+                }
+            ]
+        },
+        {
+            "id": "mcp-server",
+            "label": "MCP Server",
+            "type": "api",
+            "icon": "api",
+            "endpoint": "ctxeco.com/mcp",
+            "protocol": "JSON-RPC 2.0",
+            "description": "Model Context Protocol router exposing 8 tools"
+        },
+        {
+            "id": "tool-registry",
+            "label": "Tool Registry",
+            "type": "component",
+            "icon": "tools",
+            "tools": [
+                {
+                    "name": "search_memory",
+                    "status": "live",
+                    "handler": "Zep"
+                },
+                {
+                    "name": "list_episodes",
+                    "status": "live",
+                    "handler": "Zep"
+                },
+                {
+                    "name": "generate_story",
+                    "status": "live",
+                    "handler": "Temporal"
+                },
+                {
+                    "name": "generate_diagram",
+                    "status": "live",
+                    "handler": "Gemini"
+                },
+                {
+                    "name": "search_codebase",
+                    "status": "pending",
+                    "handler": "ripgrep"
+                },
+                {
+                    "name": "get_project_status",
+                    "status": "pending",
+                    "handler": "GitHub"
+                },
+                {
+                    "name": "create_github_issue",
+                    "status": "pending",
+                    "handler": "GitHub"
+                },
+                {
+                    "name": "trigger_ingestion",
+                    "status": "pending",
+                    "handler": "ETL"
+                }
+            ]
+        },
+        {
+            "id": "temporal",
+            "label": "Temporal",
+            "type": "workflow-engine",
+            "icon": "workflow",
+            "description": "Durable execution for multi-step workflows"
+        },
+        {
+            "id": "claude",
+            "label": "Claude",
+            "type": "llm",
+            "icon": "brain",
+            "provider": "Anthropic",
+            "model": "claude-opus",
+            "use": "Story generation"
+        },
+        {
+            "id": "gemini",
+            "label": "Gemini",
+            "type": "llm",
+            "icon": "brain",
+            "provider": "Google",
+            "model": "gemini-3",
+            "use": "Diagram generation"
+        },
+        {
+            "id": "zep",
+            "label": "Zep Memory",
+            "type": "database",
+            "icon": "database",
+            "description": "Tri-Search (keyword + vector + graph)"
+        },
+        {
+            "id": "blob-storage",
+            "label": "Azure Blob",
+            "type": "storage",
+            "icon": "storage",
+            "description": "Story and image persistence"
+        }
+    ],
+    "edges": [
+        {
+            "from": "user",
+            "to": "frontend",
+            "label": "Chat",
+            "type": "interaction"
+        },
+        {
+            "from": "frontend",
+            "to": "foundry",
+            "label": "Agent Request",
+            "type": "api-call"
+        },
+        {
+            "from": "foundry",
+            "to": "mcp-server",
+            "label": "MCP Protocol",
+            "type": "tool-call",
+            "protocol": "JSON-RPC",
+            "auth": "x-api-key"
+        },
+        {
+            "from": "mcp-server",
+            "to": "tool-registry",
+            "label": "Dispatch",
+            "type": "internal"
+        },
+        {
+            "from": "tool-registry",
+            "to": "temporal",
+            "label": "generate_story",
+            "type": "workflow"
+        },
+        {
+            "from": "tool-registry",
+            "to": "zep",
+            "label": "search_memory",
+            "type": "query"
+        },
+        {
+            "from": "temporal",
+            "to": "claude",
+            "label": "Story Text",
+            "type": "llm-call"
+        },
+        {
+            "from": "temporal",
+            "to": "gemini",
+            "label": "Diagram Spec",
+            "type": "llm-call"
+        },
+        {
+            "from": "temporal",
+            "to": "blob-storage",
+            "label": "Save Artifacts",
+            "type": "write"
+        },
+        {
+            "from": "temporal",
+            "to": "zep",
+            "label": "Enrich Memory",
+            "type": "write"
+        }
+    ],
+    "annotations": [
+        {
+            "id": "phase-status",
+            "type": "badge",
+            "position": "top-right",
+            "text": "Phase 2 Complete",
+            "color": "green"
+        },
+        {
+            "id": "multi-model",
+            "type": "highlight",
+            "targets": [
+                "claude",
+                "gemini",
+                "foundry"
+            ],
+            "label": "Multi-Model Routing",
+            "description": "gpt-5.2 orchestrates, Claude writes, Gemini diagrams"
+        }
+    ]
+}

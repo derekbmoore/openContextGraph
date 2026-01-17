@@ -42,6 +42,8 @@ class TokenPayload(BaseModel):
     iss: str = ""                 # Issuer
     exp: int = 0                  # Expiration
     iat: int = 0                  # Issued at
+    groups: list[str] = []        # Security Groups (Group IDs)
+    wids: list[str] = []          # Directory Roles (Well-known IDs)
 
 
 class OIDCAuth:
@@ -263,7 +265,41 @@ async def get_current_user(
         email=token.email or token.preferred_username,
         display_name=token.name,
         token_expiry=datetime.fromtimestamp(token.exp, tz=timezone.utc) if token.exp else None,
+        # Flatten groups and wids into a single list of group strings
+        groups=token.groups + token.wids 
     )
+
+
+async def get_optional_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> Optional[SecurityContext]:
+    """
+    Get current user if authenticated, otherwise return None.
+    
+    Used for endpoints that have different behavior for authenticated
+    vs unauthenticated users (e.g., MCP tool discovery vs execution).
+    """
+    if not credentials:
+        return None
+    
+    try:
+        auth = get_auth()
+        token = await auth.validate_token(credentials.credentials)
+        
+        return SecurityContext(
+            user_id=token.oid or token.sub,
+            tenant_id=token.tid or "default",
+            roles=auth.map_roles(token.roles),
+            scopes=auth.extract_scopes(token),
+            email=token.email or token.preferred_username,
+            display_name=token.name,
+            token_expiry=datetime.fromtimestamp(token.exp, tz=timezone.utc) if token.exp else None,
+            groups=token.groups + token.wids 
+        )
+    except Exception:
+        # Token invalid - treat as unauthenticated
+        return None
 
 
 def require_roles(*required_roles: Role):
