@@ -166,14 +166,17 @@ jobs:
             fi
           fi
           # Use GitHub Secrets as fallback/defaults
+          # Note: Bicep uses ${envName}-api and ${envName}-worker where envName defaults to 'ctxEco-env'
+          # So actual Container App names are likely: ctxEco-env-api and ctxEco-env-worker
+          # Override via secrets if your deployment uses different names
           echo "resourceGroup=${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}" >> $GITHUB_OUTPUT
-          echo "backendAppName=${{ secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}" >> $GITHUB_OUTPUT
-          echo "workerAppName=${{ secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}" >> $GITHUB_OUTPUT
+          echo "backendAppName=${{ secrets.AZURE_BACKEND_APP_NAME || 'ctxEco-env-api' }}" >> $GITHUB_OUTPUT
+          echo "workerAppName=${{ secrets.AZURE_WORKER_APP_NAME || 'ctxEco-env-worker' }}" >> $GITHUB_OUTPUT
 
       - name: Update Backend Container App
         env:
           RESOURCE_GROUP: ${{ steps.get-config.outputs.resourceGroup || secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}
-          BACKEND_APP_NAME: ${{ steps.get-config.outputs.backendAppName || secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}
+          BACKEND_APP_NAME: ${{ steps.get-config.outputs.backendAppName || secrets.AZURE_BACKEND_APP_NAME || 'ctxEco-env-api' }}
         run: |
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
           
@@ -197,7 +200,7 @@ jobs:
       - name: Update Worker Container App
         env:
           RESOURCE_GROUP: ${{ steps.get-config.outputs.resourceGroup || secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}
-          WORKER_APP_NAME: ${{ steps.get-config.outputs.workerAppName || secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}
+          WORKER_APP_NAME: ${{ steps.get-config.outputs.workerAppName || secrets.AZURE_WORKER_APP_NAME || 'ctxEco-env-worker' }}
         run: |
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
           

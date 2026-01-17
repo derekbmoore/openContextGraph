@@ -45,8 +45,10 @@ az ad sp create-for-rbac \
 
 **Optional for CI/CD (with defaults):**
 - `AZURE_RESOURCE_GROUP` - Resource group name (default: `ctxeco-rg`)
-- `AZURE_BACKEND_APP_NAME` - Backend Container App name (default: `ctxeco-api`)
-- `AZURE_WORKER_APP_NAME` - Worker Container App name (default: `ctxeco-worker`)
+- `AZURE_BACKEND_APP_NAME` - Backend Container App name (default: `ctxEco-env-api`)
+- `AZURE_WORKER_APP_NAME` - Worker Container App name (default: `ctxEco-env-worker`)
+
+**Note:** The defaults match the Bicep naming pattern (`${envName}-api` and `${envName}-worker` where `envName` defaults to `ctxEco-env`). If your deployment uses different names, set these secrets accordingly.
 - `AZURE_KEY_VAULT_NAME` - Key Vault name for fetching config (optional)
 
 **Optional for Deployment (passed to Bicep templates):**

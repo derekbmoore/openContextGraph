@@ -1,0 +1,326 @@
+#!/bin/bash
+# Setup GitHub Secrets for OpenContextGraph Platform
+# This script helps you create Azure service principal and set GitHub secrets
+
+set -e
+
+echo "=========================================="
+echo "OpenContextGraph - GitHub Secrets Setup"
+echo "=========================================="
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if Azure CLI is installed
+if ! command -v az &> /dev/null; then
+    echo -e "${RED}Error: Azure CLI is not installed.${NC}"
+    echo "Install it from: https://aka.ms/InstallAzureCLI"
+    exit 1
+fi
+
+# Check if GitHub CLI is installed
+if ! command -v gh &> /dev/null; then
+    echo -e "${YELLOW}Warning: GitHub CLI is not installed.${NC}"
+    echo "You can install it from: https://cli.github.com"
+    echo "Or set secrets manually via GitHub web UI"
+    USE_GH_CLI=false
+else
+    USE_GH_CLI=true
+    echo -e "${GREEN}GitHub CLI found. Will use it to set secrets.${NC}"
+fi
+
+# Check if logged into Azure
+echo "Checking Azure login status..."
+if ! az account show &> /dev/null; then
+    echo -e "${YELLOW}Not logged into Azure. Logging in...${NC}"
+    az login
+fi
+
+# Get current Azure subscription
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+SUBSCRIPTION_NAME=$(az account show --query name -o tsv)
+echo -e "${GREEN}Using Azure subscription: ${SUBSCRIPTION_NAME} (${SUBSCRIPTION_ID})${NC}"
+echo ""
+
+# Prompt for resource group
+read -p "Enter Azure resource group name [ctxeco-rg]: " RESOURCE_GROUP
+RESOURCE_GROUP=${RESOURCE_GROUP:-ctxeco-rg}
+
+# Check if resource group exists
+if ! az group show --name "$RESOURCE_GROUP" &> /dev/null; then
+    read -p "Resource group '$RESOURCE_GROUP' doesn't exist. Create it? (y/n): " CREATE_RG
+    if [[ $CREATE_RG == "y" ]]; then
+        read -p "Enter Azure location [eastus]: " LOCATION
+        LOCATION=${LOCATION:-eastus}
+        az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+        echo -e "${GREEN}Resource group created.${NC}"
+    else
+        echo -e "${RED}Exiting. Please create the resource group first.${NC}"
+        exit 1
+    fi
+fi
+
+# Prompt for service principal name
+read -p "Enter service principal name [opencontextgraph-github-actions]: " SP_NAME
+SP_NAME=${SP_NAME:-opencontextgraph-github-actions}
+
+echo ""
+echo "Creating Azure service principal..."
+echo "This will create a service principal with Contributor role on the resource group."
+
+# Create service principal
+SP_OUTPUT=$(az ad sp create-for-rbac \
+    --name "$SP_NAME" \
+    --role contributor \
+    --scopes "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP" \
+    --sdk-auth)
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Failed to create service principal.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Service principal created successfully!${NC}"
+echo ""
+
+# Extract values from JSON
+CLIENT_ID=$(echo "$SP_OUTPUT" | grep -o '"clientId": "[^"]*"' | cut -d'"' -f4)
+CLIENT_SECRET=$(echo "$SP_OUTPUT" | grep -o '"clientSecret": "[^"]*"' | cut -d'"' -f4)
+TENANT_ID=$(echo "$SP_OUTPUT" | grep -o '"tenantId": "[^"]*"' | cut -d'"' -f4)
+
+# Save to file for reference (but don't commit it!)
+echo "$SP_OUTPUT" > azure-credentials.json
+chmod 600 azure-credentials.json
+echo -e "${YELLOW}Service principal credentials saved to azure-credentials.json (DO NOT COMMIT THIS FILE)${NC}"
+echo ""
+
+# Get admin object ID (current user)
+ADMIN_OBJECT_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo "")
+if [ -n "$ADMIN_OBJECT_ID" ]; then
+    echo -e "${GREEN}Admin Object ID: ${ADMIN_OBJECT_ID}${NC}"
+fi
+echo ""
+
+# Prompt for GitHub repository
+read -p "Enter GitHub repository (format: owner/repo) [derekbmoore/openContextGraph]: " GITHUB_REPO
+GITHUB_REPO=${GITHUB_REPO:-derekbmoore/openContextGraph}
+
+# Check if GitHub CLI is authenticated
+if [ "$USE_GH_CLI" = true ]; then
+    if ! gh auth status &> /dev/null; then
+        echo -e "${YELLOW}GitHub CLI not authenticated. Logging in...${NC}"
+        gh auth login
+    fi
+    
+    # Verify we're in the right repo
+    CURRENT_REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")
+    if [ "$CURRENT_REPO" != "$GITHUB_REPO" ]; then
+        echo -e "${YELLOW}Current directory is not in repo $GITHUB_REPO${NC}"
+        read -p "Continue anyway? (y/n): " CONTINUE
+        if [[ $CONTINUE != "y" ]]; then
+            exit 1
+        fi
+    fi
+fi
+
+echo ""
+echo "=========================================="
+echo "Setting GitHub Secrets"
+echo "=========================================="
+echo ""
+
+# Function to set secret via GitHub CLI or show instructions
+set_secret() {
+    local SECRET_NAME=$1
+    local SECRET_VALUE=$2
+    local DESCRIPTION=$3
+    
+    if [ "$USE_GH_CLI" = true ]; then
+        echo "$SECRET_VALUE" | gh secret set "$SECRET_NAME"
+        echo -e "${GREEN}✓ Set ${SECRET_NAME}${NC}"
+    else
+        echo -e "${YELLOW}→ ${SECRET_NAME}: ${DESCRIPTION}${NC}"
+        echo "   Value: ${SECRET_VALUE:0:20}..."
+    fi
+}
+
+# Set AZURE_CREDENTIALS
+if [ "$USE_GH_CLI" = true ]; then
+    echo "$SP_OUTPUT" | gh secret set AZURE_CREDENTIALS
+    echo -e "${GREEN}✓ Set AZURE_CREDENTIALS${NC}"
+else
+    echo -e "${YELLOW}→ AZURE_CREDENTIALS: Service principal JSON${NC}"
+    echo "   Set this in GitHub: Settings → Secrets and variables → Actions → New repository secret"
+    echo "   Value: (see azure-credentials.json)"
+fi
+
+# Set AZURE_ADMIN_OBJECT_ID
+if [ -n "$ADMIN_OBJECT_ID" ]; then
+    if [ "$USE_GH_CLI" = true ]; then
+        echo "$ADMIN_OBJECT_ID" | gh secret set AZURE_ADMIN_OBJECT_ID
+        echo -e "${GREEN}✓ Set AZURE_ADMIN_OBJECT_ID${NC}"
+    else
+        echo -e "${YELLOW}→ AZURE_ADMIN_OBJECT_ID: ${ADMIN_OBJECT_ID}${NC}"
+    fi
+fi
+
+# Set POSTGRES_PASSWORD (prompt user)
+echo ""
+read -sp "Enter PostgreSQL password for deployment: " POSTGRES_PASSWORD
+echo ""
+if [ "$USE_GH_CLI" = true ]; then
+    echo "$POSTGRES_PASSWORD" | gh secret set POSTGRES_PASSWORD
+    echo -e "${GREEN}✓ Set POSTGRES_PASSWORD${NC}"
+else
+    echo -e "${YELLOW}→ POSTGRES_PASSWORD: (hidden)${NC}"
+fi
+
+# Optional secrets
+echo ""
+echo "Optional secrets (press Enter to skip):"
+echo ""
+
+# Azure AI Foundry Key (optional override)
+read -p "Enter Azure AI API key (optional): " OPENAI_KEY
+if [ -n "$OPENAI_KEY" ]; then
+    if [ "$USE_GH_CLI" = true ]; then
+        echo "$OPENAI_KEY" | gh secret set AZURE_AI_KEY
+        echo -e "${GREEN}✓ Set AZURE_AI_KEY${NC}"
+    else
+        echo -e "${YELLOW}→ AZURE_AI_KEY: (set manually)${NC}"
+    fi
+fi
+
+# =============================================================================
+# Entra ID Secrets (Required for Frontend Auth)
+# =============================================================================
+echo ""
+echo "Entra ID Configuration (Required for Enterprise Auth)"
+echo "----------------------------------------------------"
+
+read -p "Enter Azure AD Tenant ID (or press Enter to skip): " AAD_TENANT_ID
+
+if [ -n "$AAD_TENANT_ID" ]; then
+    read -p "Enter Azure AD Client ID (Frontend App ID): " AAD_CLIENT_ID
+
+    read -p "Enter External Domain (e.g., ctxeco) [ctxeco]: " AAD_DOMAIN
+    AAD_DOMAIN=${AAD_DOMAIN:-ctxeco}
+
+    if [ "$USE_GH_CLI" = true ]; then
+        echo "$AAD_TENANT_ID" | gh secret set AZURE_AD_TENANT_ID
+        echo -e "${GREEN}✓ Set AZURE_AD_TENANT_ID${NC}"
+        
+        if [ -n "$AAD_CLIENT_ID" ]; then
+            echo "$AAD_CLIENT_ID" | gh secret set AZURE_AD_CLIENT_ID
+            echo -e "${GREEN}✓ Set AZURE_AD_CLIENT_ID${NC}"
+        else
+            echo -e "${RED}Warning: AZURE_AD_CLIENT_ID not set! Frontend auth will fail.${NC}"
+        fi
+        
+        echo "$AAD_DOMAIN" | gh secret set AZURE_AD_EXTERNAL_DOMAIN
+        echo -e "${GREEN}✓ Set AZURE_AD_EXTERNAL_DOMAIN${NC}"
+        
+        echo "true" | gh secret set AZURE_AD_EXTERNAL_ID
+        echo -e "${GREEN}✓ Set AZURE_AD_EXTERNAL_ID=true${NC}"
+    else
+        echo -e "${YELLOW}→ AZURE_AD_TENANT_ID: ${AAD_TENANT_ID}${NC}"
+        echo -e "${YELLOW}→ AZURE_AD_CLIENT_ID: ${AAD_CLIENT_ID}${NC}"
+        echo -e "${YELLOW}→ AZURE_AD_EXTERNAL_DOMAIN: ${AAD_DOMAIN}${NC}"
+        echo -e "${YELLOW}→ AZURE_AD_EXTERNAL_ID: true${NC}"
+    fi
+fi
+
+# Azure AI Foundry Agent (optional)
+echo ""
+echo "Azure AI Foundry Agent Configuration (optional)"
+echo "------------------------------------------------"
+
+read -p "Enter Foundry Agent Endpoint (optional): " FOUNDRY_ENDPOINT
+if [ -n "$FOUNDRY_ENDPOINT" ]; then
+    read -p "Enter Foundry Agent Project: " FOUNDRY_PROJECT
+    read -sp "Enter Foundry Agent Key: " FOUNDRY_KEY
+    echo ""
+    read -p "Enter Elena Foundry Agent ID: " ELENA_AGENT_ID
+
+    if [ "$USE_GH_CLI" = true ]; then
+        echo "$FOUNDRY_ENDPOINT" | gh secret set AZURE_FOUNDRY_AGENT_ENDPOINT
+        echo -e "${GREEN}✓ Set AZURE_FOUNDRY_AGENT_ENDPOINT${NC}"
+        
+        if [ -n "$FOUNDRY_PROJECT" ]; then
+            echo "$FOUNDRY_PROJECT" | gh secret set AZURE_FOUNDRY_AGENT_PROJECT
+            echo -e "${GREEN}✓ Set AZURE_FOUNDRY_AGENT_PROJECT${NC}"
+        fi
+        
+        if [ -n "$FOUNDRY_KEY" ]; then
+            echo "$FOUNDRY_KEY" | gh secret set AZURE_FOUNDRY_AGENT_KEY
+            echo -e "${GREEN}✓ Set AZURE_FOUNDRY_AGENT_KEY${NC}"
+        fi
+        
+        if [ -n "$ELENA_AGENT_ID" ]; then
+            echo "$ELENA_AGENT_ID" | gh secret set ELENA_FOUNDRY_AGENT_ID
+            echo -e "${GREEN}✓ Set ELENA_FOUNDRY_AGENT_ID${NC}"
+        fi
+    else
+        echo -e "${YELLOW}→ AZURE_FOUNDRY_AGENT_ENDPOINT: ${FOUNDRY_ENDPOINT}${NC}"
+        echo -e "${YELLOW}→ AZURE_FOUNDRY_AGENT_PROJECT: ${FOUNDRY_PROJECT}${NC}"
+        echo -e "${YELLOW}→ AZURE_FOUNDRY_AGENT_KEY: (hidden)${NC}"
+        echo -e "${YELLOW}→ ELENA_FOUNDRY_AGENT_ID: ${ELENA_AGENT_ID}${NC}"
+    fi
+fi
+
+echo ""
+echo "=========================================="
+echo "Summary"
+echo "=========================================="
+echo ""
+echo -e "${GREEN}✓ Service principal created: ${SP_NAME}${NC}"
+echo -e "${GREEN}✓ Resource group: ${RESOURCE_GROUP}${NC}"
+echo -e "${GREEN}✓ Subscription: ${SUBSCRIPTION_NAME}${NC}"
+echo ""
+
+if [ "$USE_GH_CLI" = true ]; then
+    echo -e "${GREEN}All secrets have been set in GitHub!${NC}"
+else
+    echo -e "${YELLOW}Please set the following secrets manually in GitHub:${NC}"
+    echo "  1. Go to: https://github.com/${GITHUB_REPO}/settings/secrets/actions"
+    echo "  2. Click 'New repository secret'"
+    echo "  3. Set each secret from the list above"
+    echo ""
+    echo "Required secrets:"
+    echo "  - AZURE_CREDENTIALS (from azure-credentials.json)"
+    if [ -n "$ADMIN_OBJECT_ID" ]; then
+        echo "  - AZURE_ADMIN_OBJECT_ID: ${ADMIN_OBJECT_ID}"
+    fi
+    echo "  - POSTGRES_PASSWORD: (the password you entered)"
+fi
+
+echo ""
+echo -e "${YELLOW}⚠️  IMPORTANT:${NC}"
+echo "  - azure-credentials.json contains sensitive data. DO NOT COMMIT IT!"
+echo "  - Add it to .gitignore if not already there"
+echo "  - Keep it secure and delete it when no longer needed"
+echo ""
+
+# Check if .gitignore exists and contains azure-credentials.json
+if [ -f .gitignore ]; then
+    if ! grep -q "azure-credentials.json" .gitignore; then
+        echo "azure-credentials.json" >> .gitignore
+        echo -e "${GREEN}Added azure-credentials.json to .gitignore${NC}"
+    fi
+else
+    echo "azure-credentials.json" > .gitignore
+    echo -e "${GREEN}Created .gitignore with azure-credentials.json${NC}"
+fi
+
+echo ""
+echo -e "${GREEN}Setup complete!${NC}"
+echo ""
+echo "Next steps:"
+echo "  1. Push your code to trigger the CI/CD pipeline"
+echo "  2. Monitor deployment at: https://github.com/${GITHUB_REPO}/actions"
+echo "  3. Verify Container Apps are running in Azure Portal"
+echo ""
