@@ -24,7 +24,8 @@ from pydantic import BaseModel
 
 from voice.voicelive_service import voicelive_service
 from core import get_settings, EnterpriseContext, SecurityContext, Role, MessageRole, Turn
-from agents import chat as agent_chat, get_agent
+# Note: agent_chat and get_agent imports removed - not used in voice router
+# Voice router uses VoiceLive SDK directly, not agent chat fallback
 from memory import memory_client, persist_conversation
 from api.middleware.auth import get_auth, get_current_user
 from fastapi import Depends

@@ -13,12 +13,20 @@ import logging
 from dataclasses import dataclass
 from typing import Optional, Union
 
-from azure.core.credentials import AzureKeyCredential
-from azure.identity import DefaultAzureCredential
-
-from core import get_settings
+# Optional Azure imports - service can work without them for basic functionality
+try:
+    from azure.core.credentials import AzureKeyCredential
+    from azure.identity import DefaultAzureCredential
+    AZURE_AVAILABLE = True
+except ImportError:
+    AZURE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+if not AZURE_AVAILABLE:
+    logger.warning("Azure SDK not installed. VoiceLive service will have limited functionality.")
+
+from core import get_settings
 
 
 @dataclass
@@ -132,7 +140,16 @@ class VoiceLiveService:
         4. Azure CLI (local development)
         5. Azure PowerShell
         6. Interactive browser (if enabled)
+        
+        Raises:
+            ImportError: If Azure SDK is not installed
         """
+        if not AZURE_AVAILABLE:
+            raise ImportError(
+                "Azure SDK is required for VoiceLive service. "
+                "Install with: pip install azure-identity azure-core"
+            )
+        
         environment = self.settings.environment.lower()
         
         # For production/enterprise, always use DefaultAzureCredential (Managed Identity)

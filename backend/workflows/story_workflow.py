@@ -24,7 +24,7 @@ from temporalio.common import RetryPolicy
 
 # Import activities (with sandbox warning suppression)
 with workflow.unsafe.imports_passed_through():
-    from backend.workflows.story_activities import (
+    from workflows.story_activities import (
         GenerateStoryInput,
         GenerateDiagramInput,
         GenerateImageInput,

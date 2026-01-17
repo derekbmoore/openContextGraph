@@ -115,7 +115,7 @@ async def initialize_context_activity(user_id: str, tenant_id: str, session_id: 
     """
     activity.logger.info(f"Initializing context for user {user_id}, session {session_id}")
 
-    from backend.core import Role, SecurityContext, EnterpriseContext
+    from core import Role, SecurityContext, EnterpriseContext
 
     # Create security context
     security = SecurityContext(
@@ -146,8 +146,8 @@ async def enrich_memory_activity(input: MemoryEnrichInput) -> MemoryEnrichOutput
     activity.logger.info(f"Enriching context with memory for query: {input.query[:50]}...")
 
     try:
-        from backend.core import EnterpriseContext
-        from backend.memory import enrich_context
+        from core import EnterpriseContext
+        from memory import enrich_context
 
         # Deserialize context
         context = EnterpriseContext.model_validate_json(input.context_json)
@@ -184,8 +184,8 @@ async def agent_reasoning_activity(input: ReasoningInput) -> ReasoningOutput:
     activity.logger.info(f"Running agent reasoning: {input.agent_id}")
 
     try:
-        from backend.agents import get_agent
-        from backend.core import EnterpriseContext
+        from agents import get_agent
+        from core import EnterpriseContext
 
         # Deserialize context
         context = EnterpriseContext.model_validate_json(input.context_json)
@@ -226,8 +226,8 @@ async def persist_memory_activity(input: MemoryPersistInput) -> MemoryPersistOut
     activity.logger.info("Persisting conversation to memory")
 
     try:
-        from backend.core import EnterpriseContext
-        from backend.memory import persist_conversation
+        from core import EnterpriseContext
+        from memory import persist_conversation
 
         # Deserialize context
         context = EnterpriseContext.model_validate_json(input.context_json)
@@ -257,12 +257,12 @@ async def execute_tool_activity(input: ToolExecutionInput) -> ToolExecutionOutpu
 
     try:
         # Import tools from agents
-        from backend.agents.elena.agent import (
+        from agents.elena.agent import (
             analyze_requirements,
             create_user_story,
             stakeholder_mapping,
         )
-        from backend.agents.marcus.agent import (
+        from agents.marcus.agent import (
             assess_project_risks,
             create_project_timeline,
             create_status_report,

@@ -12,8 +12,8 @@ from typing import Optional
 
 from temporalio.client import Client
 
-from backend.core import get_settings
-from backend.workflows.agent_workflow import (
+from core import get_settings
+from workflows.agent_workflow import (
     AgentWorkflow,
     AgentWorkflowInput,
     AgentWorkflowOutput,
@@ -21,7 +21,7 @@ from backend.workflows.agent_workflow import (
     ApprovalWorkflow,
     ConversationWorkflow,
 )
-from backend.workflows.story_workflow import (
+from workflows.story_workflow import (
     StoryWorkflow,
     StoryWorkflowInput,
     StoryWorkflowOutput,

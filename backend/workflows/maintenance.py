@@ -8,7 +8,7 @@ async def repair_stories_activity() -> str:
     """
     import logging
     # Import the logic function from the script
-    from backend.scripts.repair_story_images import repair_stories
+    from scripts.repair_story_images import repair_stories
     
     logger = logging.getLogger(__name__)
     logger.info("Starting story image repair activity...")

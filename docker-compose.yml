@@ -5,7 +5,7 @@ services:
   # Core Infrastructure
   # =============================================================================
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     environment:
       POSTGRES_DB: ctxEco
       POSTGRES_USER: ctxEco
@@ -26,12 +26,14 @@ services:
   zep:
     image: ghcr.io/getzep/zep:latest
     environment:
-      ZEP_STORE_TYPE: postgres
-      ZEP_STORE_POSTGRES_DSN: postgres://ctxEco:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ctxEco?sslmode=disable
-      ZEP_AUTH_REQUIRED: false
-      ZEP_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Zep server
+      ZEP_SERVER_ADDRESS: 0.0.0.0:8000
+      # Embeddings (disable hard requirement on OpenAI by providing a dummy key)
+      ZEP_OPENAI_API_KEY: ${OPENAI_API_KEY:-test}
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/zep-config.yaml:/app/config.yaml:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,10 +97,13 @@ services:
       - TEMPORAL_HOST=temporal:7233
       - ZEP_API_URL=http://zep:8000
     depends_on:
-      - temporal
-      - zep
+      temporal:
+        condition: service_started
+      zep:
+        condition: service_started
     volumes:
       - ./backend:/app
+    restart: on-failure
 
 volumes:
   postgres_data:

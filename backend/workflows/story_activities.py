@@ -124,7 +124,7 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
     activity.logger.info(f"Generating story: {input.topic}")
     
     try:
-        from backend.llm.claude_client import get_claude_client
+        from llm.claude_client import get_claude_client
         
         client = get_claude_client()
         
@@ -132,7 +132,7 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
         # Sage performs an independent search to verify and enrich context
         activity.logger.info(f"Sage Verification: Searching memory for '{input.topic}'")
         try:
-            from backend.memory.client import memory_client
+            from memory.client import memory_client
             
             # Using global-search or a specific session if we had one
             search_results = await memory_client.search_memory(
@@ -212,7 +212,7 @@ async def generate_diagram_activity(input: GenerateDiagramInput) -> GenerateDiag
     activity.logger.info(f"Generating diagram: {input.topic}")
     
     try:
-        from backend.llm.gemini_client import get_gemini_client
+        from llm.gemini_client import get_gemini_client
         
         client = get_gemini_client()
         spec = await client.generate_diagram_spec(
@@ -249,7 +249,7 @@ async def generate_image_activity(input: GenerateImageInput) -> GenerateImageOut
     activity.logger.info(f"Generating image for prompt: {input.prompt[:50]}...")
     
     try:
-        from backend.llm.gemini_client import get_gemini_client
+        from llm.gemini_client import get_gemini_client
         
         client = get_gemini_client()
         
@@ -293,7 +293,7 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
     activity.logger.info(f"Saving artifacts: {input.story_id}")
     
     try:
-        from backend.core import get_settings
+        from core import get_settings
         
         settings = get_settings()
         docs_path = Path(settings.onedrive_docs_path or "docs")
@@ -355,7 +355,7 @@ async def enrich_story_memory_activity(input: EnrichMemoryInput) -> EnrichMemory
     activity.logger.info(f"Enriching memory: {input.story_id}")
     
     try:
-        from backend.memory.client import memory_client
+        from memory.client import memory_client
         
         session_id = f"story-{input.story_id}"
         

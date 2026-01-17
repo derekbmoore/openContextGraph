@@ -13,8 +13,8 @@ import sys
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from backend.core import get_settings
-from backend.workflows.activities import (
+from core import get_settings
+from workflows.activities import (
     agent_reasoning_activity,
     enrich_memory_activity,
     execute_tool_activity,
@@ -23,20 +23,20 @@ from backend.workflows.activities import (
     send_notification_activity,
     validate_response_activity,
 )
-from backend.workflows.story_activities import (
+from workflows.story_activities import (
     generate_story_activity,
     generate_diagram_activity,
     generate_image_activity,
     save_artifacts_activity,
     enrich_story_memory_activity,
 )
-from backend.workflows.agent_workflow import (
+from workflows.agent_workflow import (
     AgentWorkflow,
     ApprovalWorkflow,
     ConversationWorkflow,
 )
-from backend.workflows.story_workflow import StoryWorkflow
-from backend.workflows.maintenance import RepairWorkflow, repair_stories_activity
+from workflows.story_workflow import StoryWorkflow
+from workflows.maintenance import RepairWorkflow, repair_stories_activity
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
