@@ -18,7 +18,7 @@ spec:
       serviceAccountName: worker-sa
       containers:
         - name: worker
-          image: ghcr.io/derekbmoore/ctxEco/worker:latest
+          image: ghcr.io/derekbmoore/opencontextgraph/backend:latest
           env:
             - name: ENVIRONMENT
               value: production
@@ -65,7 +65,7 @@ spec:
       serviceAccountName: worker-sa
       containers:
         - name: worker
-          image: ghcr.io/derekbmoore/ctxEco/worker:latest
+          image: ghcr.io/derekbmoore/opencontextgraph/backend:latest
           env:
             - name: ENVIRONMENT
               value: production

@@ -43,10 +43,10 @@ param postgresPassword string
 // param adminObjectId string
 
 @description('Container image for backend API.')
-param backendImage string = 'ghcr.io/derekbmoore/ctxeco/backend:latest'
+param backendImage string = 'ghcr.io/derekbmoore/opencontextgraph/backend:latest'
 
 @description('Container image for worker.')
-param workerImage string = 'ghcr.io/derekbmoore/ctxeco/backend:latest'
+param workerImage string = 'ghcr.io/derekbmoore/opencontextgraph/backend:latest'
 
 @description('Container image for Zep (memory).')
 param zepImage string = 'ghcr.io/getzep/zep:latest'
