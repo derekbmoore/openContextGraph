@@ -92,6 +92,9 @@ jobs:
           severity-cutoff: high
 
   # Deploy to Azure Container Apps
+  # Secrets Management:
+  # - CI/CD secrets (Azure auth, resource names): GitHub Secrets (required)
+  # - Application secrets (postgres, api keys): Azure Key Vault (configured in Bicep)
   deploy-azure:
     name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
@@ -112,13 +115,38 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Get Resource Group from Key Vault (if available)
+        id: get-config
+        run: |
+          # Try to get Key Vault URI and resource names from Key Vault if available
+          KEY_VAULT_NAME="${{ secrets.AZURE_KEY_VAULT_NAME || '' }}"
+          if [ -n "$KEY_VAULT_NAME" ]; then
+            echo "Fetching configuration from Key Vault: $KEY_VAULT_NAME"
+            # Get Key Vault URI
+            KEY_VAULT_URI=$(az keyvault show --name "$KEY_VAULT_NAME" --query properties.vaultUri -o tsv 2>/dev/null || echo "")
+            if [ -n "$KEY_VAULT_URI" ]; then
+              echo "keyVaultUri=$KEY_VAULT_URI" >> $GITHUB_OUTPUT
+            fi
+          fi
+          # Use GitHub Secrets as fallback/defaults
+          echo "resourceGroup=${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}" >> $GITHUB_OUTPUT
+          echo "backendAppName=${{ secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}" >> $GITHUB_OUTPUT
+          echo "workerAppName=${{ secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}" >> $GITHUB_OUTPUT
+
       - name: Update Backend Container App
+        env:
+          RESOURCE_GROUP: ${{ steps.get-config.outputs.resourceGroup || secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}
+          BACKEND_APP_NAME: ${{ steps.get-config.outputs.backendAppName || secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}
         run: |
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
-          RESOURCE_GROUP="${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}"
-          BACKEND_APP_NAME="${{ secrets.AZURE_BACKEND_APP_NAME || 'ctxeco-api' }}"
           
-          echo "Updating Container App: $BACKEND_APP_NAME with image: $IMAGE_TAG"
+          echo "📦 Updating Container App: $BACKEND_APP_NAME"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Image: $IMAGE_TAG"
+          
+          echo "📦 Updating Container App: $BACKEND_APP_NAME"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Image: $IMAGE_TAG"
           
           az containerapp update \
             --name "$BACKEND_APP_NAME" \
@@ -126,14 +154,23 @@ jobs:
             --image "$IMAGE_TAG" \
             --query "properties.template.containers[0].image" \
             -o tsv
+          
+          echo "✅ Backend Container App updated successfully"
 
       - name: Update Worker Container App
+        env:
+          RESOURCE_GROUP: ${{ steps.get-config.outputs.resourceGroup || secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}
+          WORKER_APP_NAME: ${{ steps.get-config.outputs.workerAppName || secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}
         run: |
           IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:latest"
-          RESOURCE_GROUP="${{ secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}"
-          WORKER_APP_NAME="${{ secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}"
           
-          echo "Updating Container App: $WORKER_APP_NAME with image: $IMAGE_TAG"
+          echo "📦 Updating Container App: $WORKER_APP_NAME"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Image: $IMAGE_TAG"
+          
+          echo "📦 Updating Container App: $WORKER_APP_NAME"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Image: $IMAGE_TAG"
           
           az containerapp update \
             --name "$WORKER_APP_NAME" \
@@ -141,3 +178,5 @@ jobs:
             --image "$IMAGE_TAG" \
             --query "properties.template.containers[0].image" \
             -o tsv
+          
+          echo "✅ Worker Container App updated successfully"
