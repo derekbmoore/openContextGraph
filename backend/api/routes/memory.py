@@ -323,3 +323,100 @@ async def get_episode_transcript(session_id: str, user: SecurityContext = Depend
         logger.error(f"Failed to get episode transcript: {e}")
         # Fallback
         return EpisodeTranscriptResponse(id=session_id, transcript=[])
+
+
+# =============================================================================
+# Memory Enrichment (VoiceLive / Automation Context)
+# =============================================================================
+
+class EnrichRequest(BaseModel):
+    """Request body for voice transcript enrichment"""
+    text: str
+    session_id: Optional[str] = None
+    speaker: str = "user"  # 'user' or 'assistant'
+    agent_id: Optional[str] = None
+    channel: str = "voice"
+    metadata: dict = {}
+
+
+class EnrichResponse(BaseModel):
+    """Response for enrichment request"""
+    success: bool
+    session_id: str
+    message: str
+
+
+@router.post("/enrich", response_model=EnrichResponse)
+async def enrich_memory(request: EnrichRequest, user: SecurityContext = Depends(get_current_user)):
+    """
+    Enrich memory with voice transcripts or automation context.
+    
+    This endpoint is called by the browser after receiving transcription
+    from the Azure Realtime API, or by automation tools to store context.
+    It's fire-and-forget — the experience continues regardless of 
+    whether memory persistence succeeds.
+    """
+    import uuid
+    from datetime import datetime, timezone
+    
+    try:
+        memory_client = get_memory_client()
+        
+        # Generate session ID if not provided
+        session_id = request.session_id or f"voice-{uuid.uuid4()}"
+        
+        # Create/update session with metadata including summary from content
+        summary = request.text[:200] + ("..." if len(request.text) > 200 else "")
+        
+        # Merge request metadata with session metadata
+        session_metadata = {
+            "tenant_id": user.tenant_id,
+            "channel": request.channel,
+            "agent_id": request.agent_id or "unknown",
+            "summary": summary,
+            "turn_count": 1,
+            **request.metadata  # Include extra context in session metadata too
+        }
+
+        await memory_client.get_or_create_session(
+            session_id=session_id,
+            user_id=user.user_id,
+            metadata=session_metadata,
+        )
+        
+        # Directly add the message to memory
+        role = "user" if request.speaker == "user" else "assistant"
+        
+        # Merge message metadata
+        message_metadata = {
+            "agent_id": request.agent_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "channel": request.channel,
+            **request.metadata
+        }
+
+        await memory_client.add_memory(
+            session_id=session_id,
+            messages=[{
+                "role": role,
+                "content": request.text,
+                "metadata": message_metadata,
+            }],
+        )
+        
+        logger.info(f"Memory enriched: session={session_id}, speaker={request.speaker}, len={len(request.text)}")
+        
+        return EnrichResponse(
+            success=True,
+            session_id=session_id,
+            message="Transcript enriched successfully",
+        )
+        
+    except Exception as e:
+        logger.warning(f"Memory enrichment failed (non-blocking): {e}")
+        return EnrichResponse(
+            success=False,
+            session_id=request.session_id or "",
+            message=f"Enrichment failed: {str(e)}",
+        )
+
