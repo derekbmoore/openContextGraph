@@ -10,9 +10,16 @@ import { getAccessToken } from '../auth/authConfig'
 // Environment-aware API URL
 const API_BASE = (() => {
   const envUrl = import.meta.env.VITE_API_URL as string | undefined
-  if (envUrl) return envUrl
+  const isBrowser = typeof window !== 'undefined'
 
-  if (typeof window !== 'undefined') {
+  if (envUrl) {
+    if (isBrowser && window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
+      return envUrl.replace(/^http:\/\//, 'https://')
+    }
+    return envUrl
+  }
+
+  if (isBrowser) {
     const origin = window.location.origin
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return origin
