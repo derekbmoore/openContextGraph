@@ -7,11 +7,11 @@
 
 import { getAccessToken } from '../auth/authConfig'
 
-// In production, we want relative path (same origin)
-// In dev, we use VITE_API_URL or fallback to localhost
-export const API_BASE_URL = import.meta.env.PROD
-  ? ''
-  : (import.meta.env.VITE_API_URL || 'http://localhost:8082');
+// Environment-aware API URL
+const API_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
+
 
 const API_VERSION = '/api/v1'
 

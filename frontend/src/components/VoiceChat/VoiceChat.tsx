@@ -206,7 +206,7 @@ export default function VoiceChat({
         }
 
         // Connect to backend WebSocket proxy endpoint
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
         let wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/v1/voice/voicelive/${activeSessionId}`;
 
         // Append token as query parameter if available
@@ -447,7 +447,7 @@ export default function VoiceChat({
       }
 
       // 1. Fetch ICE credentials from backend
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       console.log('📡 Fetching ICE credentials from backend...');
 
       const iceResponse = await fetch(`${apiUrl}/api/v1/voice/avatar/ice-credentials`, {

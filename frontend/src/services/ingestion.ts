@@ -111,7 +111,7 @@ export interface IngestResult {
   routingClass?: DataClass;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8082';
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
 const API_VERSION = '/api/v1';
 
 const toSource = (s: any): IngestSource => ({

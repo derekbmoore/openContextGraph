@@ -223,7 +223,7 @@ export function GoldenThreadRunner() {
                 onClick={async () => {
                   if (!run) return
                   try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8082'}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
                       headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
                       },
