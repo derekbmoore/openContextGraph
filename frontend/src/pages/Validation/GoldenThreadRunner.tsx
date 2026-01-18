@@ -223,7 +223,12 @@ export function GoldenThreadRunner() {
                 onClick={async () => {
                   if (!run) return
                   try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
+                    // Resolve API URL with HTTPS upgrade for mixed content prevention
+                    let apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+                    if (window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+                      apiUrl = apiUrl.replace('http://', 'https://');
+                    }
+                    const response = await fetch(`${apiUrl}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
                       headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
                       },

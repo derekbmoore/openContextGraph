@@ -10,7 +10,14 @@ import { getAccessToken } from '../auth/authConfig'
 // Environment-aware API URL
 const API_BASE = (() => {
   const envUrl = import.meta.env.VITE_API_URL as string | undefined
-  if (envUrl) return envUrl
+
+  // If VITE_API_URL is set, ensure it uses HTTPS when page is loaded over HTTPS
+  if (envUrl) {
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
+      return envUrl.replace('http://', 'https://')
+    }
+    return envUrl
+  }
 
   if (typeof window !== 'undefined') {
     const origin = window.location.origin

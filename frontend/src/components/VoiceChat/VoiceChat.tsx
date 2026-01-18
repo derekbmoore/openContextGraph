@@ -109,13 +109,25 @@ export default function VoiceChat({
       apiUrl = origin;
     }
 
+    // Upgrade HTTP to HTTPS when page is loaded over HTTPS (prevent mixed content)
+    if (window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+      apiUrl = apiUrl.replace('http://', 'https://');
+    }
+
     return apiUrl;
   }, []);
 
   const resolveWsUrl = useCallback((apiUrl: string) => {
     const envWsUrl = import.meta.env.VITE_WS_URL as string | undefined;
-    const base = envWsUrl || apiUrl;
-    return base.replace(/^http/, 'ws');
+    let base = envWsUrl || apiUrl;
+
+    // Upgrade HTTP to HTTPS when page is loaded over HTTPS
+    if (window.location.protocol === 'https:' && base.startsWith('http://')) {
+      base = base.replace('http://', 'https://');
+    }
+
+    // Convert HTTP(S) to WS(S)
+    return base.replace(/^https/, 'wss').replace(/^http/, 'ws');
   }, []);
 
   const isAuthRequired = useCallback(() => {

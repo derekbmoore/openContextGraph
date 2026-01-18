@@ -111,7 +111,14 @@ export interface IngestResult {
   routingClass?: DataClass;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
+const API_BASE = (() => {
+  let apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
+  // Upgrade HTTP to HTTPS when page is loaded over HTTPS (prevent mixed content)
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+    apiUrl = apiUrl.replace('http://', 'https://');
+  }
+  return apiUrl;
+})();
 const API_VERSION = '/api/v1';
 
 const toSource = (s: any): IngestSource => ({

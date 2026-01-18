@@ -56,6 +56,11 @@ export function useAzureRealtime(config: RealtimeConfig) {
             apiUrl = origin;
         }
 
+        // Upgrade HTTP to HTTPS when page is loaded over HTTPS (prevent mixed content)
+        if (window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+            apiUrl = apiUrl.replace('http://', 'https://');
+        }
+
         return apiUrl;
     }, []);
 
