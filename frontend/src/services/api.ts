@@ -123,6 +123,9 @@ export class ApiClient {
       agent: string
       sources?: string[]
       tool_calls?: Array<Record<string, unknown>>
+      tokens_used?: number
+      latency_ms?: number
+      avatar_video_url?: string
     }>('/chat', {
       method: 'POST',
       body: JSON.stringify({
@@ -145,6 +148,9 @@ export class ApiClient {
       agent_name: agentNameMap[response.agent] || response.agent,
       timestamp: new Date().toISOString(),
       session_id: response.session_id,
+      tokens_used: response.tokens_used,
+      latency_ms: response.latency_ms,
+      avatar_video_url: response.avatar_video_url,
     }
   }
 
