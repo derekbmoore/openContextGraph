@@ -8,6 +8,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { getAccessToken } from '../auth/authConfig';
+import { normalizeApiBase } from '../utils/url';
 
 export interface RealtimeConfig {
     agentId: string;
@@ -49,8 +50,8 @@ export function useAzureRealtime(config: RealtimeConfig) {
     // Fetch ephemeral token from backend
     const resolveApiUrl = useCallback(() => {
         const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
-        const origin = window.location.origin;
-        let apiUrl = envApiUrl || origin;
+            const origin = window.location.origin;
+            let apiUrl = normalizeApiBase(envApiUrl, origin);
 
         if (apiUrl.includes('localhost') && !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
             apiUrl = origin;
@@ -60,7 +61,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
     }, []);
 
     const fetchToken = useCallback(async (): Promise<EphemeralTokenResponse> => {
-        const baseUrl = resolveApiUrl();
+        const baseUrl = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined, window.location.origin);
         const authToken = await getAccessToken();
         const response = await fetch(`${baseUrl}/api/v1/voice/realtime/token`, {
             method: 'POST',

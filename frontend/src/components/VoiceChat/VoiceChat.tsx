@@ -11,6 +11,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import './VoiceChat.css';
 import { getAccessToken } from '../../auth/authConfig';
+import { normalizeApiBase } from '../../utils/url';
 
 interface VoiceMessage {
   id: string;
@@ -104,7 +105,7 @@ export default function VoiceChat({
   const resolveApiUrl = useCallback(() => {
     const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
     const origin = window.location.origin;
-    let apiUrl = envApiUrl || origin;
+    let apiUrl = normalizeApiBase(envApiUrl, origin);
 
     if (apiUrl.includes('localhost') && !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
       apiUrl = origin;
@@ -116,7 +117,7 @@ export default function VoiceChat({
   const resolveWsUrl = useCallback((apiUrl: string) => {
     const envWsUrl = import.meta.env.VITE_WS_URL as string | undefined;
     const base = envWsUrl || apiUrl;
-    return base.replace(/^http/, 'ws');
+    return base.replace(/^https/, 'wss').replace(/^http/, 'ws');
   }, []);
 
   const isAuthRequired = useCallback(() => {
@@ -544,7 +545,7 @@ export default function VoiceChat({
       }
 
       // 1. Fetch ICE credentials from backend
-      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      const apiUrl = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined, window.location.origin);
       console.log('📡 Fetching ICE credentials from backend...');
 
       const iceResponse = await fetch(`${apiUrl}/api/v1/voice/avatar/ice-credentials`, {

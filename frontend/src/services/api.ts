@@ -6,28 +6,15 @@
  */
 
 import { getAccessToken } from '../auth/authConfig'
+import { normalizeApiBase } from '../utils/url'
 
 // Environment-aware API URL
 const API_BASE = (() => {
   const envUrl = import.meta.env.VITE_API_URL as string | undefined
   const isBrowser = typeof window !== 'undefined'
+  const fallback = isBrowser ? window.location.origin : 'http://localhost:8082'
 
-  if (envUrl) {
-    if (isBrowser && window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
-      return envUrl.replace(/^http:\/\//, 'https://')
-    }
-    return envUrl
-  }
-
-  if (isBrowser) {
-    const origin = window.location.origin
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return origin
-    }
-    return origin
-  }
-
-  return 'http://localhost:8082'
+  return normalizeApiBase(envUrl, fallback)
 })()
 
 export const API_BASE_URL = API_BASE

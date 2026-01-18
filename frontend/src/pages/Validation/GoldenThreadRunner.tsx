@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { normalizeApiBase } from '../../utils/url'
 import './GoldenThreadRunner.css'
 
 /* Inline styles for check details */
@@ -223,7 +224,11 @@ export function GoldenThreadRunner() {
                 onClick={async () => {
                   if (!run) return
                   try {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
+                    const baseUrl = normalizeApiBase(
+                      import.meta.env.VITE_API_URL as string | undefined,
+                      window.location.origin
+                    )
+                    const response = await fetch(`${baseUrl}/api/v1/validation/runs/${run.summary.runId}/evidence`, {
                       headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
                       },

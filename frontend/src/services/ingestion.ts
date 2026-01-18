@@ -4,6 +4,8 @@
  * Sources API with NIST-aligned classification and Antigravity routing.
  */
 
+import { normalizeApiBase } from '../utils/url';
+
 export type IngestStatus = 'healthy' | 'indexing' | 'paused' | 'error' | 'pending';
 
 export type IngestKind =
@@ -111,7 +113,10 @@ export interface IngestResult {
   routingClass?: DataClass;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
+const API_BASE = normalizeApiBase(
+  import.meta.env.VITE_API_URL as string | undefined,
+  typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082'
+);
 const API_VERSION = '/api/v1';
 
 const toSource = (s: any): IngestSource => ({
