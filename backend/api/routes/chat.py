@@ -142,13 +142,29 @@ async def chat(
     
     # Persist conversation to memory
     try:
+        # Ensure session exists with security context metadata
+        await memory_client.get_or_create_session(
+            session_id=session_id,
+            user_id=user.user_id,
+            metadata={
+                "tenant_id": user.tenant_id,
+                "project_id": user.project_id or "",
+                "groups": user.groups,
+                "agent_id": request.agent,
+                "created_at": str(uuid.uuid1())
+            }
+        )
+        
         await memory_client.add_memory(
             session_id=session_id,
             messages=[
                 {"role": "user", "content": request.message},
                 {"role": "assistant", "content": result["response"]},
             ],
-            metadata={"agent_id": request.agent}
+            metadata={
+                "agent_id": request.agent,
+                "project_id": user.project_id
+            }
         )
     except Exception as e:
         logger.warning(f"Memory persistence failed: {e}")
