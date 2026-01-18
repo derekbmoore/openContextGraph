@@ -17,10 +17,10 @@ const EXTERNAL_ID = (import.meta.env.VITE_AZURE_AD_EXTERNAL_ID || 'false').toLow
 const EXTERNAL_DOMAIN = import.meta.env.VITE_AZURE_AD_EXTERNAL_DOMAIN || TENANT_DOMAIN;
 
 const authority = EXTERNAL_ID && EXTERNAL_DOMAIN && TENANT_ID
-    ? `https://${EXTERNAL_DOMAIN}.ciamlogin.com/${TENANT_ID}`
+    ? `https://${EXTERNAL_DOMAIN}.ciamlogin.com/${TENANT_ID}/v2.0`
     : TENANT_ID
-        ? `https://login.microsoftonline.com/${TENANT_ID}`
-        : 'https://login.microsoftonline.com/organizations';
+        ? `https://login.microsoftonline.com/${TENANT_ID}/v2.0`
+        : 'https://login.microsoftonline.com/organizations/v2.0';
 
 // MSAL Configuration for Entra External ID
 export const msalConfig: Configuration = {
