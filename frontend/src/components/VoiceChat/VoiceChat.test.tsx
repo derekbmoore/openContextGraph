@@ -51,6 +51,12 @@ describe('VoiceChat Component', () => {
     vi.clearAllMocks();
     vi.stubGlobal('WebSocket', MockWebSocket);
 
+    // Mock backend health check
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    }));
+
     // Mock environment variable
     import.meta.env = { VITE_API_URL: 'http://localhost:8082' };
 

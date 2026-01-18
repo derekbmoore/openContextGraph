@@ -12,6 +12,8 @@ const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL
   : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
 
+export const API_BASE_URL = API_BASE
+
 
 const API_VERSION = '/api/v1'
 
@@ -24,7 +26,7 @@ export interface ApiError {
 export class ApiClient {
   private baseUrl: string
 
-  constructor(baseUrl: string = API_BASE_URL) {
+  constructor(baseUrl: string = API_BASE) {
     // Normalize trailing slash to avoid accidental double slashes
     this.baseUrl = baseUrl.replace(/\/$/, '')
   }
@@ -104,24 +106,35 @@ export class ApiClient {
 
   // Chat API
   async sendMessage(content: string, agentId?: string, sessionId?: string) {
-    return this.request<{
-      message_id: string
-      content: string
-      agent_id: string
-      agent_name: string
-      timestamp: string
-      tokens_used?: number
-      latency_ms?: number
+    const response = await this.request<{
+      response: string
       session_id: string
-      avatar_video_url?: string  // Foundry avatar video URL (if available)
+      agent: string
+      sources?: string[]
+      tool_calls?: Array<Record<string, unknown>>
     }>('/chat', {
       method: 'POST',
       body: JSON.stringify({
-        content,
-        agent_id: agentId,
+        message: content,
+        agent: agentId,
         session_id: sessionId,
       }),
     })
+
+    const agentNameMap: Record<string, string> = {
+      elena: 'Dr. Elena Vasquez',
+      marcus: 'Marcus Chen',
+      sage: 'Sage Meridian',
+    }
+
+    return {
+      message_id: `msg-${Date.now()}`,
+      content: response.response,
+      agent_id: response.agent,
+      agent_name: agentNameMap[response.agent] || response.agent,
+      timestamp: new Date().toISOString(),
+      session_id: response.session_id,
+    }
   }
 
   async deleteSession(sessionId: string) {

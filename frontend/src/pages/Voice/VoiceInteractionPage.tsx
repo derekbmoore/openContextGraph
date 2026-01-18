@@ -17,9 +17,10 @@ interface VoiceInteractionPageProps {
  */
 export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractionPageProps) {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
-  const [isSpeaking] = useState(false); // TODO: Wire up when VoiceChat exposes speaking state
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [avatarStream, setAvatarStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [voiceReady, setVoiceReady] = useState(false);
 
   // Video element ref for WebRTC stream
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -91,13 +92,15 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
 
           <div className="connection-status">
             <span className={`status-dot ${isSpeaking ? 'speaking' :
-              status === 'connected' ? 'connected' :
-                status === 'connecting' ? 'connecting' : 'error'
+              !voiceReady ? 'error' :
+                status === 'connected' ? 'connected' :
+                  status === 'connecting' ? 'connecting' : 'error'
               }`} />
             <span>
-              {isSpeaking ? 'Speaking...' :
-                status === 'connected' ? 'Ready' :
-                  status === 'connecting' ? 'Connecting...' : 'Disconnected'}
+              {!voiceReady ? 'Inactive' :
+                isSpeaking ? 'Speaking...' :
+                  status === 'connected' ? 'Ready' :
+                    status === 'connecting' ? 'Connecting...' : 'Disconnected'}
             </span>
           </div>
         </div>
@@ -117,14 +120,29 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
           </div>
         )}
 
-        {/* VoiceChat handles the push-to-talk and audio processing */}
-        <VoiceChat
-          agentId={activeAgent}
-          sessionId={sessionId}
-          disabled={status !== 'connected'}
-          onStatusChange={handleStatusChange}
-          onAvatarStream={handleAvatarStream}
-        />
+        {!voiceReady ? (
+          <div className="voice-activate">
+            <button
+              className="voice-activate-btn"
+              onClick={() => {
+                setVoiceReady(true);
+                setStatus('connecting');
+                setError(null);
+              }}
+            >
+              Activate Voice
+            </button>
+          </div>
+        ) : (
+          <VoiceChat
+            agentId={activeAgent}
+            sessionId={sessionId}
+            disabled={status !== 'connected'}
+            onStatusChange={handleStatusChange}
+            onAvatarStream={handleAvatarStream}
+            onSpeaking={setIsSpeaking}
+          />
+        )}
       </section>
     </div>
   );

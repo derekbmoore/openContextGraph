@@ -98,6 +98,33 @@ export default function VoiceChat({
     onAvatarStreamRef.current = onAvatarStream;
   }, [onMessage, onVisemes, onStatusChange, onAvatarVideo, onAvatarStream]);
 
+  const checkBackendHealth = useCallback(async (apiUrl: string) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 2500);
+
+    try {
+      const response = await fetch(`${apiUrl}/health`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Health check failed: ${response.status}`);
+      }
+
+      return true;
+    } catch (err) {
+      console.warn('Voice backend unavailable:', err);
+      setError('Voice service is unavailable. Please start the backend and try again.');
+      setConnectionStatus('error');
+      onStatusChangeRef.current?.('error');
+      return false;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }, []);
+
   // Notify parent when avatar video URL changes (legacy support)
   useEffect(() => {
     if (onAvatarVideoRef.current) {
@@ -207,6 +234,13 @@ export default function VoiceChat({
 
         // Connect to backend WebSocket proxy endpoint
         const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+
+        // Preflight health check to avoid noisy WS errors when backend is down
+        const healthy = await checkBackendHealth(apiUrl);
+        if (!healthy) {
+          return;
+        }
+
         let wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/v1/voice/voicelive/${activeSessionId}`;
 
         // Append token as query parameter if available

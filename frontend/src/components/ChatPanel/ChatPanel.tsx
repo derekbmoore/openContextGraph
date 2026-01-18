@@ -98,6 +98,7 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false)
   const [avatarStream, setAvatarStream] = useState<MediaStream | null>(null)
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false)
+  const [voiceReady, setVoiceReady] = useState(false)
 
   // Auto-open voice mode on mount (Mobile-first experience)
   useEffect(() => {
@@ -105,6 +106,13 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
       setIsVoiceOpen(true);
     }
   }, [agent.id, agent.voiceEnabled]);
+
+  // Reset activation gate when overlay closes
+  useEffect(() => {
+    if (!isVoiceOpen) {
+      setVoiceReady(false)
+    }
+  }, [isVoiceOpen])
 
   // Initialize local sessionId once (used when caller doesn't supply a shared sessionId)
   const [localSessionId] = useState<string>(() =>
@@ -463,26 +471,46 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                 />
               </div>
 
-              <VoiceChat
-                agentId={agent.id}
-                sessionId={sessionId}
-                onStatusChange={(status) => {
-                  if (status === 'error') {
-                    // Optional: handle error state
-                  }
-                }}
-                onAvatarStream={setAvatarStream}
-                onSpeaking={setIsAvatarSpeaking}
-              />
-              <p style={{
-                fontSize: '0.875rem',
-                color: 'var(--color-text-dim)',
-                textAlign: 'center',
-                margin: 0
-              }}>
-                Press and hold the ring to speak.
-                Stories and visuals created here will appear in the chat.
-              </p>
+              {!voiceReady ? (
+                <button
+                  className="voice-activate-btn"
+                  onClick={() => setVoiceReady(true)}
+                  style={{
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '999px',
+                    border: '1px solid var(--glass-border)',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    color: 'var(--color-text)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Activate Voice
+                </button>
+              ) : (
+                <>
+                  <VoiceChat
+                    agentId={agent.id}
+                    sessionId={sessionId}
+                    onStatusChange={(status) => {
+                      if (status === 'error') {
+                        // Optional: handle error state
+                      }
+                    }}
+                    onAvatarStream={setAvatarStream}
+                    onSpeaking={setIsAvatarSpeaking}
+                  />
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--color-text-dim)',
+                    textAlign: 'center',
+                    margin: 0
+                  }}>
+                    Press and hold the ring to speak.
+                    Stories and visuals created here will appear in the chat.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )

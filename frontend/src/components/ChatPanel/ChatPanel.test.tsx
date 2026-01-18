@@ -50,6 +50,9 @@ describe('ChatPanel', () => {
         fireEvent.click(micButton)
 
         // Overlay should be visible
+        const activateButton = screen.getByRole('button', { name: /activate voice/i })
+        expect(activateButton).toBeInTheDocument()
+        fireEvent.click(activateButton)
         expect(screen.getByTestId('voice-chat-mock')).toBeInTheDocument()
         expect(screen.getByText(/Speaking with Elena/i)).toBeInTheDocument()
 

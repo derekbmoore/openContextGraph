@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { VoiceInteractionPage } from './VoiceInteractionPage';
 
@@ -11,43 +11,29 @@ vi.mock('../../components/VoiceChat/VoiceChat', () => ({
 }));
 
 describe('VoiceInteractionPage', () => {
-  it('should render voice interaction page with heading', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
-    expect(screen.getByRole('heading', { name: /voice interaction/i })).toBeInTheDocument();
+  it('should render agent info for Elena', () => {
+    render(<VoiceInteractionPage activeAgent="elena" sessionId="test-session" />);
+    expect(screen.getByRole('heading', { name: /dr\. elena vasquez/i })).toBeInTheDocument();
+    expect(screen.getByText(/business analyst/i)).toBeInTheDocument();
   });
 
-  it('should display agent name in subtitle for Elena', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
-    expect(screen.getByText(/interact with elena/i)).toBeInTheDocument();
+  it('should render agent info for Marcus', () => {
+    render(<VoiceInteractionPage activeAgent="marcus" sessionId="test-session" />);
+    expect(screen.getByRole('heading', { name: /marcus chen/i })).toBeInTheDocument();
+    expect(screen.getByText(/project manager/i)).toBeInTheDocument();
   });
 
-  it('should display agent name in subtitle for Marcus', () => {
-    render(<VoiceInteractionPage activeAgent="marcus" />);
-    expect(screen.getByText(/interact with marcus/i)).toBeInTheDocument();
-  });
-
-  it('should render VoiceChat component', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
+  it('should require activation before rendering VoiceChat', () => {
+    render(<VoiceInteractionPage activeAgent="elena" sessionId="test-session" />);
+    expect(screen.queryByTestId('voice-chat-mock')).not.toBeInTheDocument();
+    const activateButton = screen.getByRole('button', { name: /activate voice/i });
+    fireEvent.click(activateButton);
     expect(screen.getByTestId('voice-chat-mock')).toBeInTheDocument();
   });
 
-  it('should display connection status section', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
-    expect(screen.getByText(/connection status:/i)).toBeInTheDocument();
-  });
-
-  it('should show connecting status initially', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
-    expect(screen.getByText(/🟡 connecting to voice service/i)).toBeInTheDocument();
-  });
-
-  it('should pass correct agent ID to VoiceChat', () => {
-    render(<VoiceInteractionPage activeAgent="marcus" />);
+  it('should pass correct agent ID to VoiceChat after activation', () => {
+    render(<VoiceInteractionPage activeAgent="marcus" sessionId="test-session" />);
+    fireEvent.click(screen.getByRole('button', { name: /activate voice/i }));
     expect(screen.getByText(/voicechat component for marcus/i)).toBeInTheDocument();
-  });
-
-  it('should handle instructions correctly', () => {
-    render(<VoiceInteractionPage activeAgent="elena" />);
-    expect(screen.getByText(/press and hold to speak/i)).toBeInTheDocument();
   });
 });
