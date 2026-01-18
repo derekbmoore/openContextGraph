@@ -153,15 +153,15 @@ class VoiceLiveService:
         
         environment = self.settings.environment.lower()
         
-        # For production/enterprise, always use DefaultAzureCredential (Managed Identity)
+        # Prefer API key if provided (avoids MI scope/role issues in production)
+        if self._key:
+            logger.info("Using API key credential")
+            return AzureKeyCredential(self._key)
+
+        # For production/enterprise, fall back to DefaultAzureCredential (Managed Identity)
         if environment in ("production", "enterprise", "prod"):
             logger.info("Using DefaultAzureCredential for production (Managed Identity)")
             return DefaultAzureCredential()
-        
-        # For staging/dev, prefer DefaultAzureCredential but allow API key fallback
-        if self._key:
-            logger.info("Using API key credential (POC/Staging mode)")
-            return AzureKeyCredential(self._key)
         
         # No API key - use DefaultAzureCredential (works with Azure CLI locally)
         logger.info("Using DefaultAzureCredential (Azure CLI or Managed Identity)")
