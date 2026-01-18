@@ -22,11 +22,11 @@ We have successfully integrated Elena, Marcus, and Sage as **Azure AI Foundry Ag
 
 ### 1. Agent Provisioning
 
-| Agent | Foundry ID | MCP Connected | API Key |
+| Agent | Foundry ID | MCP Connected | Status |
 | :--- | :--- | :--- | :--- |
-| **Elena** | `Elena:22` | ✅ | `mcp_elena_Rn4LawobZttIbI-5zQIqrk16RA6553-r-V1WpzcLqUc` |
-| **Marcus** | `Marcus:1` | ✅ | `mcp_marcus_A8m6ZCiSu_UFqWPvyY8e8qijAI0bXj1zdFk57YNhyIM` |
-| **Sage** | `Sage:1` | ✅ | `mcp_sage_cr3P69wVNaM7PEihwwttSZgo0P27Fvx8L0Y2ySi9Ils` |
+| **Elena** | `asst_4kAvh0iYARDkEfH2NygdLlUp` | ✅ | Ready |
+| **Marcus** | `asst_pGd3gsS2ujEAIkKfkIm1JRep` | ✅ | Ready |
+| **Sage** | `asst_ab78FfxxCy4uziyHBB4fPr2l` | ✅ | Ready |
 
 ### 2. MCP Server Implementation
 

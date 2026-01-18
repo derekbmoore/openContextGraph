@@ -1,0 +1,76 @@
+name: Deploy Frontend
+
+on:
+    push:
+        branches: [main]
+        paths: ["frontend/**"]
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Deployment environment"
+                required: true
+                default: "prod"
+                type: choice
+                options:
+                    - prod
+                    - staging
+
+env:
+    AZURE_RESOURCE_GROUP: ctxeco-rg
+    AZURE_LOCATION: eastus2
+    SWA_APP_NAME: ctxEco-env-web
+
+jobs:
+    deploy-frontend:
+        name: Deploy Frontend
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: frontend/package-lock.json
+
+            - name: Install dependencies
+              run: |
+                  cd frontend
+                  npm ci
+
+            - name: Build frontend
+              env:
+                  VITE_API_URL: https://api.ctxeco.com
+                  VITE_WS_URL: https://api.ctxeco.com
+                  VITE_AZURE_AD_TENANT_ID: "6684288a-b805-4161-bf41-ba2121e51c90"
+                  VITE_AZURE_AD_CLIENT_ID: "e32c6c40-615e-4a25-bc9e-944169e99697"
+                  VITE_AZURE_AD_TENANT_DOMAIN: "engramai"
+                  VITE_REDIRECT_URI: https://ctxeco.com
+              run: |
+                  cd frontend
+                  npm run build
+
+            - name: Azure Login
+              uses: azure/login@v2
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Get SWA Deployment Token
+              id: get_token
+              run: |
+                  TOKEN=$(az staticwebapp secrets list --name ${{ env.SWA_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.apiKey" -o tsv)
+                  echo "::add-mask::$TOKEN"
+                  echo "SWA_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+            - name: Deploy to Azure Static Web Apps
+              uses: Azure/static-web-apps-deploy@v1
+              with:
+                  azure_static_web_apps_api_token: ${{ env.SWA_TOKEN }}
+                  repo_token: ${{ secrets.GITHUB_TOKEN }}
+                  action: "upload"
+                  app_location: "frontend/dist"
+                  output_location: ""
+                  skip_app_build: true
