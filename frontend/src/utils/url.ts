@@ -2,8 +2,9 @@ export const normalizeApiBase = (rawUrl: string | undefined, fallback: string): 
   const isBrowser = typeof window !== 'undefined';
   let url = (rawUrl || fallback).trim();
 
-  if (isBrowser && window.location.protocol === 'https:' && url.startsWith('http://')) {
-    url = url.replace(/^http:\/\//, 'https://');
+  // Convert HTTP to HTTPS when the page is loaded over HTTPS (case-insensitive)
+  if (isBrowser && window.location.protocol === 'https:' && /^http:\/\//i.test(url)) {
+    url = url.replace(/^http:\/\//i, 'https://');
   }
 
   url = url.replace(/\/$/, '');
