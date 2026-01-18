@@ -704,8 +704,8 @@ export default function VoiceChat({
 
       if (audioContextRef.current.audioWorklet?.addModule) {
         try {
-          const workletUrl = new URL('../../worklets/pcm16-processor.ts', import.meta.url);
-          await audioContextRef.current.audioWorklet.addModule(workletUrl);
+          const workletUrl = new URL('/worklets/pcm16-processor.js', window.location.origin);
+          await audioContextRef.current.audioWorklet.addModule(workletUrl.toString());
           const workletNode = new AudioWorkletNode(audioContextRef.current, 'pcm16-processor');
           workletNode.port.onmessage = (event) => {
             const pcm16 = event.data as Int16Array;
