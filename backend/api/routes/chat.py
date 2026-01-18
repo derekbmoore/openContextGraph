@@ -93,6 +93,7 @@ async def chat(
         ),
     )
     
+
     # Enrich context with memory
     memory_client = get_memory_client()
     try:
@@ -100,9 +101,41 @@ async def chat(
     except Exception as e:
         logger.warning(f"Memory enrichment failed: {e}")
     
-    # Route to agent
-    agent_router = get_agent_router()
-    result = await agent_router.route(request.agent, request.message, context)
+    # Check for Foundry Agent configuration
+    from core.config import get_settings
+    settings = get_settings()
+    foundry_agent_id = None
+    if request.agent == "elena":
+        foundry_agent_id = settings.elena_foundry_agent_id
+    elif request.agent == "marcus":
+        foundry_agent_id = settings.marcus_foundry_agent_id
+    elif request.agent == "sage":
+        foundry_agent_id = settings.sage_foundry_agent_id
+    
+    # Try Foundry First
+    result = None
+    if foundry_agent_id and settings.azure_foundry_agent_endpoint and settings.azure_foundry_agent_key:
+        try:
+            logger.info(f"Routing chat to Foundry Agent: {request.agent} ({foundry_agent_id})")
+            response_text = await chat_via_foundry(
+                agent_id=foundry_agent_id,
+                message=request.message,
+                settings=settings
+            )
+            result = {
+                "response": response_text,
+                "agent_id": request.agent,
+                "sources": ["Azure AI Foundry"],
+                "tool_calls": [] 
+            }
+        except Exception as e:
+            logger.error(f"Foundry chat failed: {e}")
+            # Fallback to local will happen below if result is None
+    
+    # Fallback to local routing
+    if not result:
+        agent_router = get_agent_router()
+        result = await agent_router.route(request.agent, request.message, context)
     
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -127,6 +160,73 @@ async def chat(
         sources=result.get("sources", []),
         tool_calls=result.get("tool_calls", []),
     )
+
+
+async def chat_via_foundry(agent_id: str, message: str, settings: Any) -> str:
+    """
+    Route chat to Azure AI Foundry Assistants API.
+    
+    Agents are configured with Action Groups (MCP) to access tools.
+    The run execution handles tool calls server-side.
+    """
+    from openai import AzureOpenAI
+    import asyncio
+    
+    client = AzureOpenAI(
+        azure_endpoint=settings.azure_foundry_agent_endpoint,
+        api_key=settings.azure_foundry_agent_key,
+        api_version=settings.azure_foundry_agent_api_version,
+    )
+    
+    # Create Thread
+    thread = client.beta.threads.create()
+    
+    # Add Message
+    client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=message
+    )
+    
+    # Run Agent
+    run = client.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id=agent_id
+    )
+    
+    # Poll for completion
+    # Timeout after 60 seconds
+    for _ in range(120):
+        await asyncio.sleep(0.5)
+        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+        
+        if run.status == "completed":
+            break
+        elif run.status == "failed":
+            raise Exception(f"Foundry Run Failed: {run.last_error}")
+        elif run.status == "requires_action":
+            # NOTE: If we get here, it means the agent trying to call a function locally
+            # instead of using the server-side Action Group (HTTP). 
+            # For now, we treat this as a failure or incomplete configuration.
+            # Ideally, we would handle local function dispatch here if needed.
+            logger.warning("Foundry agent requires local action - cancelling run")
+            client.beta.threads.runs.cancel(thread_id=thread.id, run_id=run.id)
+            raise Exception("Agent requires local tool action (not implemented)")
+            
+    if run.status != "completed":
+        raise Exception("Foundry Run Timed Out")
+        
+    # Get Messages
+    messages = client.beta.threads.messages.list(
+        thread_id=thread.id,
+        order="desc",
+        limit=1
+    )
+    
+    if not messages.data:
+        return "No response from agent."
+        
+    return messages.data[0].content[0].text.value
 
 
 @router.get("/sessions", response_model=list[SessionInfo])
@@ -170,13 +270,25 @@ async def list_agents():
     agent_router = get_agent_router()
     
     agents = []
+    # Mix local capabilities + Foundry status
+    from core.config import get_settings
+    settings = get_settings()
+    
     for name in agent_router.list_agents():
         agent = agent_router.get_agent(name)
         if agent:
+            # Check if this agent is Foundry-backed
+            is_foundry = False
+            if name == "elena" and settings.elena_foundry_agent_id: is_foundry = True
+            if name == "marcus" and settings.marcus_foundry_agent_id: is_foundry = True
+            if name == "sage" and settings.sage_foundry_agent_id: is_foundry = True
+            
             agents.append({
                 "id": agent.agent_id,
                 "name": agent.display_name,
                 "tools": [t.get("name") for t in agent.get_tools()],
+                "foundry_backed": is_foundry
             })
     
     return {"agents": agents}
+

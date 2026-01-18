@@ -105,6 +105,19 @@ class Settings(BaseSettings):
     azure_voicelive_api_version: str = Field("2024-10-01-preview", alias="AZURE_VOICELIVE_API_VERSION")
 
     # ==========================================================================
+    # Azure AI Foundry Agents (Orchestration)
+    # ==========================================================================
+    azure_foundry_agent_endpoint: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_ENDPOINT")
+    azure_foundry_agent_key: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_KEY")
+    azure_foundry_agent_project: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_PROJECT")
+    azure_foundry_agent_api_version: str = Field("2024-05-01-preview", alias="AZURE_FOUNDRY_AGENT_API_VERSION")
+    
+    # Agent IDs
+    elena_foundry_agent_id: Optional[str] = Field(None, alias="ELENA_FOUNDRY_AGENT_ID")
+    marcus_foundry_agent_id: Optional[str] = Field(None, alias="MARCUS_FOUNDRY_AGENT_ID")
+    sage_foundry_agent_id: Optional[str] = Field(None, alias="SAGE_FOUNDRY_AGENT_ID")
+
+    # ==========================================================================
     # Multi-Model LLM Integration (Sage Agent)
     # ==========================================================================
     # Anthropic Claude for story generation
