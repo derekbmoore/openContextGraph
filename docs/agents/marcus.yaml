@@ -86,7 +86,7 @@ definition:
   tools:
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/search_codebase
+        url: https://api.ctxeco.com/api/v1/tools/search_codebase
         method: POST
         headers:
           Content-Type: application/json
@@ -121,7 +121,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/search_memory
+        url: https://api.ctxeco.com/api/v1/tools/search_memory
         method: POST
         headers:
           Content-Type: application/json
@@ -144,7 +144,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/analyze_pr
+        url: https://api.ctxeco.com/api/v1/tools/analyze_pr
         method: POST
         headers:
           Content-Type: application/json
@@ -168,7 +168,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/create_github_issue
+        url: https://api.ctxeco.com/api/v1/tools/create_github_issue
         method: POST
         headers:
           Content-Type: application/json
@@ -202,7 +202,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/get_project_status
+        url: https://api.ctxeco.com/api/v1/tools/get_project_status
         method: POST
         headers:
           Content-Type: application/json
@@ -217,7 +217,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/list_my_tasks
+        url: https://api.ctxeco.com/api/v1/tools/list_my_tasks
         method: POST
         headers:
           Content-Type: application/json
@@ -243,7 +243,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/run_deployment_check
+        url: https://api.ctxeco.com/api/v1/tools/run_deployment_check
         method: POST
         headers:
           Content-Type: application/json

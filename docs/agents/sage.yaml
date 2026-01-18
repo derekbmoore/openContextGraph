@@ -85,7 +85,7 @@ definition:
   tools:
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/search_memory
+        url: https://api.ctxeco.com/api/v1/tools/search_memory
         method: POST
         headers:
           Content-Type: application/json
@@ -108,7 +108,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/generate_story
+        url: https://api.ctxeco.com/api/v1/tools/generate_story
         method: POST
         headers:
           Content-Type: application/json
@@ -143,7 +143,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/generate_diagram
+        url: https://api.ctxeco.com/api/v1/tools/generate_diagram
         method: POST
         headers:
           Content-Type: application/json
@@ -178,7 +178,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/create_episode
+        url: https://api.ctxeco.com/api/v1/tools/create_episode
         method: POST
         headers:
           Content-Type: application/json

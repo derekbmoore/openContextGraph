@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
 
 from core import get_settings
-from .routes import health, chat, memory, etl, stories, voice, images, mcp, graph
+from .routes import health, chat, memory, etl, stories, voice, images, mcp, graph, tools
 from .middleware.cors_preflight import CORSPreflightMiddleware
 
 logging.basicConfig(level=logging.INFO)
@@ -117,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(images.router, prefix="/api/v1/images", tags=["Images"])
     app.include_router(graph.router, prefix="/api/v1/memory/graph", tags=["Graph"])
     app.include_router(mcp.router, prefix="/mcp", tags=["MCP"])
+    app.include_router(tools.router, prefix="/api/v1/tools", tags=["Tools"])
 
     @app.get("/")
     async def root():
