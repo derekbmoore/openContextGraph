@@ -214,6 +214,18 @@ def _get_auth_required() -> bool:
     return os.getenv("AUTH_REQUIRED", "true").lower() == "true"
 
 
+def _get_poc_user_context() -> SecurityContext:
+    """Build a default SecurityContext when auth is disabled."""
+    return SecurityContext(
+        user_id=os.getenv("POC_USER_ID", "poc-user"),
+        tenant_id=os.getenv("POC_TENANT_ID", "zimax"),
+        roles=[Role.ADMIN],
+        scopes=["*"],
+        email=os.getenv("POC_USER_EMAIL", "poc@example.com"),
+        display_name=os.getenv("POC_USER_NAME", "POC User"),
+    )
+
+
 async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -236,14 +248,7 @@ async def get_current_user(
     # Development mode - return POC user
     if not _get_auth_required():
         logger.debug("Auth disabled, returning POC user")
-        return SecurityContext(
-            user_id="poc-user",
-            tenant_id="poc-tenant",
-            roles=[Role.ADMIN],
-            scopes=["*"],
-            email="poc@example.com",
-            display_name="POC User",
-        )
+        return _get_poc_user_context()
     
     # Production mode - validate token
     if not credentials:

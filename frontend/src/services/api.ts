@@ -8,9 +8,20 @@
 import { getAccessToken } from '../auth/authConfig'
 
 // Environment-aware API URL
-const API_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL
-  : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
+const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined
+  if (envUrl) return envUrl
+
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return origin
+    }
+    return origin
+  }
+
+  return 'http://localhost:8082'
+})()
 
 export const API_BASE_URL = API_BASE
 

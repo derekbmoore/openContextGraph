@@ -219,10 +219,10 @@ async def voicelive_websocket(websocket: WebSocket, session_id: str):
             return
     else:
         # POC mode: use default user when auth not required
-        user_id = "poc-user"
-        tenant_id = settings.azure_tenant_id or "poc-tenant"
-        email = None
-        display_name = None
+        user_id = os.getenv("POC_USER_ID", "poc-user")
+        tenant_id = os.getenv("POC_TENANT_ID", settings.azure_tenant_id or "zimax")
+        email = os.getenv("POC_USER_EMAIL")
+        display_name = os.getenv("POC_USER_NAME")
         roles = [Role.ADMIN]
         scopes = ["*"]
         logger.info(f"VoiceLive WebSocket: Using POC user for session {session_id} (AUTH_REQUIRED=false)")

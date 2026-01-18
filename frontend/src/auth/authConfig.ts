@@ -9,22 +9,29 @@ import type { Configuration } from '@azure/msal-browser';
 import { LogLevel, PublicClientApplication } from '@azure/msal-browser';
 
 // Environment variables (set in .env or via Vite)
-const TENANT_DOMAIN = import.meta.env.VITE_AZURE_AD_TENANT_DOMAIN || 'engramai';
-const TENANT_ID = import.meta.env.VITE_AZURE_AD_TENANT_ID || 'engramai.onmicrosoft.com';
+const TENANT_DOMAIN = import.meta.env.VITE_AZURE_AD_TENANT_DOMAIN || '';
+const TENANT_ID = import.meta.env.VITE_AZURE_AD_TENANT_ID || '';
 const CLIENT_ID = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
 const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI || window.location.origin;
+const EXTERNAL_ID = (import.meta.env.VITE_AZURE_AD_EXTERNAL_ID || 'false').toLowerCase() === 'true';
+const EXTERNAL_DOMAIN = import.meta.env.VITE_AZURE_AD_EXTERNAL_DOMAIN || TENANT_DOMAIN;
+
+const authority = EXTERNAL_ID && EXTERNAL_DOMAIN && TENANT_ID
+    ? `https://${EXTERNAL_DOMAIN}.ciamlogin.com/${TENANT_ID}`
+    : TENANT_ID
+        ? `https://login.microsoftonline.com/${TENANT_ID}`
+        : 'https://login.microsoftonline.com/organizations';
 
 // MSAL Configuration for Entra External ID
 export const msalConfig: Configuration = {
     auth: {
         clientId: CLIENT_ID,
-        // External ID uses ciamlogin.com authority
-        authority: `https://${TENANT_DOMAIN}.ciamlogin.com/${TENANT_ID}`,
+        authority,
         // Alternatively for B2C: `https://${TENANT_DOMAIN}.b2clogin.com/${TENANT_ID}/${POLICY_NAME}`
         redirectUri: REDIRECT_URI,
         postLogoutRedirectUri: REDIRECT_URI,
         // Required for External ID
-        knownAuthorities: [`${TENANT_DOMAIN}.ciamlogin.com`],
+        knownAuthorities: EXTERNAL_ID && EXTERNAL_DOMAIN ? [`${EXTERNAL_DOMAIN}.ciamlogin.com`] : [],
         navigateToLoginRequestUrl: true,
     },
     cache: {

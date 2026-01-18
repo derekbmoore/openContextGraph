@@ -43,12 +43,14 @@ jobs:
 
             - name: Build frontend
               env:
-                  VITE_API_URL: https://api.ctxeco.com
-                  VITE_WS_URL: https://api.ctxeco.com
-                  VITE_AZURE_AD_TENANT_ID: "6684288a-b805-4161-bf41-ba2121e51c90"
-                  VITE_AZURE_AD_CLIENT_ID: "e32c6c40-615e-4a25-bc9e-944169e99697"
-                  VITE_AZURE_AD_TENANT_DOMAIN: "engramai"
-                  VITE_REDIRECT_URI: https://ctxeco.com
+                  VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.ctxeco.com' }}
+                  VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'https://api.ctxeco.com' }}
+                  VITE_AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+                  VITE_AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+                  VITE_AZURE_AD_TENANT_DOMAIN: ${{ secrets.AZURE_AD_TENANT_DOMAIN }}
+                  VITE_AZURE_AD_EXTERNAL_ID: ${{ secrets.AZURE_AD_EXTERNAL_ID || 'false' }}
+                  VITE_AZURE_AD_EXTERNAL_DOMAIN: ${{ secrets.AZURE_AD_EXTERNAL_DOMAIN }}
+                  VITE_REDIRECT_URI: ${{ secrets.VITE_REDIRECT_URI || 'https://ctxeco.com' }}
               run: |
                   cd frontend
                   npm run build

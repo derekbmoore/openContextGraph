@@ -7,6 +7,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { getAccessToken } from '../auth/authConfig';
 
 export interface RealtimeConfig {
     agentId: string;
@@ -45,11 +46,27 @@ export function useAzureRealtime(config: RealtimeConfig) {
     }, [config]);
 
     // Fetch ephemeral token from backend
+    const resolveApiUrl = useCallback(() => {
+        const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+        const origin = window.location.origin;
+        let apiUrl = envApiUrl || origin;
+
+        if (apiUrl.includes('localhost') && !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+            apiUrl = origin;
+        }
+
+        return apiUrl;
+    }, []);
+
     const fetchToken = useCallback(async (): Promise<EphemeralTokenResponse> => {
-        const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+        const baseUrl = resolveApiUrl();
+        const authToken = await getAccessToken();
         const response = await fetch(`${baseUrl}/api/v1/voice/realtime/token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
             body: JSON.stringify({
                 agent_id: configRef.current.agentId,
                 session_id: configRef.current.sessionId,
@@ -66,10 +83,14 @@ export function useAzureRealtime(config: RealtimeConfig) {
     // Send transcript to memory enrichment (fire-and-forget)
     const enrichMemory = useCallback(async (text: string, speaker: 'user' | 'assistant') => {
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+            const baseUrl = resolveApiUrl();
+            const authToken = await getAccessToken();
             await fetch(`${baseUrl}/api/v1/memory/enrich`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                },
                 body: JSON.stringify({
                     text,
                     session_id: configRef.current.sessionId,
@@ -82,7 +103,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
             // Fire-and-forget — log but don't fail
             console.warn('Memory enrichment failed (non-blocking):', e);
         }
-    }, []);
+    }, [resolveApiUrl]);
 
     // Handle incoming events from Azure
     const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {

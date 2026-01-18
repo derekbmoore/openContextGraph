@@ -98,6 +98,32 @@ export default function VoiceChat({
     onAvatarStreamRef.current = onAvatarStream;
   }, [onMessage, onVisemes, onStatusChange, onAvatarVideo, onAvatarStream]);
 
+  const resolveApiUrl = useCallback(() => {
+    const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    const origin = window.location.origin;
+    let apiUrl = envApiUrl || origin;
+
+    if (apiUrl.includes('localhost') && !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+      apiUrl = origin;
+    }
+
+    return apiUrl;
+  }, []);
+
+  const resolveWsUrl = useCallback((apiUrl: string) => {
+    const envWsUrl = import.meta.env.VITE_WS_URL as string | undefined;
+    const base = envWsUrl || apiUrl;
+    return base.replace(/^http/, 'ws');
+  }, []);
+
+  const isAuthRequired = useCallback(() => {
+    const flag = import.meta.env.VITE_AUTH_REQUIRED as string | undefined;
+    if (typeof flag === 'string') {
+      return flag.toLowerCase() === 'true';
+    }
+    return import.meta.env.PROD;
+  }, []);
+
   const checkBackendHealth = useCallback(async (apiUrl: string) => {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 2500);
@@ -232,8 +258,15 @@ export default function VoiceChat({
           // Continue without token - backend will handle authentication
         }
 
+        if (isAuthRequired() && !token) {
+          setError('Sign-in required to use voice. Please sign in and try again.');
+          setConnectionStatus('error');
+          onStatusChangeRef.current?.('error');
+          return;
+        }
+
         // Connect to backend WebSocket proxy endpoint
-        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+        const apiUrl = resolveApiUrl();
 
         // Preflight health check to avoid noisy WS errors when backend is down
         const healthy = await checkBackendHealth(apiUrl);
@@ -241,13 +274,13 @@ export default function VoiceChat({
           return;
         }
 
-        let wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/v1/voice/voicelive/${activeSessionId}`;
+        let wsUrl = resolveWsUrl(apiUrl) + `/api/v1/voice/voicelive/${activeSessionId}`;
 
         // Append token as query parameter if available
         if (token) {
           wsUrl += `?token=${encodeURIComponent(token)}`;
-        } else {
-          console.warn('No access token available for voice WebSocket - connection may fail if AUTH_REQUIRED=true');
+        } else if (isAuthRequired()) {
+          console.warn('No access token available for voice WebSocket - connection may fail because auth is required');
         }
 
         const ws = new WebSocket(wsUrl);
