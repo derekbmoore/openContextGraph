@@ -726,6 +726,36 @@ class ZepMemoryClient:
         # Get user facts
         facts = await self.get_facts(user_id=user_id, query=query, limit=5)
         context.semantic.facts.extend(facts)
+
+        # Add recent episode summaries as contextual facts
+        try:
+            sessions = await self.list_sessions(
+                user_id=user_id,
+                tenant_id=context.security.tenant_id,
+                limit=5,
+                offset=0,
+            )
+            for session in sessions:
+                metadata = session.get("metadata", {})
+                title = metadata.get("title")
+                summary = metadata.get("summary")
+                if summary or title:
+                    content = ""
+                    if title and summary:
+                        content = f"Episode: {title} — {summary}"
+                    elif title:
+                        content = f"Episode: {title}"
+                    else:
+                        content = f"Episode: {summary}"
+                    context.semantic.facts.append(
+                        Fact(
+                            content=content,
+                            source=session.get("session_id"),
+                            confidence=0.4,
+                        )
+                    )
+        except Exception as e:
+            logger.warning(f"Failed to load episode summaries: {e}")
         
         return context
     

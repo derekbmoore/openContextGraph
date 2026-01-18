@@ -40,6 +40,7 @@ Populate these secrets for each customer deployment (names are fixed):
 - `voicelive-api-key` — Voice live API key (Cognitive Services)
 - `azure-openai-realtime-endpoint` — Azure OpenAI Realtime endpoint (https://{resource}.openai.azure.com)
 - `azure-openai-realtime-key` — Azure OpenAI Realtime key
+- `zep-api-key` — Zep API key (if Zep is exposed at zep.<domain>)
 
 > These are wired into the app by the Key Vault loader in [backend/core/config.py](backend/core/config.py) and the ACA secret references in [infra/modules/backend-aca.bicep](infra/modules/backend-aca.bicep).
 
@@ -60,6 +61,7 @@ Set these on the API Container App:
 - `AZURE_OPENAI_REALTIME_ENDPOINT` (https://{resource}.openai.azure.com)
 - `AZURE_OPENAI_REALTIME_KEY`
 - `AZURE_SPEECH_KEY`
+- `ZEP_API_URL` (e.g., https://zep.ctxeco.com)
 - `AUTH_REQUIRED` (true in prod)
 - `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_AUDIENCE` (or Entra fields)
 
@@ -105,6 +107,14 @@ VITE_API_URL=https://api.customer-domain.com
 VITE_WS_URL=wss://api.customer-domain.com
 VITE_API_SCOPE=api://<api-application-id>/.default
 ```
+
+### Current ctxEco Defaults (Reference)
+
+- Resource group: `ctxeco-rg`
+- Key Vault: `ctxecokv`
+- API domain: `https://api.ctxeco.com`
+- Zep domain: `https://zep.ctxeco.com`
+- Voice live endpoint: `https://zimax.services.ai.azure.com`
 
 ## Tri-Search™ + Gk (Graph Knowledge)
 Tri-Search is implemented in [backend/memory/client.py](backend/memory/client.py) and exposed via:

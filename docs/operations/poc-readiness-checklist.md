@@ -19,7 +19,7 @@ Ensure these are set:
 - `AZURE_VOICELIVE_ENDPOINT=https://<account>.services.ai.azure.com`
 - `AZURE_VOICELIVE_KEY=<Cognitive Services key>` (not APIM key)
 - `AZURE_VOICELIVE_MODEL=gpt-realtime`
-- `AZURE_VOICELIVE_API_VERSION` (preview as configured)
+- `AZURE_VOICELIVE_API_VERSION=2025-10-01`
 - `AZURE_OPENAI_REALTIME_ENDPOINT=https://<resource>.openai.azure.com`
 - `AZURE_OPENAI_REALTIME_KEY=<Azure OpenAI key>`
 - `AZURE_SPEECH_KEY=<Speech key>`
@@ -32,6 +32,7 @@ Ensure these are set:
 Verify secrets exist and match the target resource:
 - `voicelive-api-key` **must** be the Cognitive Services key (not APIM key)
 - `azure-speech-key` is valid and from **westus2** Speech resource
+- `zep-api-key` matches the Zep instance for `ZEP_API_URL`
 
 ## 2) Auth Readiness
 - Entra app redirect URIs include customer domain.

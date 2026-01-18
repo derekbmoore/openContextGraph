@@ -109,25 +109,13 @@ export default function VoiceChat({
       apiUrl = origin;
     }
 
-    // Upgrade HTTP to HTTPS when page is loaded over HTTPS (prevent mixed content)
-    if (window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
-      apiUrl = apiUrl.replace('http://', 'https://');
-    }
-
     return apiUrl;
   }, []);
 
   const resolveWsUrl = useCallback((apiUrl: string) => {
     const envWsUrl = import.meta.env.VITE_WS_URL as string | undefined;
-    let base = envWsUrl || apiUrl;
-
-    // Upgrade HTTP to HTTPS when page is loaded over HTTPS
-    if (window.location.protocol === 'https:' && base.startsWith('http://')) {
-      base = base.replace('http://', 'https://');
-    }
-
-    // Convert HTTP(S) to WS(S)
-    return base.replace(/^https/, 'wss').replace(/^http/, 'ws');
+    const base = envWsUrl || apiUrl;
+    return base.replace(/^http/, 'ws');
   }, []);
 
   const isAuthRequired = useCallback(() => {
@@ -716,9 +704,8 @@ export default function VoiceChat({
 
       if (audioContextRef.current.audioWorklet?.addModule) {
         try {
-          // Use ?url query to get the compiled worklet URL from Vite
-          const workletUrl = new URL('../../worklets/pcm16-processor.ts?url', import.meta.url).href;
-          await audioContextRef.current.audioWorklet.addModule(workletUrl);
+          const workletUrl = new URL('/worklets/pcm16-processor.js', window.location.origin);
+          await audioContextRef.current.audioWorklet.addModule(workletUrl.toString());
           const workletNode = new AudioWorkletNode(audioContextRef.current, 'pcm16-processor');
           workletNode.port.onmessage = (event) => {
             const pcm16 = event.data as Int16Array;

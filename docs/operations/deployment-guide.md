@@ -1,6 +1,6 @@
 # OpenContextGraph Deployment Guide
 
-This guide details how to deploy the **OpenContextGraph** platform (formerly Engram/CtxEco) to a new Azure Tenant (e.g., a customer environment).
+This guide details how to deploy the **OpenContextGraph** platform (ctxEco) to a new Azure Tenant (e.g., a customer environment).
 
 Before customer demos, run the readiness checklist in [docs/operations/poc-readiness-checklist.md](poc-readiness-checklist.md).
 
@@ -59,7 +59,7 @@ The `infra/main.bicep` file controls the specific deployment configuration. Impo
 param envName string = 'customer-app'       // Resource prefix
 param environment string = 'prod'           // prod, uat, staging
 param azureAdExternalDomain string = ''     // e.g., 'customer-auth.ciamlogin.com'
-param azureVoiceLiveEndpoint string = ''    // Default: 'https://zimax.services.ai.azure.com'
+param azureVoiceLiveEndpoint string = ''    // Example: 'https://<account>.services.ai.azure.com'
 param azureAiEndpoint string = ''           // Your AI Foundry Endpoint
 ```
 
@@ -100,7 +100,7 @@ Once the Key Vault is created (output from Step 2), run a script or manually add
 ```bash
 # Example
 az keyvault secret set --vault-name customerkv --name azure-speech-key --value "<YOUR_KEY>"
-az keyvault secret set --vault-name customerkv --name voicelive-api-key --value "<ZIMAX_PROVIDED_KEY>"
+az keyvault secret set --vault-name customerkv --name voicelive-api-key --value "<COGNITIVE_SERVICES_KEY>"
 ```
 
 ### Step 4: Deploy Configuration Updates

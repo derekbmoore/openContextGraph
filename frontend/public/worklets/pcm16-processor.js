@@ -1,14 +1,6 @@
-declare const sampleRate: number;
-
-declare class AudioWorkletProcessor {
-  readonly port: MessagePort;
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean;
-}
-
-declare function registerProcessor(name: string, processorCtor: typeof AudioWorkletProcessor): void;
-
+// PCM16 AudioWorklet processor (24 kHz)
 class Pcm16Processor extends AudioWorkletProcessor {
-  process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>): boolean {
+  process(inputs) {
     const input = inputs[0];
     if (!input || input.length === 0) {
       return true;
