@@ -1,3 +1,4 @@
+// PCM16 AudioWorklet processor (24 kHz)
 class Pcm16Processor extends AudioWorkletProcessor {
   process(inputs) {
     const input = inputs[0];
