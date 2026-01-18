@@ -206,8 +206,7 @@ export default function VoiceChat({
         }
 
         // Connect to backend WebSocket proxy endpoint
-        const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
-
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
         let wsUrl = apiUrl.replace(/^http/, 'ws') + `/api/v1/voice/voicelive/${activeSessionId}`;
 
         // Append token as query parameter if available
@@ -398,16 +397,9 @@ export default function VoiceChat({
               setError(`Authentication failed: ${reason}. Please refresh and try again.`);
             } else if (event.code !== 1000) {
               // 1000 is normal closure, others are errors
-              const reason = event.reason;
-              console.error(`Voice WebSocket closed with error: ${reason || 'Unknown'} (code: ${event.code})`);
-
-              if (reason) {
-                setError(`Connection closed: ${reason}`);
-              } else {
-                // Determine if we should set a generic error
-                // Use functional update to check if we already have a more specific error from onmessage
-                setError(prev => prev || `Connection closed: Unknown reason (code: ${event.code})`);
-              }
+              const reason = event.reason || 'Unknown reason';
+              console.error(`Voice WebSocket closed with error: ${reason} (code: ${event.code})`);
+              setError(`Connection closed: ${reason}`);
             }
             onStatusChangeRef.current?.('error');
           }
@@ -455,8 +447,7 @@ export default function VoiceChat({
       }
 
       // 1. Fetch ICE credentials from backend
-      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
-
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
       console.log('📡 Fetching ICE credentials from backend...');
 
       const iceResponse = await fetch(`${apiUrl}/api/v1/voice/avatar/ice-credentials`, {
@@ -733,7 +724,6 @@ export default function VoiceChat({
           <div
             className="voice-ring"
             style={{
-              // eslint-disable-next-line react-dom/no-unsafe-innerhtml
               '--scale': 1 + audioLevel * 0.5,
               '--opacity': isListening ? 0.8 : 0
             } as React.CSSProperties}

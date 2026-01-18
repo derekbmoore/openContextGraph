@@ -1,0 +1,255 @@
+import { useState } from 'react'
+import type { Agent } from '../../types'
+import AvatarDisplay from '../AvatarDisplay'
+import VoiceChat from '../VoiceChat'
+import './VisualPanel.css'
+
+interface Viseme {
+  time_ms: number;
+  viseme_id: number;
+}
+
+interface VisualPanelProps {
+  agent: Agent
+  metrics: {
+    tokensUsed: number
+    latency: number
+    memoryNodes: number
+    duration: number
+    turns: number
+    cost: number
+  }
+  model: string
+  onModelChange: (model: string) => void
+  onVoiceMessage?: (message: { text: string; type: 'user' | 'agent' }) => void
+  sessionId?: string
+}
+
+export function VisualPanel({ agent, metrics, model, onModelChange, onVoiceMessage, sessionId }: VisualPanelProps) {
+  const [voiceAvatarVideoUrl, setVoiceAvatarVideoUrl] = useState<string | undefined>(undefined);
+  const [avatarStream, setAvatarStream] = useState<MediaStream | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [currentVisemes, setCurrentVisemes] = useState<Viseme[]>([])
+  const [expression, setExpression] = useState<'neutral' | 'smile' | 'thinking' | 'listening'>('neutral')
+  const [voiceEnabled, setVoiceEnabled] = useState(true)  // Voice channel open by default
+  const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
+  const [voiceReady, setVoiceReady] = useState(false)  // Track if voice component should render
+
+  const handleVisemes = (visemes: Viseme[]) => {
+    setCurrentVisemes(visemes)
+    setIsSpeaking(true)
+
+    // Calculate total duration and stop speaking when done
+    if (visemes.length > 0) {
+      const lastViseme = visemes[visemes.length - 1]
+      setTimeout(() => {
+        setIsSpeaking(false)
+        setCurrentVisemes([])
+      }, lastViseme.time_ms + 500)
+    }
+  }
+
+  const handleVoiceMessage = (message: { text: string; type: string }) => {
+    if (message.type === 'user') {
+      setExpression('thinking')
+    } else {
+      setExpression('neutral')
+    }
+
+    onVoiceMessage?.({
+      text: message.text,
+      type: message.type as 'user' | 'agent'
+    })
+  }
+
+  return (
+    <div className="visual-panel">
+      {/* Agent Avatar Display with Voice */}
+      <div className="panel-card avatar-card">
+        <div className="card-header">
+          <h4 className="card-title">Active Agent</h4>
+          {voiceEnabled && (
+            <div className={`voice-connection-badge status-${voiceReady ? (voiceStatus === 'error' ? 'pending' : voiceStatus) : 'idle'}`}>
+              {!voiceReady && 'VoiceLive: Ready'}
+              {voiceReady && voiceStatus === 'connected' && 'VoiceLive: Connected'}
+              {voiceReady && voiceStatus === 'connecting' && 'VoiceLive: Connecting'}
+              {voiceReady && voiceStatus === 'error' && 'VoiceLive: Pending'}
+              {voiceReady && voiceStatus === 'idle' && 'VoiceLive: Ready'}
+            </div>
+          )}
+          <button
+            className={`voice-toggle ${voiceEnabled ? 'enabled' : ''}`}
+            onClick={() => {
+              setVoiceEnabled(!voiceEnabled)
+              if (!voiceEnabled) {
+                setVoiceReady(false)  // Reset ready state when disabling
+              }
+            }}
+            title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
+          >
+            {voiceEnabled ? '🔊' : '🔇'}
+          </button>
+        </div>
+
+        {/* Avatar Component */}
+        <AvatarDisplay
+          agentId={agent.id as 'elena' | 'marcus' | 'sage'}
+          isSpeaking={isSpeaking}
+          expression={expression}
+          visemes={currentVisemes}
+          showName={true}
+          size="lg"
+          avatarVideoUrl={voiceAvatarVideoUrl}  // VoiceLive avatar video URL
+          avatarStream={avatarStream} // WebRTC stream
+        />
+
+        {/* Voice Chat Component */}
+        {voiceEnabled && (
+          <div className="voice-section">
+            {!voiceReady ? (
+              <button
+                className="voice-activate-btn"
+                onClick={() => setVoiceReady(true)}
+              >
+                🎙️ Activate Avatar
+              </button>
+            ) : (
+              <VoiceChat
+                agentId={agent.id}
+                sessionId={sessionId}
+                onMessage={handleVoiceMessage}
+                onVisemes={handleVisemes}
+                onStatusChange={setVoiceStatus}
+                onAvatarVideo={setVoiceAvatarVideoUrl}
+                onAvatarStream={setAvatarStream}
+                disabled={!voiceEnabled}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Session Metrics */}
+      <div className="panel-card metrics-card">
+        <h4 className="card-title">Session Metrics</h4>
+        <div className="metrics-grid">
+          <div className="metric">
+            <span className="metric-icon">🪙</span>
+            <div className="metric-data">
+              <span className="metric-value">{metrics.tokensUsed.toLocaleString()}</span>
+              <span className="metric-label">Tokens Used</span>
+            </div>
+          </div>
+          <div className="metric">
+            <span className="metric-icon">⚡</span>
+            <div className="metric-data">
+              <span className="metric-value">{metrics.latency.toFixed(1)}s</span>
+              <span className="metric-label">Latency</span>
+            </div>
+          </div>
+          <div className="metric">
+            <span className="metric-icon">🔗</span>
+            <div className="metric-data">
+              <span className="metric-value">{metrics.memoryNodes}</span>
+              <span className="metric-label">Memory Nodes</span>
+            </div>
+          </div>
+          <div className="metric">
+            <span className="metric-icon">⏱️</span>
+            <div className="metric-data">
+              <span className="metric-value">{metrics.duration}m</span>
+              <span className="metric-label">Duration</span>
+            </div>
+          </div>
+          <div className="metric">
+            <span className="metric-icon">💬</span>
+            <div className="metric-data">
+              <span className="metric-value">{metrics.turns}</span>
+              <span className="metric-label">Turns</span>
+            </div>
+          </div>
+          <div className="metric">
+            <span className="metric-icon">💵</span>
+            <div className="metric-data">
+              <span className="metric-value">${metrics.cost.toFixed(4)}</span>
+              <span className="metric-label">Est. Cost</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Configuration */}
+      <div className="panel-card config-card">
+        <h4 className="card-title">Model Configuration</h4>
+        <div className="config-content">
+          <div className="config-row">
+            <span className="config-label" id="model-select-label">Model</span>
+            <select
+              title="Select Model"
+              aria-labelledby="model-select-label"
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="config-select"
+            >
+              <option value="gpt-5.2-chat">GPT-5.2-chat</option>
+            </select>
+          </div>
+          <div className="config-row">
+            <span className="config-label" id="temp-label">Temperature</span>
+            <div className="config-slider-container">
+              <input
+                title="Temperature"
+                aria-labelledby="temp-label"
+                type="range"
+                min="0"
+                max="100"
+                defaultValue="70"
+                className="config-slider"
+              />
+              <span className="config-value">0.7</span>
+            </div>
+          </div>
+          <div className="config-row">
+            <span className="config-label" id="tokens-label">Max Tokens</span>
+            <div className="config-slider-container">
+              <input
+                title="Max Tokens"
+                aria-labelledby="tokens-label"
+                type="range"
+                min="0"
+                max="100"
+                defaultValue="80"
+                className="config-slider"
+              />
+              <span className="config-value">4096</span>
+            </div>
+          </div>
+          <div className="config-row">
+            <span className="config-label" id="voice-select-label">Voice</span>
+            <select
+              title="Select Voice"
+              aria-labelledby="voice-select-label"
+              className="config-select"
+            >
+              <option value="jenny">Jenny (Elena)</option>
+              <option value="guy">Guy (Marcus)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="panel-card actions-card">
+        <button className="action-button">
+          <span>📋</span> Export Chat
+        </button>
+        <button className="action-button">
+          <span>🔄</span> Reset Context
+        </button>
+        <button className="action-button danger">
+          <span>🗑️</span> Clear Memory
+        </button>
+      </div>
+    </div>
+  )
+}

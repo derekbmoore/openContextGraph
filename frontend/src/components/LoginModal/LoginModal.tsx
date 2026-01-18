@@ -61,7 +61,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                 <div className="login-modal-header">
                     <div className="login-modal-logo">⚡</div>
-                    <h2>Welcome to OpenContextGraph</h2>
+                    <h2>Welcome to Engram</h2>
                     <p>Sign in to access your AI-powered context engine</p>
                 </div>
 

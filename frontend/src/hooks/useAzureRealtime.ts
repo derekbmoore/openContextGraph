@@ -46,8 +46,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
 
     // Fetch ephemeral token from backend
     const fetchToken = useCallback(async (): Promise<EphemeralTokenResponse> => {
-        const baseUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
-
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
         const response = await fetch(`${baseUrl}/api/v1/voice/realtime/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -67,8 +66,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
     // Send transcript to memory enrichment (fire-and-forget)
     const enrichMemory = useCallback(async (text: string, speaker: 'user' | 'assistant') => {
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8082');
-
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8082';
             await fetch(`${baseUrl}/api/v1/memory/enrich`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
