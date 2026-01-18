@@ -8,7 +8,7 @@ Provides voice endpoints with chat-based fallback:
 Note: When VoiceLive realtime endpoint is not available, uses chat completions
 with the agent system for text responses.
 
-VoiceLive v2: Adds /realtime/token endpoint for browser-direct WebRTC connections.
+Azure OpenAI Realtime: Adds /realtime/token endpoint for browser-direct WebRTC connections.
 """
 
 import asyncio
@@ -40,7 +40,7 @@ VOICE_PERSIST_TIMEOUT = 10.0
 
 
 # -----------------------------------------------------------------------------
-# VoiceLive v2: Token Request/Response Models
+# Azure OpenAI Realtime: Token Request/Response Models
 # -----------------------------------------------------------------------------
 
 class TokenRequest(BaseModel):
@@ -54,6 +54,7 @@ class TokenResponse(BaseModel):
     """Ephemeral token response for WebRTC connection"""
     token: str
     endpoint: str
+    calls_url: Optional[str] = None
     expires_at: Optional[str] = None
     token_type: Optional[str] = None  # "api_key" or "jwt" to indicate token type
 
@@ -1137,17 +1138,13 @@ async def _generate_token_with_failsafe_for_browser(
     # Get credential
     credential = voicelive_service.get_credential()
     
-    # Build WebSocket URL helper
-    ws_base = endpoint.replace("https://", "wss://").replace("http://", "ws://")
-    
-    def build_ws_url(version: str) -> str:
-        """Build WebSocket URL for given API version."""
+    def build_calls_url() -> str:
+        """Build WebRTC calls URL for Azure OpenAI Realtime."""
         if endpoint_type == "direct":
-            return f"{ws_base}/openai/realtime?api-version={version}&deployment={model}"
-        elif project_name:
-            return f"{ws_base}/api/projects/{project_name}/voice-live/realtime?api-version={version}&model={model}"
-        else:
-            return f"{ws_base}/voice-live/realtime?api-version={version}&model={model}"
+            return f"{endpoint}/openai/v1/realtime/calls?webrtcfilter=on"
+        if project_name:
+            return f"{endpoint}/api/projects/{project_name}/openai/realtime/calls?webrtcfilter=on"
+        return f"{endpoint}/openai/realtime/calls?webrtcfilter=on"
     
     # Strategy 1: Try API key first (preferred for browser - can use as query parameter)
     # Check voicelive_service.key first (from settings), then environment, then credential
@@ -1162,9 +1159,11 @@ async def _generate_token_with_failsafe_for_browser(
             # For unified endpoints, API key can be used directly in WebSocket query parameter
             logger.info("✅ Strategy 1 succeeded: Using API key for browser WebSocket authentication")
             return TokenResponse(
-                token=api_key,  # Browser will use this as api-key query parameter
-                endpoint=build_ws_url(api_version),
+                token=api_key,  # Browser will attempt Bearer token usage
+                endpoint=endpoint,
+                calls_url=build_calls_url(),
                 expires_at=None,
+                token_type="api_key",
             )
         except Exception as e:
             logger.warning(f"⚠️  Strategy 1 failed: {str(e)[:100]}")
@@ -1180,8 +1179,10 @@ async def _generate_token_with_failsafe_for_browser(
                 logger.info(f"✅ Strategy 2 succeeded: API key with API version {fallback_version}")
                 return TokenResponse(
                     token=api_key,
-                    endpoint=build_ws_url(fallback_version),
+                    endpoint=endpoint,
+                    calls_url=build_calls_url(),
                     expires_at=None,
+                    token_type="api_key",
                 )
             except Exception as e:
                 logger.warning(f"⚠️  Strategy 2 (API {fallback_version}) failed: {str(e)[:100]}")
@@ -1196,8 +1197,10 @@ async def _generate_token_with_failsafe_for_browser(
             logger.info("✅ Strategy 3 succeeded: Managed Identity token obtained (may not work in browser)")
             return TokenResponse(
                 token=token,
-                endpoint=build_ws_url(api_version),
+                endpoint=endpoint,
+                calls_url=build_calls_url(),
                 expires_at=None,
+                token_type="jwt",
             )
         except Exception as e:
             logger.warning(f"⚠️  Strategy 3 failed: {str(e)[:100]}")
@@ -1214,6 +1217,7 @@ async def _generate_token_with_failsafe(
     model: str,
     session_config: dict,
     voicelive_service: Any,
+    api_key_override: Optional[str] = None,
 ) -> Optional[TokenResponse]:
     """
     Failsafe token generation with multiple fallback strategies.
@@ -1236,17 +1240,13 @@ async def _generate_token_with_failsafe(
     # Get credential
     credential = voicelive_service.get_credential()
     
-    # Build WebSocket URL helper
-    ws_base = endpoint.replace("https://", "wss://").replace("http://", "ws://")
-    
-    def build_ws_url(version: str) -> str:
-        """Build WebSocket URL for given API version."""
+    def build_calls_url() -> str:
+        """Build WebRTC calls URL for Azure OpenAI Realtime."""
         if endpoint_type == "direct":
-            return f"{ws_base}/openai/realtime?api-version={version}&deployment={model}"
-        elif project_name:
-            return f"{ws_base}/api/projects/{project_name}/voice-live/realtime?api-version={version}&model={model}"
-        else:
-            return f"{ws_base}/voice-live/realtime?api-version={version}&model={model}"
+            return f"{endpoint}/openai/v1/realtime/calls?webrtcfilter=on"
+        if project_name:
+            return f"{endpoint}/api/projects/{project_name}/openai/realtime/calls?webrtcfilter=on"
+        return f"{endpoint}/openai/realtime/calls?webrtcfilter=on"
     
     # Strategy 1: Try Managed Identity with current API version
     if isinstance(credential, DefaultAzureCredential):
@@ -1256,8 +1256,10 @@ async def _generate_token_with_failsafe(
             logger.info("✅ Strategy 1 succeeded: Managed Identity token obtained")
             return TokenResponse(
                 token=token,
-                endpoint=build_ws_url(api_version),
+                endpoint=endpoint,
+                calls_url=build_calls_url(),
                 expires_at=None,
+                token_type="jwt",
             )
         except Exception as e:
             logger.warning(f"⚠️  Strategy 1 failed: {str(e)[:100]}")
@@ -1274,27 +1276,30 @@ async def _generate_token_with_failsafe(
                 logger.info(f"✅ Strategy 2 succeeded: Managed Identity token with API version {fallback_version}")
                 return TokenResponse(
                     token=token,
-                    endpoint=build_ws_url(fallback_version),
+                    endpoint=endpoint,
+                    calls_url=build_calls_url(),
                     expires_at=None,
+                    token_type="jwt",
                 )
             except Exception as e:
                 logger.warning(f"⚠️  Strategy 2 (API {fallback_version}) failed: {str(e)[:100]}")
                 continue
     
-    # Strategy 3: Try API key with current API version (for unified endpoints, use direct WebSocket)
-    api_key = os.getenv("AZURE_VOICELIVE_KEY", "")
+    # Strategy 3: Try API key with current API version (not suitable for browser WebRTC)
+    api_key = api_key_override or os.getenv("AZURE_VOICELIVE_KEY", "")
     if not api_key and isinstance(credential, AzureKeyCredential):
         api_key = credential.key
     
     if api_key:
         logger.info(f"📋 Strategy 3: API key with current API version")
         try:
-            # For unified endpoints, API key can be used directly in WebSocket header
-            logger.info("✅ Strategy 3 succeeded: Using API key for WebSocket authentication")
+            logger.info("✅ Strategy 3 succeeded: API key available (non-ephemeral)")
             return TokenResponse(
-                token=api_key,  # Browser will use this as api-key header
-                endpoint=build_ws_url(api_version),
+                token=api_key,
+                endpoint=endpoint,
+                calls_url=build_calls_url(),
                 expires_at=None,
+                token_type="api_key",
             )
         except Exception as e:
             logger.warning(f"⚠️  Strategy 3 failed: {str(e)[:100]}")
@@ -1322,8 +1327,10 @@ async def _generate_token_with_failsafe(
                         logger.info("✅ Strategy 4 succeeded: REST token endpoint")
                         return TokenResponse(
                             token=ephemeral_token,
-                            endpoint=build_ws_url(api_version),
+                            endpoint=endpoint,
+                            calls_url=build_calls_url(),
                             expires_at=data.get("expires_at"),
+                            token_type="ephemeral",
                         )
         except Exception as e:
             logger.warning(f"⚠️  Strategy 4 failed: {str(e)[:100]}")
@@ -1355,8 +1362,10 @@ async def _generate_token_with_failsafe(
                             logger.info(f"✅ Strategy 5 succeeded: REST token with API version {fallback_version}")
                             return TokenResponse(
                                 token=ephemeral_token,
-                                endpoint=build_ws_url(fallback_version),
+                                endpoint=endpoint,
+                                calls_url=build_calls_url(),
                                 expires_at=data.get("expires_at"),
+                                token_type="ephemeral",
                             )
             except Exception as e:
                 logger.warning(f"⚠️  Strategy 5 (API {fallback_version}) failed: {str(e)[:100]}")
@@ -1370,29 +1379,49 @@ async def _generate_token_with_failsafe(
 @router.post("/realtime/token", response_model=TokenResponse)
 async def get_realtime_token(request: TokenRequest):
     """
-    Generate an ephemeral token for direct browser-to-Azure WebRTC connection.
+    Generate an ephemeral token for direct browser-to-Azure OpenAI Realtime WebRTC connection.
     
     The browser calls this endpoint to get a short-lived token, then uses it
     to establish a direct WebRTC connection to Azure's Realtime API.
     
-    This is VoiceLive v2 architecture — audio flows directly browser↔Azure,
-    bypassing the backend for lower latency.
+    This is the Azure OpenAI Realtime WebRTC path — audio flows directly
+    browser↔Azure, bypassing the backend for lower latency.
     """
-    # Validate VoiceLive is configured
-    if not voicelive_service.is_configured:
+    settings = get_settings()
+
+    endpoint = (settings.azure_openai_realtime_endpoint or "").rstrip('/')
+    api_key = settings.azure_openai_realtime_key or settings.azure_ai_key
+    if not endpoint:
+        # Back-compat: allow direct OpenAI endpoint to be supplied via VoiceLive endpoint
+        fallback = (voicelive_service.endpoint or "").rstrip('/')
+        if "openai.azure.com" in fallback:
+            endpoint = fallback
+    
+    if not endpoint:
         raise HTTPException(
             status_code=503,
-            detail="VoiceLive not configured. Set AZURE_VOICELIVE_ENDPOINT and AZURE_VOICELIVE_KEY."
+            detail="Azure OpenAI Realtime endpoint not configured. Set AZURE_OPENAI_REALTIME_ENDPOINT."
         )
-    
+
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Azure OpenAI Realtime key not configured. Set AZURE_OPENAI_REALTIME_KEY."
+        )
+
     # Validate endpoint format
-    endpoint = voicelive_service.endpoint.rstrip('/')
     is_valid, endpoint_type = validate_voicelive_endpoint(endpoint)
     if not is_valid:
         logger.error(f"Invalid VoiceLive endpoint format: {endpoint}")
         raise HTTPException(
             status_code=503,
             detail=f"Invalid VoiceLive endpoint format. Expected 'services.ai.azure.com' or 'openai.azure.com', got: {endpoint}"
+        )
+
+    if endpoint_type != "direct":
+        raise HTTPException(
+            status_code=503,
+            detail="Azure OpenAI Realtime requires an openai.azure.com endpoint."
         )
     
     logger.info(f"Using {endpoint_type} endpoint: {endpoint}")
@@ -1497,9 +1526,15 @@ async def get_realtime_token(request: TokenRequest):
             model=voicelive_service.model,
             session_config=session_config,
             voicelive_service=voicelive_service,
+            api_key_override=api_key,
         )
         
         if token_response:
+            if token_response.token_type == "api_key":
+                raise HTTPException(
+                    status_code=502,
+                    detail="Realtime WebRTC requires an ephemeral token. Configure client_secrets endpoint for this resource.",
+                )
             logger.info("✅ Token generated successfully using failsafe strategy")
             return token_response
         else:

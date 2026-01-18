@@ -1,11 +1,11 @@
 /**
  * VoiceChatV2 Component
  * 
- * VoiceLive v2 architecture: Direct browser-to-Azure WebRTC connection
- * with async memory enrichment. Audio flows directly to Azure, transcripts
- * are sent to backend for memory persistence.
+ * Azure OpenAI Realtime WebRTC architecture: Direct browser-to-Azure
+ * connection with async memory enrichment. Audio flows directly to Azure,
+ * transcripts are sent to backend for memory persistence.
  * 
- * This replaces the backend-proxied WebSocket approach from v1.
+ * This complements the backend-proxied VoiceLive WebSocket approach.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';

@@ -56,6 +56,7 @@ class VoiceLiveService:
         self.settings = get_settings()
         # Use dedicated VoiceLive endpoint (separate from chat gateway)
         self._endpoint = self.settings.azure_voicelive_endpoint
+        self._ws_url = self.settings.azure_voicelive_ws_url
         self._key = self.settings.azure_voicelive_key
         self._model = self.settings.azure_voicelive_model
         self._project_name = self.settings.azure_voicelive_project_name
@@ -265,15 +266,18 @@ Remember: You're a storyteller. Make every conversation memorable and meaningful
         The VoiceLive SDK expects a specific endpoint format for real-time audio.
         Uses the configured API version from environment variable.
         """
+        if self._ws_url:
+            return self._ws_url
+
         if not self._endpoint:
             raise ValueError("AZURE_VOICELIVE_ENDPOINT not configured")
         
         # Convert HTTP endpoint to WebSocket
         base = self._endpoint.replace("https://", "wss://").replace("http://", "ws://")
         
-        # VoiceLive uses the OpenAI realtime path with configurable API version
+        # VoiceLive realtime WebSocket path (handled by SDK for most flows)
         api_version = self._api_version
-        return f"{base}/openai/realtime?api-version={api_version}&deployment={self._model}"
+        return f"{base}/voice-live/realtime?api-version={api_version}&model={self._model}"
 
 
 # Singleton instance

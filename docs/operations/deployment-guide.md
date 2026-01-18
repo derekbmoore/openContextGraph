@@ -2,6 +2,8 @@
 
 This guide details how to deploy the **OpenContextGraph** platform (formerly Engram/CtxEco) to a new Azure Tenant (e.g., a customer environment).
 
+Before customer demos, run the readiness checklist in [docs/operations/poc-readiness-checklist.md](poc-readiness-checklist.md).
+
 ## 1. Prerequisites
 
 Before beginning the deployment, ensure you have the following administrative access and prerequisites:
@@ -43,8 +45,10 @@ You must seed the **Key Vault** with these secrets before the Container Apps can
 | `azure-ai-key` | Key for Azure OpenAI/Foundry | Azure Portal (AI Foundry) |
 | `anthropic-api-key` | (Optional) For Anthropic fallback | Anthropic Console |
 | `gemini-api-key` | (Optional) For Gemini fallback | Google AI Studio |
-| `voicelive-api-key` | Zimax VoiceLive API Key | **Contact Zimax Support** |
+| `voicelive-api-key` | Voice live API key (Cognitive Services) | Azure Portal (AI Services) |
 | `azure-speech-key` | Azure Speech Service Key | Azure Portal -> Speech Resource (`westus2`) |
+| `azure-openai-realtime-endpoint` | Azure OpenAI Realtime endpoint | Azure Portal (OpenAI resource) |
+| `azure-openai-realtime-key` | Azure OpenAI Realtime key | Azure Portal (OpenAI resource) |
 | `github-token` | PAT for Repo Context Ingestion | GitHub Developer Settings |
 
 ### 3.2 Bicep Parameters

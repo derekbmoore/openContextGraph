@@ -62,6 +62,8 @@ export default function VoiceChat({
   const videoWsRef = useRef<WebSocket | null>(null); // Fallback: Direct WebSocket to Azure (deprecated)
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null); // WebRTC for avatar video
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -679,22 +681,12 @@ export default function VoiceChat({
 
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       const source = audioContextRef.current.createMediaStreamSource(stream);
+      sourceNodeRef.current = source;
       analyserRef.current = audioContextRef.current.createAnalyser();
       source.connect(analyserRef.current);
       updateAudioLevel();
 
-      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-      processor.onaudioprocess = (e) => {
-        const input = e.inputBuffer.getChannelData(0);
-        // Resample/Convert to PCM16
-        const pcm16 = new Int16Array(input.length);
-        for (let i = 0; i < input.length; i++) {
-          const s = Math.max(-1, Math.min(1, input[i]));
-          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-        }
-
-        // Convert to Base64
-        // Note: Performance heavy for main thread, but standard for these demos
+      const sendPcm16 = (pcm16: Int16Array) => {
         const bytes = new Uint8Array(pcm16.buffer);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) {
@@ -703,8 +695,6 @@ export default function VoiceChat({
         const base64 = btoa(binary);
 
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-          // Send audio chunk to backend WebSocket proxy
-          // Backend forwards to Azure VoiceLive
           wsRef.current.send(JSON.stringify({
             type: 'audio',
             data: base64
@@ -712,9 +702,41 @@ export default function VoiceChat({
         }
       };
 
-      source.connect(processor);
-      processor.connect(audioContextRef.current.destination);
-      processorRef.current = processor;
+      if (audioContextRef.current.audioWorklet?.addModule) {
+        try {
+          const workletUrl = new URL('../../worklets/pcm16-processor.ts', import.meta.url);
+          await audioContextRef.current.audioWorklet.addModule(workletUrl);
+          const workletNode = new AudioWorkletNode(audioContextRef.current, 'pcm16-processor');
+          workletNode.port.onmessage = (event) => {
+            const pcm16 = event.data as Int16Array;
+            if (pcm16?.buffer) {
+              sendPcm16(pcm16);
+            }
+          };
+          source.connect(workletNode);
+          workletNode.connect(audioContextRef.current.destination);
+          workletNodeRef.current = workletNode;
+        } catch (error) {
+          console.warn('AudioWorklet failed, falling back to ScriptProcessorNode', error);
+        }
+      }
+
+      if (!workletNodeRef.current) {
+        const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0);
+          const pcm16 = new Int16Array(input.length);
+          for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          sendPcm16(pcm16);
+        };
+
+        source.connect(processor);
+        processor.connect(audioContextRef.current.destination);
+        processorRef.current = processor;
+      }
 
       setIsListening(true);
     } catch (e) {
@@ -730,8 +752,12 @@ export default function VoiceChat({
     // No need to send commit/response.create - backend detects speech end
     // Just stop sending audio chunks
 
+    workletNodeRef.current?.disconnect();
+    workletNodeRef.current = null;
     processorRef.current?.disconnect();
     processorRef.current = null;
+    sourceNodeRef.current?.disconnect();
+    sourceNodeRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());

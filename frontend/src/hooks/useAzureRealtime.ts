@@ -1,9 +1,9 @@
 /**
  * useAzureRealtime Hook
  * 
- * Provides direct browser-to-Azure WebRTC connection for real-time voice.
- * This is VoiceLive v2 architecture — audio flows directly to Azure,
- * memory enrichment happens asynchronously via text transcripts.
+ * Provides direct browser-to-Azure OpenAI Realtime WebRTC connection.
+ * Audio flows directly to Azure; memory enrichment happens asynchronously
+ * via text transcripts.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -22,6 +22,7 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
 interface EphemeralTokenResponse {
     token: string;
     endpoint: string;
+    calls_url?: string;
     expiresAt?: string;
 }
 
@@ -166,7 +167,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
             configRef.current.onStatusChange?.('connecting');
 
             // Get ephemeral token from backend
-            const { token, endpoint } = await fetchToken();
+            const { token, endpoint, calls_url } = await fetchToken();
 
             // Create peer connection
             const pc = new RTCPeerConnection();
@@ -216,7 +217,7 @@ export function useAzureRealtime(config: RealtimeConfig) {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            const webrtcUrl = `${endpoint}/openai/v1/realtime/calls?webrtcfilter=on`;
+            const webrtcUrl = calls_url || `${endpoint}/openai/v1/realtime/calls?webrtcfilter=on`;
             const sdpResponse = await fetch(webrtcUrl, {
                 method: 'POST',
                 body: offer.sdp,

@@ -91,6 +91,7 @@ class Settings(BaseSettings):
     # Authentication: DefaultAzureCredential (Managed Identity) for enterprise
     # Falls back to API key for POC/staging if AZURE_VOICELIVE_KEY is set
     azure_voicelive_endpoint: Optional[str] = Field(None, alias="AZURE_VOICELIVE_ENDPOINT")
+    azure_voicelive_ws_url: Optional[str] = Field(None, alias="AZURE_VOICELIVE_WS_URL")
     azure_voicelive_key: Optional[str] = Field(None, alias="AZURE_VOICELIVE_KEY")  # Optional for POC
     azure_voicelive_model: str = Field("gpt-realtime", alias="AZURE_VOICELIVE_MODEL")
     azure_voicelive_voice: str = Field("en-US-Ava:DragonHDLatestNeural", alias="AZURE_VOICELIVE_VOICE")
@@ -103,6 +104,12 @@ class Settings(BaseSettings):
     azure_voicelive_project_name: Optional[str] = Field("zimax", alias="AZURE_VOICELIVE_PROJECT_NAME")
     # Use "2024-10-01-preview" for Realtime API public preview
     azure_voicelive_api_version: str = Field("2024-10-01-preview", alias="AZURE_VOICELIVE_API_VERSION")
+
+    # ==========================================================================
+    # Azure OpenAI Realtime (WebRTC Direct)
+    # ==========================================================================
+    azure_openai_realtime_endpoint: Optional[str] = Field(None, alias="AZURE_OPENAI_REALTIME_ENDPOINT")
+    azure_openai_realtime_key: Optional[str] = Field(None, alias="AZURE_OPENAI_REALTIME_KEY")
 
     # ==========================================================================
     # Azure AI Foundry Agents (Orchestration)
@@ -284,6 +291,8 @@ class KeyVaultSettings:
             "azure-ai-key": "azure_ai_key",
             "azure-ai-endpoint": "azure_ai_endpoint",
             "azure-ai-project-name": "azure_ai_project_name",
+            "azure-openai-realtime-endpoint": "azure_openai_realtime_endpoint",
+            "azure-openai-realtime-key": "azure_openai_realtime_key",
             "azure-client-secret": "azure_client_secret",
             "azure-client-id": "azure_client_id",
             "azure-tenant-id": "azure_tenant_id",

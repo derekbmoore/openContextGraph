@@ -37,7 +37,9 @@ Populate these secrets for each customer deployment (names are fixed):
 - `azure-foundry-agent-key` — Foundry Agent Service key (optional if using managed identity)
 - `elena-foundry-agent-id` (and `marcus-foundry-agent-id`, `sage-foundry-agent-id` if used)
 - `azure-speech-key` — Speech key for avatar
-- `voicelive-api-key` — VoiceLive API key
+- `voicelive-api-key` — Voice live API key (Cognitive Services)
+- `azure-openai-realtime-endpoint` — Azure OpenAI Realtime endpoint (https://{resource}.openai.azure.com)
+- `azure-openai-realtime-key` — Azure OpenAI Realtime key
 
 > These are wired into the app by the Key Vault loader in [backend/core/config.py](backend/core/config.py) and the ACA secret references in [infra/modules/backend-aca.bicep](infra/modules/backend-aca.bicep).
 
@@ -51,9 +53,12 @@ Set these on the API Container App:
 - `ELENA_FOUNDRY_AGENT_ID` (+ optional Marcus/Sage)
 - `AZURE_VOICELIVE_ENDPOINT`
 - `AZURE_VOICELIVE_KEY`
+- `AZURE_VOICELIVE_WS_URL` (optional override)
 - `AZURE_VOICELIVE_PROJECT_NAME`
 - `AZURE_VOICELIVE_API_VERSION`
 - `AZURE_VOICELIVE_MODEL`
+- `AZURE_OPENAI_REALTIME_ENDPOINT` (https://{resource}.openai.azure.com)
+- `AZURE_OPENAI_REALTIME_KEY`
 - `AZURE_SPEECH_KEY`
 - `AUTH_REQUIRED` (true in prod)
 - `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_AUDIENCE` (or Entra fields)
@@ -62,6 +67,44 @@ Front-end Vite variables:
 - `VITE_API_URL` (e.g., https://api.ctxeco.com)
 - `VITE_WS_URL` (e.g., wss://api.ctxeco.com)
 - `VITE_API_SCOPE` (optional)
+
+### Example .env (Customer)
+
+Backend (Container App):
+
+```
+AZURE_FOUNDRY_AGENT_ENDPOINT=https://<account>.services.ai.azure.com
+AZURE_FOUNDRY_AGENT_PROJECT=<project-name>
+AZURE_FOUNDRY_AGENT_KEY=<optional-if-managed-identity>
+AZURE_FOUNDRY_AGENT_API_VERSION=2024-12-01-preview
+ELENA_FOUNDRY_AGENT_ID=<agent-id>
+
+AZURE_VOICELIVE_ENDPOINT=https://<account>.services.ai.azure.com
+AZURE_VOICELIVE_KEY=<cognitive-services-key>
+AZURE_VOICELIVE_PROJECT_NAME=<project-name>
+AZURE_VOICELIVE_API_VERSION=2025-10-01
+AZURE_VOICELIVE_MODEL=gpt-realtime
+AZURE_VOICELIVE_WS_URL=wss://<account>.services.ai.azure.com/voice-live/realtime?api-version=2025-10-01&model=gpt-realtime
+
+AZURE_OPENAI_REALTIME_ENDPOINT=https://<resource>.openai.azure.com
+AZURE_OPENAI_REALTIME_KEY=<openai-key>
+
+AZURE_SPEECH_KEY=<speech-key>
+AZURE_SPEECH_REGION=westus2
+
+AUTH_REQUIRED=true
+OIDC_ISSUER_URL=https://login.microsoftonline.com/<tenant-id>/v2.0
+OIDC_CLIENT_ID=<app-client-id>
+OIDC_AUDIENCE=<api-application-id>
+```
+
+Frontend (Static Web App):
+
+```
+VITE_API_URL=https://api.customer-domain.com
+VITE_WS_URL=wss://api.customer-domain.com
+VITE_API_SCOPE=api://<api-application-id>/.default
+```
 
 ## Tri-Search™ + Gk (Graph Knowledge)
 Tri-Search is implemented in [backend/memory/client.py](backend/memory/client.py) and exposed via:
