@@ -336,6 +336,8 @@ class EnrichRequest(BaseModel):
     speaker: str = "user"  # 'user' or 'assistant'
     agent_id: Optional[str] = None
     channel: str = "voice"
+    title: Optional[str] = None
+    summary: Optional[str] = None
     metadata: dict = {}
 
 
@@ -365,8 +367,9 @@ async def enrich_memory(request: EnrichRequest, user: SecurityContext = Depends(
         # Generate session ID if not provided
         session_id = request.session_id or f"voice-{uuid.uuid4()}"
         
-        # Create/update session with metadata including summary from content
-        summary = request.text[:200] + ("..." if len(request.text) > 200 else "")
+        # Create/update session with metadata including summary/title
+        summary = request.summary or (request.text[:200] + ("..." if len(request.text) > 200 else ""))
+        title = request.title
         
         # Merge request metadata with session metadata
         session_metadata = {
@@ -374,6 +377,7 @@ async def enrich_memory(request: EnrichRequest, user: SecurityContext = Depends(
             "channel": request.channel,
             "agent_id": request.agent_id or "unknown",
             "summary": summary,
+            "title": title,
             "turn_count": 1,
             **request.metadata  # Include extra context in session metadata too
         }

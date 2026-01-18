@@ -130,6 +130,8 @@ class EnrichRequest(BaseModel):
     speaker: str = "user"
     agent_id: Optional[str] = None
     channel: str = "voice"
+    title: Optional[str] = None
+    summary: Optional[str] = None
     metadata: dict = Field(default_factory=dict)
 
 
@@ -147,13 +149,15 @@ async def tool_enrich_memory(
     try:
         memory_client = get_memory_client()
         session_id = request.session_id or f"poc-{os.urandom(6).hex()}"
-        summary = request.text[:200] + ("..." if len(request.text) > 200 else "")
+        summary = request.summary or (request.text[:200] + ("..." if len(request.text) > 200 else ""))
+        title = request.title
 
         session_metadata = {
             "tenant_id": user.tenant_id,
             "channel": request.channel,
             "agent_id": request.agent_id or "unknown",
             "summary": summary,
+            "title": title,
             "turn_count": 1,
             **request.metadata,
         }
