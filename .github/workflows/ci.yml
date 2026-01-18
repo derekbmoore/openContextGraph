@@ -196,6 +196,24 @@ jobs:
             --name "$BACKEND_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --image "$IMAGE_TAG" \
+            --query "properties.template.containers[0].image"
+
+      - name: Update Worker Container App
+        env:
+          RESOURCE_GROUP: ${{ steps.get-config.outputs.resourceGroup || secrets.AZURE_RESOURCE_GROUP || 'ctxeco-rg' }}
+          WORKER_APP_NAME: ${{ steps.get-config.outputs.workerAppName || secrets.AZURE_WORKER_APP_NAME || 'ctxeco-worker' }}
+        run: |
+          # Use the specific SHA tag to force a revision update
+          IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/opencontextgraph/backend:${{ github.sha }}"
+
+          echo "📦 Updating Container App: $WORKER_APP_NAME"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Image: $IMAGE_TAG"
+
+          az containerapp update \
+            --name "$WORKER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE_TAG" \
             --query "properties.template.containers[0].image" \
             -o tsv
 
