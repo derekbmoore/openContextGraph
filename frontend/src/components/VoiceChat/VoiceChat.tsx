@@ -704,7 +704,8 @@ export default function VoiceChat({
 
       if (audioContextRef.current.audioWorklet?.addModule) {
         try {
-          const workletUrl = new URL('../../worklets/pcm16-processor.ts', import.meta.url);
+          // Use ?url query to get the compiled worklet URL from Vite
+          const workletUrl = new URL('../../worklets/pcm16-processor.ts?url', import.meta.url).href;
           await audioContextRef.current.audioWorklet.addModule(workletUrl);
           const workletNode = new AudioWorkletNode(audioContextRef.current, 'pcm16-processor');
           workletNode.port.onmessage = (event) => {
