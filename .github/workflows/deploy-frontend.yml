@@ -6,6 +6,7 @@ on:
             - main
         paths:
             - "frontend/**"
+            - ".github/workflows/deploy-frontend.yml"
     workflow_dispatch:
         inputs:
             environment:
@@ -46,7 +47,7 @@ jobs:
             - name: Build frontend
                 env:
                     VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.ctxeco.com' }}
-                    VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'https://api.ctxeco.com' }}
+                    VITE_WS_URL: ${{ secrets.VITE_WS_URL || 'wss://api.ctxeco.com' }}
                     VITE_AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
                     VITE_AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
                     VITE_AZURE_AD_TENANT_DOMAIN: ${{ secrets.AZURE_AD_TENANT_DOMAIN }}
