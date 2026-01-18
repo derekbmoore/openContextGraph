@@ -203,6 +203,7 @@ export default function AvatarDisplay({
             <video
               ref={videoRef}
               autoPlay
+              muted
               playsInline
               className="avatar-video"
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
@@ -213,7 +214,7 @@ export default function AvatarDisplay({
               src={avatarVideoUrl}
               autoPlay
               loop={false}
-              muted={false}
+              muted
               playsInline
               className="avatar-video"
               onError={() => {

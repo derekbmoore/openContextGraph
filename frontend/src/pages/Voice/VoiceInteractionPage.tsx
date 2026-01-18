@@ -19,6 +19,7 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [avatarStream, setAvatarStream] = useState<MediaStream | null>(null);
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [voiceReady, setVoiceReady] = useState(false);
 
@@ -38,6 +39,7 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
     setAvatarStream(stream);
     if (stream) {
       console.log('📹 Avatar video stream received');
+      setAvatarVideoUrl(undefined);
     }
   }, []);
 
@@ -70,7 +72,7 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
               ref={videoRef}
               autoPlay
               playsInline
-              muted={false}
+              muted
               className="avatar-video-stream"
             />
           ) : (
@@ -82,6 +84,7 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
               showName={false}
               size="lg"
               avatarStream={avatarStream}
+              avatarVideoUrl={avatarVideoUrl}
             />
           )}
         </div>
@@ -140,6 +143,7 @@ export function VoiceInteractionPage({ activeAgent, sessionId }: VoiceInteractio
             disabled={status !== 'connected'}
             onStatusChange={handleStatusChange}
             onAvatarStream={handleAvatarStream}
+            onAvatarVideo={setAvatarVideoUrl}
             onSpeaking={setIsSpeaking}
           />
         )}

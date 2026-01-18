@@ -66,6 +66,7 @@ export default function VoiceChat({
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackContextRef = useRef<AudioContext | null>(null);
+  const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number>(0);
@@ -179,6 +180,7 @@ export default function VoiceChat({
   const processAudioQueue = useCallback(function processQueue() {
     if (!playbackContextRef.current || audioQueueRef.current.length === 0) {
       isPlayingRef.current = false;
+      playbackSourceRef.current = null;
       setIsSpeaking(false);
       return;
     }
@@ -202,6 +204,7 @@ export default function VoiceChat({
     const source = playbackContextRef.current.createBufferSource();
     source.buffer = buffer;
     source.connect(playbackContextRef.current.destination);
+    playbackSourceRef.current = source;
 
     const currentTime = playbackContextRef.current.currentTime;
     const startTime = Math.max(currentTime, nextStartTimeRef.current);
@@ -210,8 +213,33 @@ export default function VoiceChat({
     nextStartTimeRef.current = startTime + buffer.duration;
 
     source.onended = () => {
+      if (playbackSourceRef.current === source) {
+        playbackSourceRef.current = null;
+      }
       processQueue();
     };
+  }, []);
+
+  const interruptAssistant = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'cancel' }));
+    }
+
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+    if (playbackSourceRef.current) {
+      try {
+        playbackSourceRef.current.stop();
+      } catch (error) {
+        console.warn('Failed to stop current playback source:', error);
+      }
+      playbackSourceRef.current = null;
+    }
+    if (playbackContextRef.current) {
+      nextStartTimeRef.current = playbackContextRef.current.currentTime;
+    }
+    setIsSpeaking(false);
+    setIsProcessing(false);
   }, []);
 
   // Enqueue Audio
@@ -674,6 +702,10 @@ export default function VoiceChat({
     try {
       if (connectionStatus !== 'connected') return;
 
+      if (isSpeaking || isProcessing) {
+        interruptAssistant();
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, sampleRate: 24000 }
       });
@@ -800,6 +832,7 @@ export default function VoiceChat({
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             (e.currentTarget as HTMLButtonElement).setPointerCapture?.(e.pointerId);
+            interruptAssistant();
             startListening();
           }}
           onPointerUp={(e) => {
@@ -808,7 +841,7 @@ export default function VoiceChat({
           }}
           onPointerLeave={stopListening}
           onPointerCancel={stopListening}
-          disabled={disabled || isProcessing || isSpeaking}
+          disabled={disabled || isProcessing}
           title={isListening ? 'Release to send' : 'Hold to speak'}
         >
           <div
