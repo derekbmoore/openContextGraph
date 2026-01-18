@@ -36,7 +36,7 @@ export function MainLayout({
                     >
                         ☰
                     </button>
-                    <div className="logo">ENGRAM</div>
+                    <div className="logo">OpenContextGraph</div>
                 </div>
                 <div className="header-controls">
                     <div className="model-selector">
