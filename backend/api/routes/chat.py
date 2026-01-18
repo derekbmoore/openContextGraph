@@ -112,6 +112,17 @@ async def chat(
     elif request.agent == "sage":
         foundry_agent_id = settings.sage_foundry_agent_id
     
+    def build_memory_context(ctx: EnterpriseContext) -> str:
+        if not ctx.semantic.facts:
+            return ""
+        lines = ["Relevant memory context (facts + episodes):"]
+        for fact in ctx.semantic.facts[:12]:
+            if fact.content:
+                lines.append(f"- {fact.content}")
+        return "\n".join(lines)
+
+    memory_context = build_memory_context(context)
+
     # Try Foundry First
     result = None
     if foundry_agent_id and settings.azure_foundry_agent_endpoint and settings.azure_foundry_agent_key:
@@ -120,7 +131,8 @@ async def chat(
             response_text = await chat_via_foundry(
                 agent_id=foundry_agent_id,
                 message=request.message,
-                settings=settings
+                settings=settings,
+                memory_context=memory_context,
             )
             result = {
                 "response": response_text,
@@ -178,7 +190,7 @@ async def chat(
     )
 
 
-async def chat_via_foundry(agent_id: str, message: str, settings: Any) -> str:
+async def chat_via_foundry(agent_id: str, message: str, settings: Any, memory_context: str = "") -> str:
     """
     Route chat to Azure AI Foundry Assistants API.
     
@@ -197,7 +209,15 @@ async def chat_via_foundry(agent_id: str, message: str, settings: Any) -> str:
     # Create Thread
     thread = client.beta.threads.create()
     
-    # Add Message
+    # Add memory context (if available) before the user message
+    if memory_context:
+        client.beta.threads.messages.create(
+            thread_id=thread.id,
+            role="user",
+            content=memory_context
+        )
+
+    # Add user message
     client.beta.threads.messages.create(
         thread_id=thread.id,
         role="user",
