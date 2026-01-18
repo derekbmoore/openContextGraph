@@ -1,5 +1,5 @@
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -31,7 +31,7 @@ const mockAgent = {
 }
 
 describe('ChatPanel', () => {
-    it('toggles VoiceLive overlay when mic button is clicked', () => {
+    it('toggles VoiceLive overlay when mic button is clicked', async () => {
         render(
             <ChatPanel
                 agent={mockAgent}
@@ -43,25 +43,31 @@ describe('ChatPanel', () => {
         const micButton = screen.getByTitle('Tap to talk (Voice Live)')
         expect(micButton).toBeInTheDocument()
 
-        // Overlay should not be visible initially
-        expect(screen.queryByTestId('voice-chat-mock')).not.toBeInTheDocument()
-
-        // Click mic
-        fireEvent.click(micButton)
-
-        // Overlay should be visible
-        const activateButton = screen.getByRole('button', { name: /activate voice/i })
+        // Overlay auto-opens for voice-enabled agents
+        const activateButton = await screen.findByRole('button', { name: /activate voice/i })
         expect(activateButton).toBeInTheDocument()
         fireEvent.click(activateButton)
         expect(screen.getByTestId('voice-chat-mock')).toBeInTheDocument()
         expect(screen.getByText(/Speaking with Elena/i)).toBeInTheDocument()
+
+        // Toggle overlay via mic button (close)
+        fireEvent.click(micButton)
+        await waitFor(() => {
+            expect(screen.queryByText(/Speaking with Elena/i)).not.toBeInTheDocument()
+        })
+
+        // Toggle overlay via mic button (open)
+        fireEvent.click(micButton)
+        expect(await screen.findByRole('button', { name: /activate voice/i })).toBeInTheDocument()
 
         // Click close button
         const closeButton = screen.getByLabelText('Close voice chat')
         fireEvent.click(closeButton)
 
         // Overlay should be gone
-        expect(screen.queryByTestId('voice-chat-mock')).not.toBeInTheDocument()
+        await waitFor(() => {
+            expect(screen.queryByTestId('voice-chat-mock')).not.toBeInTheDocument()
+        })
     })
 
     it('does not show VoiceLive button when agent voice is disabled', () => {
