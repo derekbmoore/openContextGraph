@@ -1046,9 +1046,12 @@ async def get_avatar_ice_credentials(
             headers = {}
             
             # Priority 1: Dedicated Speech Key (Required for Regional Endpoint)
-            if settings.azure_speech_key:
-                clean_key = settings.azure_speech_key.strip()
-                logger.info(f"Using configured AZURE_SPEECH_KEY (prefix: {clean_key[:4]}...)")
+            # Or fallback to VoiceLive Key if Speech Key is missing (Unified Key scenario)
+            auth_key = settings.azure_speech_key or settings.azure_voicelive_key
+            
+            if auth_key:
+                clean_key = auth_key.strip()
+                logger.info(f"Using API Key authentication (prefix: {clean_key[:4]}...)")
                 headers = {"Ocp-Apim-Subscription-Key": clean_key}
             else:
                 # Priority 2: Fallback to VoiceLive Service Credential (Unified Key or Managed Identity)
