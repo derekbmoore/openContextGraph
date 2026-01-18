@@ -771,20 +771,17 @@ export default function VoiceChat({
       <div className="voice-button-container">
         <button
           className={getButtonClass()}
-          onMouseDown={(e) => {
-            if (e.button !== 0) return;
+          onPointerDown={(e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            (e.currentTarget as HTMLButtonElement).setPointerCapture?.(e.pointerId);
             startListening();
           }}
-          onMouseUp={stopListening}
-          onMouseLeave={stopListening}
-          onTouchStart={(e) => {
-            e.preventDefault(); // Prevent scrolling/ghost clicks
-            startListening();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
+          onPointerUp={(e) => {
+            (e.currentTarget as HTMLButtonElement).releasePointerCapture?.(e.pointerId);
             stopListening();
           }}
+          onPointerLeave={stopListening}
+          onPointerCancel={stopListening}
           disabled={disabled || isProcessing || isSpeaking}
           title={isListening ? 'Release to send' : 'Hold to speak'}
         >
