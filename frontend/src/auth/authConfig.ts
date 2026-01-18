@@ -68,10 +68,11 @@ export const loginRequest = {
 };
 
 // API scopes for backend authentication
-// Based on app registration, the scope is: api://{CLIENT_ID}/user_impersonation
-// This matches the oauth2PermissionScopes defined in the Entra app registration
+// If you have an exposed API scope, set VITE_API_SCOPE (e.g., api://<api-app-id>/user_impersonation)
+const API_SCOPE = import.meta.env.VITE_API_SCOPE as string | undefined;
+
 export const apiRequest = {
-    scopes: CLIENT_ID ? [`api://${CLIENT_ID}/user_impersonation`] : ['openid', 'profile', 'email'],
+    scopes: API_SCOPE ? [API_SCOPE] : ['openid', 'profile', 'email'],
 };
 
 // Create MSAL instance
