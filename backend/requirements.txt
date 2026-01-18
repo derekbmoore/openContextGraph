@@ -15,8 +15,8 @@ azure-identity>=1.15.0
 azure-core>=1.29.5
 azure-storage-blob>=12.19.0
 
-# Azure AI VoiceLive (Real-time Voice) - Optional
-# azure-ai-voicelive[aiohttp]>=1.0.0  # Uncomment if VoiceLive is needed
+# Azure AI VoiceLive (Real-time Voice)
+azure-ai-voicelive[aiohttp]>=1.0.0
 
 # WebRTC for Avatar Video (Optional)
 # aiortc>=1.6.0  # Uncomment if Avatar video is needed
