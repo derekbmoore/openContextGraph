@@ -19,7 +19,7 @@ azure-storage-blob>=12.19.0
 azure-ai-voicelive[aiohttp]>=1.0.0
 
 # WebRTC for Avatar Video (Optional)
-# aiortc>=1.6.0  # Uncomment if Avatar video is needed
+aiortc>=1.6.0
 
 # Agent Framework
 langchain>=0.1.0
