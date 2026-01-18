@@ -206,7 +206,7 @@ curl -X POST https://ctxeco.com/mcp \
 ### MCP Server Endpoint
 
 ```text
-URL: https://ctxeco.com/mcp
+URL: https://api.ctxeco.com/mcp
 Method: POST
 Content-Type: application/json
 ```
