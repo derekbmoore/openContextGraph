@@ -41,7 +41,7 @@ async def get_memory_graph(
 
         # 2. Fetch Episodes (Sessions)
         # Note: list_sessions returns list of dicts based on client.py
-        sessions = await client.list_sessions(user_id=user.user_id, limit=limit)
+        sessions = await client.list_sessions(user_id=user.user_id, tenant_id=user.tenant_id, limit=limit)
         
         session_ids = set()
         
