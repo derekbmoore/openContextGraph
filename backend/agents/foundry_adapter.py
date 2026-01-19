@@ -43,12 +43,19 @@ class FoundryAgentWrapper(BaseAgent):
         self._registered_tools = {}
         
         # Initialize Azure OpenAI Client
-        # We use standard env vars or 'zimax' hardcoded fallbacks for this context if needed
-        # ideally env vars: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT
+        # Use AZURE_FOUNDRY_AGENT_* env vars (as configured in ACA)
+        # Fallback to AZURE_OPENAI_* for local dev compatibility
+        api_key = os.getenv("AZURE_FOUNDRY_AGENT_KEY") or os.getenv("AZURE_OPENAI_API_KEY")
+        endpoint = os.getenv("AZURE_FOUNDRY_AGENT_ENDPOINT") or os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_version = os.getenv("AZURE_FOUNDRY_AGENT_API_VERSION", "2024-05-01-preview")
+        
+        if not api_key or not endpoint:
+            logger.warning(f"FoundryAgentWrapper: Missing credentials (key={bool(api_key)}, endpoint={bool(endpoint)}). Agent will fail at runtime.")
+        
         self.client = AzureOpenAI(
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            api_version="2024-05-01-preview",
+            api_key=api_key,
+            azure_endpoint=endpoint,
+            api_version=api_version,
         )
 
     def get_tools(self) -> List[str]:
