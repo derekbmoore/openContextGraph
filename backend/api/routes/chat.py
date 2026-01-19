@@ -128,141 +128,34 @@ async def chat(
     if foundry_agent_id and settings.azure_foundry_agent_endpoint and settings.azure_foundry_agent_key:
         try:
             logger.info(f"Routing chat to Foundry Agent: {request.agent} ({foundry_agent_id})")
-            response_text = await chat_via_foundry(
+            
+            # Initialize Foundry Client
+            from integrations.foundry import FoundryClient
+            foundry_client = FoundryClient(settings)
+            
+            # Send message
+            foundry_response = await foundry_client.chat(
                 agent_id=foundry_agent_id,
                 message=request.message,
-                settings=settings,
+                thread_id=None, # TODO: We need to store thread_id in Session metadata to resume conversations
                 memory_context=memory_context,
             )
-            result = {
-                "response": response_text,
-                "agent_id": request.agent,
-                "sources": ["Azure AI Foundry"],
-                "tool_calls": [] 
-            }
-        except Exception as e:
-            logger.error(f"Foundry chat failed: {e}")
-            # Fallback to local will happen below if result is None
-    
-    # Fallback to local routing
-    if not result:
-        agent_router = get_agent_router()
-        result = await agent_router.route(request.agent, request.message, context)
-    
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    
-    # Persist conversation to memory
-    try:
-        # Ensure session exists with security context metadata
-        await memory_client.get_or_create_session(
-            session_id=session_id,
-            user_id=user.user_id,
-            metadata={
-                "tenant_id": user.tenant_id,
-                "project_id": user.project_id or "",
-                "groups": user.groups,
-                "agent_id": request.agent,
-                "created_at": str(uuid.uuid1())
-            }
-        )
-        
-        await memory_client.add_memory(
-            session_id=session_id,
-            messages=[
-                {"role": "user", "content": request.message},
-                {"role": "assistant", "content": result["response"]},
-            ],
-            metadata={
-                "agent_id": request.agent,
-                "project_id": user.project_id
-            }
-        )
-    except Exception as e:
-        logger.warning(f"Memory persistence failed: {e}")
-    
-    return ChatResponse(
-        response=result["response"],
-        session_id=session_id,
-        agent=result["agent_id"],
-        sources=result.get("sources", []),
-        tool_calls=result.get("tool_calls", []),
-    )
-
-
-async def chat_via_foundry(agent_id: str, message: str, settings: Any, memory_context: str = "") -> str:
-    """
-    Route chat to Azure AI Foundry Assistants API.
-    
-    Agents are configured with Action Groups (MCP) to access tools.
-    The run execution handles tool calls server-side.
-    """
-    from openai import AzureOpenAI
-    import asyncio
-    
-    client = AzureOpenAI(
-        azure_endpoint=settings.azure_foundry_agent_endpoint,
-        api_key=settings.azure_foundry_agent_key,
-        api_version=settings.azure_foundry_agent_api_version,
-    )
-    
-    # Create Thread
-    thread = client.beta.threads.create()
-    
-    # Add memory context (if available) before the user message
-    if memory_context:
-        client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=memory_context
-        )
-
-    # Add user message
-    client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content=message
-    )
-    
-    # Run Agent
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=agent_id
-    )
-    
-    # Poll for completion
-    # Timeout after 60 seconds
-    for _ in range(120):
-        await asyncio.sleep(0.5)
-        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-        
-        if run.status == "completed":
-            break
-        elif run.status == "failed":
-            raise Exception(f"Foundry Run Failed: {run.last_error}")
-        elif run.status == "requires_action":
-            # NOTE: If we get here, it means the agent trying to call a function locally
-            # instead of using the server-side Action Group (HTTP). 
-            # For now, we treat this as a failure or incomplete configuration.
-            # Ideally, we would handle local function dispatch here if needed.
-            logger.warning("Foundry agent requires local action - cancelling run")
-            client.beta.threads.runs.cancel(thread_id=thread.id, run_id=run.id)
-            raise Exception("Agent requires local tool action (not implemented)")
             
-    if run.status != "completed":
-        raise Exception("Foundry Run Timed Out")
-        
-    # Get Messages
-    messages = client.beta.threads.messages.list(
-        thread_id=thread.id,
-        order="desc",
-        limit=1
-    )
-    
-    if not messages.data:
-        return "No response from agent."
-        
-    return messages.data[0].content[0].text.value
+            if foundry_response.status == "completed":
+                result = {
+                    "response": foundry_response.response, # No stripped quotes here
+                    "agent_id": request.agent,
+                    "sources": ["Azure AI Foundry"],
+                    "tool_calls": foundry_response.tool_calls
+                }
+            else:
+                logger.error(f"Foundry failed: {foundry_response.error}")
+                # Fallback to local
+                
+        except Exception as e:
+            logger.error(f"Foundry chat failed: {e}", exc_info=True)
+            # Fallback to local
+
 
 
 @router.get("/sessions", response_model=list[SessionInfo])
