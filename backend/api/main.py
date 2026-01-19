@@ -126,9 +126,12 @@ def create_app() -> FastAPI:
         headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         headers["Access-Control-Allow-Headers"] = "authorization, content-type"
         
+        # Include actual error details for debugging
+        error_detail = f"{type(exc).__name__}: {str(exc)}"
+        
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error"},
+            content={"detail": error_detail},
             headers=headers,
         )
 
