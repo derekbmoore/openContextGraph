@@ -186,4 +186,16 @@ describe('normalizeApiBase', () => {
     // In non-browser environment, HTTP shouldn't be converted to HTTPS
     expect(result).toBe('http://api.ctxeco.com');
   });
+
+  it('should handle quoted string (if env var issue)', () => {
+    global.window = {
+      location: {
+        protocol: 'https:',
+        origin: 'https://ctxeco.com',
+      },
+    } as any;
+    // If env var comes with quotes, we want to strip them AND upgrade to https
+    const url = normalizeApiBase('"http://api.ctxeco.com"', 'fallback');
+    expect(url).toBe('https://api.ctxeco.com');
+  });
 });

@@ -1,6 +1,10 @@
+
 export const normalizeApiBase = (rawUrl: string | undefined, fallback: string): string => {
   const isBrowser = typeof window !== 'undefined';
   let url = (rawUrl || fallback).trim();
+
+  // Strip leading/trailing quotes (fixes env var injection issues)
+  url = url.replace(/^['"]|['"]$/g, '');
 
   // Convert HTTP to HTTPS when the page is loaded over HTTPS (case-insensitive)
   if (isBrowser && window.location.protocol === 'https:' && /^http:\/\//i.test(url)) {
