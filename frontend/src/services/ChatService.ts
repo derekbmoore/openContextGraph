@@ -49,7 +49,7 @@ export class ChatService {
         sessionId?: string
     ): Promise<ChatResponse> {
 
-        const url = `${this.apiBase}/api/v1/chat`;
+        const url = `${this.apiBase}/api/v1/chat/`;
 
         console.log(`[ChatService] Sending message to ${url} (Agent: ${agentId})`);
 
