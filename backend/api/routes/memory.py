@@ -547,3 +547,22 @@ Output JSON only:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/environments")
+async def get_memory_environments(user: SecurityContext = Depends(get_current_user)):
+    """
+    Get memory environment configuration.
+    Used by frontend to show connection status.
+    """
+    settings = get_settings()
+    return {
+        "active_zep_api_url": settings.zep_api_url,
+        "environments": [
+            {
+                "name": "Production",
+                "zep_api_url": settings.zep_api_url,
+                "description": "Primary Zep Memory Store"
+            }
+        ]
+    }
+
+

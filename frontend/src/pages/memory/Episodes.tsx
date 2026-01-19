@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { listEpisodes, getEpisode, processEpisode } from '../../services/api';
 import { AGENTS, type AgentId } from '../../types';
 
@@ -25,7 +25,8 @@ export function Episodes() {
     const [error, setError] = useState<string | null>(null);
     const [selectedTranscript, setSelectedTranscript] = useState<{ role: string; content: string }[] | null>(null);
     const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const isModalOpen = !!searchParams.get('episode');
 
     // Filtering and search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -117,23 +118,85 @@ export function Episodes() {
 
     // Reset to page 1 when filters change
     useEffect(() => {
+        // Only reset page if NOT opening the modal (i.e. if filters change, but not if just param changes)
+        // Actually, we should check if filters specifically changed.
+        // For simplicity, we keep it, but might annoy if URL param changes.
+        // Let's rely on the dependency array. 
+        // We REMOVE searchParams from dependency here to avoid resetting page when opening modal.
         setCurrentPage(1);
     }, [searchQuery, selectedAgent, selectedTopic, dateFrom, dateTo]);
 
-    const handleViewContext = async (id: string) => {
+    // Handle URL-based modal opening
+    useEffect(() => {
+        const episodeId = searchParams.get('episode');
+        if (episodeId && allEpisodes.length > 0) {
+            // Check if we already have it loaded or need to load context
+            if (selectedEpisode?.id !== episodeId) {
+                const episode = allEpisodes.find(e => e.id === episodeId);
+                // If episode not in current filtered list but exists in allEpisodes
+                if (episode) {
+                    handleViewContext(episode.id, true);
+                } else {
+                    // If we have pagination or strictly server-side, 
+                    // we might need to fetch the specific episode details if not in list.
+                    // For now, assume it's in the full list or we just load transcript.
+                    // We'll try to load transcript anyway.
+                    loadTranscriptOnly(episodeId);
+                }
+            }
+        } else if (!episodeId) {
+            // Close modal cleanup
+            setSelectedTranscript(null);
+            setSelectedEpisode(null);
+        }
+    }, [searchParams, allEpisodes]);
+
+    const loadTranscriptOnly = async (id: string) => {
+        setLoadingTranscript(true);
+        try {
+            const data = await getEpisode(id);
+            setSelectedTranscript(data.transcript);
+            // We might not have the summary/metadata if it wasn't in list
+            // Just try to find it again
+            const episode = allEpisodes.find(e => e.id === id);
+            setSelectedEpisode(episode || { id, summary: 'Loaded from Link', topics: [], agent_id: 'unknown', turn_count: 0, started_at: new Date().toISOString(), ended_at: null });
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load episode from link.');
+        } finally {
+            setLoadingTranscript(false);
+        }
+    }
+
+
+    const handleViewContext = async (id: string, isUrlUpdate = false) => {
+        if (!isUrlUpdate) {
+            setSearchParams(prev => {
+                prev.set('episode', id);
+                return prev;
+            });
+            return; // usage of effect will trigger the actual load
+        }
+
         setLoadingTranscript(true);
         try {
             const episode = allEpisodes.find(e => e.id === id);
             const data = await getEpisode(id);
             setSelectedTranscript(data.transcript);
             setSelectedEpisode(episode || null);
-            setIsModalOpen(true);
         } catch (err) {
             console.error('Failed to load context:', err);
             setError('Failed to load episode transcript. Please try again.');
         } finally {
             setLoadingTranscript(false);
         }
+    };
+
+    const closeModal = () => {
+        setSearchParams(prev => {
+            prev.delete('episode');
+            return prev;
+        });
     };
 
     const handleDiscussWithAgent = (episodeId: string, agentId: string) => {
@@ -680,7 +743,7 @@ export function Episodes() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     zIndex: 1000
-                }} onClick={() => setIsModalOpen(false)}>
+                }} onClick={closeModal}>
                     <div style={{
                         background: '#1a1a1a',
                         border: '1px solid var(--glass-border)',
@@ -702,7 +765,7 @@ export function Episodes() {
                                 )}
                             </div>
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={closeModal}
                                 style={{
                                     background: 'none',
                                     border: 'none',
@@ -830,7 +893,7 @@ export function Episodes() {
                                     onClick={() => {
                                         if (selectedEpisode) {
                                             handleDiscussWithAgent(selectedEpisode.id, selectedEpisode.agent_id);
-                                            setIsModalOpen(false);
+                                            closeModal();
                                         }
                                     }}
                                     onMouseEnter={(e) => {
@@ -847,7 +910,6 @@ export function Episodes() {
                     </div>
                 </div>
             )}
-
             <style>{`
                 @keyframes spin {
                     to { transform: rotate(360deg); }

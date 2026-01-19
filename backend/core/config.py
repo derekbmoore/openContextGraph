@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Application
     # ==========================================================================
     app_name: str = "openContextGraph"
-    app_version: str = "0.1.0"
+    app_version: str = "0.1.1"
     environment: str = Field("development", alias="ENVIRONMENT")
     debug: bool = Field(False, alias="DEBUG")
 
