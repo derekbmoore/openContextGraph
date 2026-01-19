@@ -27,6 +27,7 @@ if not AZURE_AVAILABLE:
     logger.warning("Azure SDK not installed. VoiceLive service will have limited functionality.")
 
 from core import get_settings
+from voice.config_validator import validator
 
 
 @dataclass
@@ -84,6 +85,9 @@ class VoiceLiveService:
                 personality="eloquent, visual, empathetic, synthesizing storyteller"
             ),
         }
+
+        # Validate configuration at startup
+        self._validate_configuration()
     
     @property
     def endpoint(self) -> str:
@@ -125,7 +129,61 @@ class VoiceLiveService:
         """Check if VoiceLive is properly configured"""
         # Configured if we have an endpoint (credential can be DefaultAzureCredential)
         return bool(self._endpoint)
-    
+
+    def _validate_configuration(self):
+        """
+        Validate voice configuration at startup and log helpful messages.
+
+        Performs checks based on deployment guide requirements:
+        - VoiceLive endpoint format
+        - Azure Speech region for avatar support
+        - Authentication configuration
+
+        Reference: docs/operations/avatar_voice_deployment_guide.md
+        """
+        logger.info("=" * 70)
+        logger.info("Voice Configuration Validation")
+        logger.info("=" * 70)
+
+        # Check if Managed Identity might be available (prod environment)
+        environment = self.settings.environment.lower()
+        has_managed_identity = environment in ("production", "enterprise", "prod")
+
+        # Elena has avatar support, so check avatar requirements
+        avatar_required = True  # Elena requires avatar support
+
+        # Perform comprehensive validation
+        is_valid, errors, warnings = validator.validate_voice_config(
+            voicelive_endpoint=self._endpoint,
+            voicelive_key=self._key,
+            speech_key=self._speech_key,
+            speech_region=self._speech_region,
+            avatar_required=avatar_required,
+            has_managed_identity=has_managed_identity or bool(self._key)
+        )
+
+        # Log results
+        if errors:
+            logger.error("Configuration validation failed:")
+            for error in errors:
+                logger.error(error)
+            logger.error("")
+            logger.error("Voice service may not work correctly. Please fix the errors above.")
+            logger.error("See: docs/operations/avatar_voice_deployment_guide.md")
+
+        if warnings:
+            logger.warning("Configuration warnings:")
+            for warning in warnings:
+                logger.warning(warning)
+            logger.warning("")
+
+        if is_valid and not warnings:
+            logger.info("✅ Voice configuration is valid")
+        elif is_valid:
+            logger.info("✅ Voice configuration is valid (with warnings)")
+
+        logger.info("=" * 70)
+
     def get_credential(self) -> Union[AzureKeyCredential, DefaultAzureCredential]:
         """
         Get the appropriate credential for the environment.

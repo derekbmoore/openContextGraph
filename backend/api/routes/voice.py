@@ -280,7 +280,10 @@ async def voicelive_websocket(websocket: WebSocket, session_id: str):
     if not voicelive_service.is_configured:
         await websocket.send_json({
             "type": "error",
-            "message": "VoiceLive not configured. Set AZURE_VOICELIVE_ENDPOINT and provide auth (AZURE_VOICELIVE_KEY or Managed Identity)."
+            "message": (
+                "VoiceLive not configured. Set AZURE_VOICELIVE_ENDPOINT and provide auth (AZURE_VOICELIVE_KEY or Managed Identity). "
+                "See troubleshooting: docs/operations/avatar_voice_deployment_guide.md Section 2.2"
+            )
         })
         await websocket.close()
         return
@@ -968,7 +971,12 @@ async def voicelive_websocket(websocket: WebSocket, session_id: str):
 
 @router.get("/status")
 async def get_voice_status():
-    """Get VoiceLive service status"""
+    """
+    Get VoiceLive service status.
+
+    This endpoint provides basic service status without performing
+    comprehensive validation checks.
+    """
     return {
         "voicelive_configured": voicelive_service.is_configured,
         "endpoint": voicelive_service.endpoint[:50] + "..." if voicelive_service.endpoint else None,
@@ -985,6 +993,66 @@ async def get_voice_status():
                 "voice": voicelive_service.get_agent_voice_config("sage").voice_name,
             },
         },
+    }
+
+
+@router.get("/health")
+async def get_voice_health():
+    """
+    Comprehensive voice configuration health check.
+
+    Performs validation based on deployment guide requirements:
+    - VoiceLive endpoint configuration
+    - Azure Speech region for avatar support
+    - Authentication setup
+
+    This endpoint is useful for:
+    - Deployment verification (Section 3 of deployment guide)
+    - Troubleshooting configuration issues
+    - Pre-flight checks before enabling voice features
+
+    Reference: docs/operations/avatar_voice_deployment_guide.md Section 3
+    """
+    from voice.config_validator import validator
+    from core import get_settings
+
+    settings = get_settings()
+
+    # Check if Managed Identity might be available
+    environment = settings.environment.lower()
+    has_managed_identity = environment in ("production", "enterprise", "prod")
+
+    # Perform comprehensive validation (Elena requires avatar)
+    is_valid, errors, warnings = validator.validate_voice_config(
+        voicelive_endpoint=voicelive_service.endpoint,
+        voicelive_key=voicelive_service.key,
+        speech_key=voicelive_service.speech_key,
+        speech_region=voicelive_service.speech_region,
+        avatar_required=True,  # Elena requires avatar support
+        has_managed_identity=has_managed_identity or bool(voicelive_service.key)
+    )
+
+    # Build response
+    return {
+        "status": "healthy" if is_valid else "unhealthy",
+        "voicelive": {
+            "configured": voicelive_service.is_configured,
+            "endpoint_configured": bool(voicelive_service.endpoint),
+            "authentication_configured": bool(voicelive_service.key) or has_managed_identity,
+            "model": voicelive_service.model,
+            "api_version": voicelive_service.api_version,
+        },
+        "avatar": {
+            "speech_key_configured": bool(voicelive_service.speech_key),
+            "speech_region": voicelive_service.speech_region,
+            "region_supports_avatar": voicelive_service.speech_region in validator.AVATAR_SUPPORTED_REGIONS if voicelive_service.speech_region else False,
+        },
+        "validation": {
+            "is_valid": is_valid,
+            "errors": errors if errors else [],
+            "warnings": warnings if warnings else [],
+        },
+        "reference": "See docs/operations/avatar_voice_deployment_guide.md for configuration guidance"
     }
 
 
@@ -1019,7 +1087,10 @@ async def get_avatar_ice_credentials(
     if not voicelive_service.is_configured:
         raise HTTPException(
             status_code=503,
-            detail="VoiceLive service not configured. Set AZURE_VOICELIVE_ENDPOINT."
+            detail=(
+                "VoiceLive service not configured. Set AZURE_VOICELIVE_ENDPOINT. "
+                "See troubleshooting: docs/operations/avatar_voice_deployment_guide.md Section 5"
+            )
         )
     
     # 1. Determine Region
@@ -1096,9 +1167,30 @@ async def get_avatar_ice_credentials(
         raise
     except Exception as e:
         logger.error(f"Failed to get ICE credentials: {e}", exc_info=True)
+        error_msg = str(e)
+
+        # Provide helpful error messages based on common issues
+        if "401" in error_msg or "Unauthorized" in error_msg:
+            detail_msg = (
+                f"ICE credentials authentication failed: {error_msg}. "
+                f"Check AZURE_SPEECH_KEY and AZURE_SPEECH_REGION. "
+                f"See troubleshooting: docs/operations/avatar_voice_deployment_guide.md Section 5 ('Avatar ICE 401/500')"
+            )
+        elif "404" in error_msg or "Not Found" in error_msg:
+            detail_msg = (
+                f"ICE credentials endpoint not found: {error_msg}. "
+                f"Verify AZURE_SPEECH_REGION is set to a supported region (westus2, westeurope, or southeastasia). "
+                f"See troubleshooting: docs/operations/avatar_voice_deployment_guide.md Section 2.1 ('Avatar Region Mismatch')"
+            )
+        else:
+            detail_msg = (
+                f"Failed to get ICE credentials: {error_msg}. "
+                f"See troubleshooting: docs/operations/avatar_voice_deployment_guide.md Section 5"
+            )
+
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get ICE credentials: {str(e)}"
+            detail=detail_msg
         )
 
 
