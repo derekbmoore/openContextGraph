@@ -46,10 +46,14 @@ Ensure these variables are set in your backend container environment:
 ```bash
 # === VoiceLive (Audio) ===
 AZURE_VOICELIVE_ENDPOINT="wss://{ai-services-resource-name}.services.ai.azure.com/voice-live/realtime?api-version=2024-10-01-preview&model=gpt-realtime"
+# Optional overrides (defaults live in backend/core/config.py)
+AZURE_VOICELIVE_API_VERSION="2024-10-01-preview"
+AZURE_VOICELIVE_MODEL="gpt-realtime"
+AZURE_VOICELIVE_PROJECT_NAME="{foundry-project-name}"  # Only for project-based unified endpoints
 # Auth strategy: Service Principal (Entra) preferred over Key
-AZURE_TENANT_ID="{tenant-id}"
-AZURE_CLIENT_ID="{client-id}"
-AZURE_CLIENT_SECRET="{client-secret}"
+AZURE_TENANT_ID="{tenant-id}"          # For Azure SDK (DefaultAzureCredential)
+AZURE_CLIENT_ID="{client-id}"          # For Azure SDK (Managed Identity or SPN)
+AZURE_CLIENT_SECRET="{client-secret}"  # For Azure SDK (SPN only)
 # OR (Fallback):
 AZURE_VOICELIVE_KEY="{key}"
 
@@ -59,8 +63,11 @@ AZURE_SPEECH_KEY="{speech-key}"
 AZURE_SPEECH_REGION="westus2"  # Must match resource region
 
 # === Security ===
+# Entra ID JWT validation (API auth)
+AZURE_AD_TENANT_ID="{entra-tenant-id}"
+AZURE_AD_CLIENT_ID="{entra-app-client-id}"
 AUTH_REQUIRED="true" # Enforce JWT for WebSocket connections
-ALLOWED_ORIGINS="https://your-frontend-domain.com,http://localhost:5173"
+CORS_ORIGINS="https://your-frontend-domain.com,http://localhost:5173"
 ```
 
 ### 2.3 Frontend Configuration (`.env`)
@@ -74,11 +81,45 @@ VITE_WS_URL="wss://your-backend-api.containerapps.io"
 VITE_AUTH_REQUIRED="true"
 ```
 
+### 2.4 Deployment Readiness Checklist (Customer Environments)
+
+Use this checklist before declaring the environment ready:
+
+1. **Azure resource alignment**
+    * VoiceLive resource in `eastus2` or `swedencentral` (Realtime-capable).
+    * Speech resource in `westus2`, `westeurope`, or `southeastasia` (Avatar Relay).
+    * Foundry project (if used) matches `AZURE_VOICELIVE_PROJECT_NAME`.
+2. **Model availability**
+    * `gpt-realtime` is deployed/available on the VoiceLive resource.
+    * If using project-based unified endpoints, ensure the model is deployed within the project.
+3. **Authentication posture**
+    * **Production:** Prefer Managed Identity or Service Principal (Azure SDK env vars).
+    * **POC/Staging:** API key is acceptable but should be scoped and rotated.
+    * JWT validation enabled with `AUTH_REQUIRED=true` and Entra app IDs configured.
+4. **Networking / firewall**
+    * Browser egress allows UDP `3478` + `49152–65535`.
+    * Backend allows outbound to `*.services.ai.azure.com` and `*.tts.speech.microsoft.com`.
+5. **Backend validation logs**
+    * Startup logs include “Voice Configuration Validation” with ✅ status (or warnings only).
+    * No “Avatar Region Mismatch” errors from `VoiceConfigValidator`.
+
 ---
 
 ## 3. Verification Steps (POC & Deployment)
 
 Use this checklist to verify the system post-deployment.
+
+### Step 0: Health Check (Recommended)
+
+**Goal:** Verify VoiceLive + Avatar configuration in one call.
+
+```bash
+GET /api/v1/voice/health
+```
+
+* **Success:** `status: healthy` and `validation.errors` is empty.
+* **Warnings only:** `status: healthy` with `validation.warnings` (audio-only mode may still work).
+* **Failure:** `status: unhealthy` with actionable errors (fix before go-live).
 
 ### Step 1: Connectivity Check
 
@@ -149,7 +190,7 @@ We introduced a **"Chat Only"** button in the overlay.
 | :--- | :--- | :--- |
 | **"Activate Avatar" button missing** | `voiceEnabled: false` in Agent config | Check `frontend/src/types.ts` (AGENTS definition) or backend agent configuration in `backend/core/config.py`. |
 | **Audio works, Video is black** | Region mismatch or ICE failure | 1. Check `AZURE_SPEECH_REGION` is `westus2` (or supported). <br> 2. Check Browser Console for "ICE connection failed". |
-| **"Connection Error" immediately** | 401 Unauthorized / CORS | 1. Check `ALLOWED_ORIGINS` in backend. <br> 2. Ensure `VITE_API_URL` uses `https://` (not http) for prod. |
+| **"Connection Error" immediately** | 401 Unauthorized / CORS | 1. Check `CORS_ORIGINS` in backend and ensure the frontend origin is listed. <br> 2. Confirm `AZURE_AD_TENANT_ID` + `AZURE_AD_CLIENT_ID` match the Entra app. <br> 3. Ensure `VITE_API_URL` uses `https://` (not http) for prod. |
 | **"Glowing" artifact behind panel** | Old CSS | **Fixed in latest version**. Ensure you have the latest `ChatPanel.css` with reduced `box-shadow`. |
 | **Avatar sync is lip-flapping only** | WebRTC failed, fallback active | System fell back to "Viseme-based animation" (CSS) because the video stream didn't arrive. Check Step 2 (ICE). |
 
