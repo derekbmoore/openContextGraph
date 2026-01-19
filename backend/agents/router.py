@@ -12,6 +12,8 @@ from typing import Optional
 
 from agents.base import BaseAgent
 from agents.elena import ElenaAgent
+from agents.marcus import MarcusAgent
+from agents.sage import SageAgent
 from core.context import EnterpriseContext
 
 logger = logging.getLogger(__name__)
@@ -32,9 +34,8 @@ class AgentRouter:
     def __init__(self):
         self.agents: dict[str, BaseAgent] = {
             "elena": ElenaAgent(),
-            # TODO: Add Marcus and Sage
-            # "marcus": MarcusAgent(),
-            # "sage": SageAgent(),
+            "marcus": MarcusAgent(),
+            "sage": SageAgent(),
         }
         logger.info(f"AgentRouter initialized with agents: {list(self.agents.keys())}")
     
