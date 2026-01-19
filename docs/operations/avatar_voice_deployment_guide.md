@@ -45,7 +45,7 @@ Ensure these variables are set in your backend container environment:
 
 ```bash
 # === VoiceLive (Audio) ===
-AZURE_VOICELIVE_ENDPOINT="wss://{name}.services.ai.azure.com/voice-live/realtime?api-version=2025-10-01&model=gpt-realtime"
+AZURE_VOICELIVE_ENDPOINT="wss://{ai-services-resource-name}.services.ai.azure.com/voice-live/realtime?api-version=2024-10-01-preview&model=gpt-realtime"
 # Auth strategy: Service Principal (Entra) preferred over Key
 AZURE_TENANT_ID="{tenant-id}"
 AZURE_CLIENT_ID="{client-id}"
@@ -147,10 +147,10 @@ We introduced a **"Chat Only"** button in the overlay.
 
 | Symptom | Probable Cause | Fix |
 | :--- | :--- | :--- |
-| **"Activate Avatar" button missing** | `voiceEnabled: false` in Agent config | Check `Constants.ts` in frontend or Agent definition in backend. |
+| **"Activate Avatar" button missing** | `voiceEnabled: false` in Agent config | Check `frontend/src/types.ts` (AGENTS definition) or backend agent configuration in `backend/core/config.py`. |
 | **Audio works, Video is black** | Region mismatch or ICE failure | 1. Check `AZURE_SPEECH_REGION` is `westus2` (or supported). <br> 2. Check Browser Console for "ICE connection failed". |
 | **"Connection Error" immediately** | 401 Unauthorized / CORS | 1. Check `ALLOWED_ORIGINS` in backend. <br> 2. Ensure `VITE_API_URL` uses `https://` (not http) for prod. |
-| **"Glowing" artifact behind panel** | Old CSS | **Fixed in v0.1.2**. Ensure you have the latest `ChatPanel.css` with reduced `box-shadow`. |
+| **"Glowing" artifact behind panel** | Old CSS | **Fixed in latest version**. Ensure you have the latest `ChatPanel.css` with reduced `box-shadow`. |
 | **Avatar sync is lip-flapping only** | WebRTC failed, fallback active | System fell back to "Viseme-based animation" (CSS) because the video stream didn't arrive. Check Step 2 (ICE). |
 
 ---
@@ -160,7 +160,7 @@ We introduced a **"Chat Only"** button in the overlay.
 For the **Proof of Concept (POC)**, stick to this "Golden Path":
 
 1. **Agent:** Use `elena` (default).
-2. **Voice:** Use `en-US-AvaMultilingualNeural` (most expressive).
+2. **Voice:** Use `en-US-Ava:DragonHDLatestNeural` (default VoiceLive voice, most expressive).
 3. **Region:** `westus2` (safest bet for Video).
 4. **Client:** Chrome or Edge (Safari WebRTC implementation can be finicky with strict corporate firewalls).
 
