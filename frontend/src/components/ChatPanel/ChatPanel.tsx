@@ -101,12 +101,12 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false)
   const [voiceReady, setVoiceReady] = useState(false)
 
-  // Auto-open voice mode on mount (Mobile-first experience)
-  useEffect(() => {
-    if (agent.voiceEnabled) {
-      setIsVoiceOpen(true);
-    }
-  }, [agent.id, agent.voiceEnabled]);
+  // Disable auto-open of voice mode - user should have text input available by default
+  // useEffect(() => {
+  //   if (agent.voiceEnabled) {
+  //     setIsVoiceOpen(true);
+  //   }
+  // }, [agent.id, agent.voiceEnabled]);
 
   // Reset activation gate when overlay closes
   useEffect(() => {
