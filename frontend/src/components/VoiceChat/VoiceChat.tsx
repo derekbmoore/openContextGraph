@@ -545,30 +545,38 @@ export default function VoiceChat({
 
               case 'video_connection_ready':
                 // Backend has prepared video connection
-                // NOTE: For 'elena' (Avatar), we use the AvatarClient SDK which handles its own connection.
-                // We check agentIdRef.current to handle dynamic switching (stale closure protection).
-                if (agentIdRef.current !== 'elena') {
+                // CRITICAL FIX: For 'elena' (Avatar), we explicitly ignore backend WebRTC signal
+                // because we use the Azure AvatarClient SDK which handles its own connection.
+                // We check both the ref AND the data payload if available to prevent race conditions.
+                if (agentIdRef.current === 'elena' || activeAgentId === 'elena') {
+                  console.log('ℹ️ Ignoring backend video_connection_ready for Avatar (using AvatarClient SDK)');
+                } else if (agentIdRef.current !== 'elena') {
                   console.log(`🎥 Video connection ready for ${agentIdRef.current}, establishing WebRTC connection...`);
                   establishWebRTCVideoConnection();
-                } else {
-                  console.log('ℹ️ Ignoring video_connection_ready for Avatar (using AvatarClient SDK)');
                 }
                 break;
 
               case 'avatar_sdp_answer':
               case 'avatar_answer':
                 // Backend returns SDP answer for WebRTC avatar (both naming conventions supported)
-                console.log('📥 Received SDP answer for avatar');
-                if (data.sdp) {
-                  handleSdpAnswer(data.sdp);
+                // If we are using AvatarClient, we should NOT be receiving this usually, unless it's a legacy path artifact.
+                console.log('📥 Received SDP answer for avatar (Legacy Path)');
+                if (agentIdRef.current !== 'elena') {
+                  if (data.sdp) {
+                    handleSdpAnswer(data.sdp);
+                  }
+                } else {
+                  console.log('ℹ️ Ignoring legacy SDP answer for Elena');
                 }
                 break;
 
               case 'remote_ice_candidate':
                 // Backend forwards remote ICE candidate
                 console.log('🧊 Received remote ICE candidate');
-                if (data.candidate) {
-                  handleRemoteIceCandidate(data.candidate);
+                if (agentIdRef.current !== 'elena') {
+                  if (data.candidate) {
+                    handleRemoteIceCandidate(data.candidate);
+                  }
                 }
                 break;
 
