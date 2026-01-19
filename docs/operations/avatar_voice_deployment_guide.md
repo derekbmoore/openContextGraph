@@ -193,6 +193,8 @@ We introduced a **"Chat Only"** button in the overlay.
 | **"Glowing" artifact behind panel** | Old CSS | **Fixed in latest version**. Ensure you have the latest `ChatPanel.css` with reduced `box-shadow`. |
 | **Avatar sync is lip-flapping only** | WebRTC failed, fallback active | System fell back to "Viseme-based animation" (CSS) because the video stream didn't arrive. Check Step 2 (Token/ICE). |
 | **Double Audio / Echo** | Backend Audio Leak | The Avatar SDK generates its own audio. Ensure `VoiceChat.tsx` logic is suppressing backend audio chunks when `agentId === 'elena'`. |
+| **Component Crash (Blank Screen)** | SDK Version Mismatch / Missing Features | **Fixed.** `AvatarClient.ts` now uses robust `try/catch` and existence checks for experimental SDK features (`AvatarVideoFormat`), falling back to safe defaults if missing. |
+| **Voice WebSocket Closed 1005 (Disconnect)** | Race Condition (Legacy vs Avatar) | **Fixed.** Older WebRTC logic in `VoiceChat.tsx` was conflicting with the Avatar SDK connection. We now explicitly ignore backend `video_connection_ready` signals when `elena` is active. |
 
 ---
 
