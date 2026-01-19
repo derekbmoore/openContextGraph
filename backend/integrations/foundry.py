@@ -29,6 +29,9 @@ class FoundryClient:
         Args:
             settings: App settings containing azure_foundry_agent_* config
         """
+        # Debug: Log credential presence (not values!)
+        logger.info(f"FoundryClient init: endpoint={bool(settings.azure_foundry_agent_endpoint)}, key={bool(settings.azure_foundry_agent_key)}, api_version={settings.azure_foundry_agent_api_version}")
+        
         self.client = AzureOpenAI(
             azure_endpoint=settings.azure_foundry_agent_endpoint,
             api_key=settings.azure_foundry_agent_key,
