@@ -27,8 +27,8 @@ class GoldenCheck(BaseModel):
     evidence_summary: Optional[str] = None
 
 class Narrative(BaseModel):
-    elena: string
-    marcus: string
+    elena: str
+    marcus: str
 
 class GoldenRun(BaseModel):
     summary: GoldenRunSummary
