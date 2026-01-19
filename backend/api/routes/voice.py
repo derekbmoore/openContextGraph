@@ -1540,9 +1540,9 @@ async def get_realtime_token(request: TokenRequest):
         }
         session_config["turn_detection"] = {
             "type": "server_vad",
-            "threshold": 0.6,
+            "threshold": 0.5,
             "prefix_padding_ms": 300,
-            "silence_duration_ms": 800,
+            "silence_duration_ms": 200
         }
     
     # Add video/avatar config if video is in modalities

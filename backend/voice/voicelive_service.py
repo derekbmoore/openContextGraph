@@ -337,6 +337,31 @@ Remember: You're a storyteller. Make every conversation memorable and meaningful
         api_version = self._api_version
         return f"{base}/voice-live/realtime?api-version={api_version}&model={self._model}"
 
+    async def issue_speech_token(self) -> str:
+        """
+        Issue an STS token for Azure Speech Service.
+        Required for the frontend to connect securely to the Avatar service
+        without exposing the Speech Key.
+        """
+        if not self._speech_key or not self._speech_region:
+            raise ValueError("Azure Speech Key/Region not configured")
+
+        import aiohttp
+        
+        url = f"https://{self._speech_region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+        headers = {
+            "Ocp-Apim-Subscription-Key": self._speech_key,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": "0"
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers) as response:
+                if response.status != 200:
+                    text = await response.text()
+                    raise Exception(f"Failed to issue STS token: {response.status} {text}")
+                return await response.text()
+
 
 # Singleton instance
 voicelive_service = VoiceLiveService()

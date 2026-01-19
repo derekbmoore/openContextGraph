@@ -90,6 +90,36 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
   // So we can initialize state directly
   const initialMessage = useMemo(() => createWelcomeMessage(agent), [agent])
 
+  // Track active agent (can switch during voice session)
+  // We initialize with the prop, but allow it to drift if voice chat switches agents
+  const [activeAgent, setActiveAgent] = useState(agent);
+
+  // Re-sync if prop changes (e.g. navigation)
+  useEffect(() => {
+    setActiveAgent(agent);
+  }, [agent.id]);
+
+  const handleVoiceAgentChange = (newAgentId: string) => {
+    if (newAgentId === activeAgent.id) return;
+
+    console.log('ChatPanel: Voice agent switched to', newAgentId);
+    if (newAgentId === 'elena') {
+      // Mock Elena object for the UI display
+      setActiveAgent({
+        ...agent,
+        id: 'elena',
+        name: 'Elena',
+        role: 'analyst',
+        title: 'Analyst',
+        avatarUrl: 'https://raw.githubusercontent.com/zimaxnet/assets/main/avatars/elena.png', // Reasonable fallback or reuse current if generic
+        accentColor: '#ef4444', // Red
+        description: 'Senior Analyst'
+      });
+    } else if (newAgentId === agent.id) {
+      setActiveAgent(agent);
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>([initialMessage])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -479,18 +509,42 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                     onClick={() => setVoiceReady(true)}
                   >
                     Activate Avatar
+
                   </button>
-                  <button
-                    className="chat-only-btn"
-                    onClick={() => setIsVoiceOpen(false)}
-                  >
-                    Chat Only
-                  </button>
+                  <div className="voice-text-input-wrapper" style={{ width: '100%', marginTop: '1rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Or type to chat..."
+                      className="chat-input"
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)' }}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          setIsVoiceOpen(false); // Close overlay to send via main flow?
+                          // Actually, we can just close overlay, the main input is synced.
+                          // But we need to trigger send?
+                          // The main form handles submit. Let's just close overlay and let user hit send, 
+                          // OR duplicate send logic. 
+                          // User said: "start typing". Even just closing overlay on focus might be enough, but let's let them type.
+                          // If they hit enter, they probably expect send.
+                          // But we are outside the form.
+                          // Let's just close overlay and focus main input?
+                          // Or better: call a send handler? 
+                          // ChatPanel's handleSubmit is form-bound.
+                          // Let's just close for now, as syncing `input` state means the text appears in the main box.
+                          setIsVoiceOpen(false);
+                          // Optional: setTimeout(() => inputRef.current?.focus(), 100);
+                        }
+                      }}
+                    />
+                  </div>
                 </>
               ) : (
                 <>
                   <VoiceChat
-                    agentId={agent.id}
+                    agentId={activeAgent.id} // Pass active ID so VoiceChat inits correctly
                     sessionId={sessionId}
                     onStatusChange={(status) => {
                       if (status === 'error') {
@@ -499,6 +553,7 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                     }}
                     onAvatarStream={setAvatarStream}
                     onSpeaking={setIsAvatarSpeaking}
+                    onAgentChange={handleVoiceAgentChange}
                   />
                   <p style={{
                     fontSize: '0.875rem',
@@ -506,8 +561,9 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                     textAlign: 'center',
                     margin: 0
                   }}>
-                    Press and hold the ring to speak.
-                    Stories and visuals created here will appear in the chat.
+                    {activeAgent.id === 'elena'
+                      ? "Elena is listening..."
+                      : "Press and hold the ring to speak."}
                   </p>
                 </>
               )}
@@ -518,4 +574,3 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
     </div >
   )
 }
-

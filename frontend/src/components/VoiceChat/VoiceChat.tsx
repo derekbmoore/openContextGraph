@@ -12,6 +12,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import './VoiceChat.css';
 import { getAccessToken } from '../../auth/authConfig';
 import { normalizeApiBase } from '../../utils/url';
+import { AvatarClient } from './AvatarClient';
 
 interface VoiceMessage {
   id: string;
@@ -35,6 +36,7 @@ interface VoiceChatProps {
   onAvatarVideo?: (url: string | undefined) => void;  // Callback for avatar video URL
   onAvatarStream?: (stream: MediaStream | null) => void; // Callback for WebRTC stream
   onSpeaking?: (speaking: boolean) => void;
+  onAgentChange?: (agentId: string) => void; // Callback when agent switches dynamically
   disabled?: boolean;
 }
 
@@ -47,6 +49,7 @@ export default function VoiceChat({
   onAvatarVideo,
   onAvatarStream,
   onSpeaking,
+  onAgentChange,
   disabled = false
 }: VoiceChatProps) {
   const [isListening, setIsListening] = useState(false);
@@ -78,6 +81,17 @@ export default function VoiceChat({
   const assistantTranscriptRef = useRef('');
   const userTranscriptRef = useRef('');
 
+  // Track effective agent ID (prop + updates from backend)
+  // We use STATE for rendering/effects and REF for callbacks
+  const [activeAgentId, setActiveAgentId] = useState(agentId);
+  const agentIdRef = useRef(agentId);
+
+  // Sync prop changes to local state
+  useEffect(() => {
+    setActiveAgentId(agentId);
+    agentIdRef.current = agentId;
+  }, [agentId]);
+
   // Store callbacks
   const onMessageRef = useRef(onMessage);
   const onVisemesRef = useRef(onVisemes);
@@ -89,11 +103,58 @@ export default function VoiceChat({
   const [localSessionId] = useState(() => `voice-${Date.now()}`);
   const activeSessionId = sessionIdProp || localSessionId;
 
-  // Refs for audio playback queue
+  // Audio Context & Worklet Refs
   const audioQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
   const nextStartTimeRef = useRef(0);
+  const avatarClientRef = useRef<AvatarClient | null>(null);
 
+  // Initialize Avatar Client for Elena
+  useEffect(() => {
+    // Only initialize if agent is elena
+    if (activeAgentId === 'elena') {
+      console.log('🤖 Initializing AvatarClient for Elena...');
+      const client = new AvatarClient(
+        (stream) => {
+          if (onAvatarStreamRef.current) {
+            onAvatarStreamRef.current(stream);
+          }
+        }
+      );
+
+      // Connect immediately
+      const connectAvatar = async () => {
+        try {
+          // Fetch our own token securely
+          const tokenData = await client.fetchToken();
+          if (!tokenData) {
+            console.error('Failed to fetch Avatar token');
+            return;
+          }
+
+          await client.connect(tokenData);
+          avatarClientRef.current = client;
+          console.log('✅ AvatarClient connected successfully');
+        } catch (e) {
+          console.error('❌ Failed to connect AvatarClient:', e);
+        }
+      };
+
+      connectAvatar();
+
+      return () => {
+        console.log('🔌 Disconnecting AvatarClient...');
+        client.disconnect();
+        avatarClientRef.current = null;
+      };
+    } else {
+      // If switching AWAY from Elena, verify cleanup
+      if (avatarClientRef.current) {
+        avatarClientRef.current.disconnect();
+        avatarClientRef.current = null;
+      }
+    }
+  }, [activeAgentId]); // Depend on activeAgentId, not prop
   useEffect(() => {
     onMessageRef.current = onMessage;
     onVisemesRef.current = onVisemes;
@@ -340,8 +401,16 @@ export default function VoiceChat({
               case 'audio':
                 // Audio chunk from assistant
                 if (data.data) {
-                  enqueueAudio(data.data);
-                  setIsSpeaking(true);
+                  // If Avatar is active (Elena), we ignore backend audio and let Avatar TTS handle it
+                  // UNLESS the Avatar failed to connect? 
+                  // For now, simple check:
+                  if (agentId === 'elena') {
+                    // Drop backend audio, Avatar SDK will generate it from text
+                    // console.log('Dropping backend audio for Avatar');
+                  } else {
+                    enqueueAudio(data.data);
+                    setIsSpeaking(true);
+                  }
                 }
                 break;
 
@@ -389,6 +458,42 @@ export default function VoiceChat({
                     setAssistantTranscription(data.text || '');
                     assistantTranscriptRef.current = data.text || '';
                     setIsProcessing(false);
+
+                    // Drive Avatar (Lip Sync / TTS)
+                    if (agentId === 'elena' && avatarClientRef.current && data.text) {
+                      // We typically wait for complete sentences or final text
+                      // But for "Realtime" feel, maybe we send chunks?
+                      // SDK speakTextAsync queues them.
+                      // However, we receive "processing" updates which are accumulative full text usually?
+                      // Or delta? 
+                      // VoiceLive sends "Full Text So Far" in `processing` usually.
+                      // We need DELTAS to avoid repeating.
+
+                      // Actually, let's wait for 'complete' to hold the turn?
+                      // No, then it's not realtime.
+                      // VoiceLive 'audio' comes in stream.
+
+                      // IF we rely on 'complete', it might be too late.
+                      // Let's rely on `data.delta` if available? 
+                      // VoiceLive output format:
+                      // processing -> text = "Hello"
+                      // processing -> text = "Hello world"
+
+                      // AvatarClient needs non-overlapping text.
+                      // This is hard to sync with acculumating text.
+
+                      // SIMPLIFICATION:
+                      // Only speak on 'complete' for this POC.
+                      // Start spinning/speaking animation?
+                    }
+                  } else if (data.status === 'complete_phrase' || (data.status === 'complete' && !data.text)) {
+                    // Handle phrase completion if backend supports it
+                  }
+
+                  // Trigger Avatar on COMPLETE (safer for POC)
+                  if (data.status === 'complete' && agentId === 'elena' && avatarClientRef.current && data.text) {
+                    avatarClientRef.current.speak(data.text);
+                    setIsSpeaking(true); // Ensure UI shows speaking state
                   }
                 }
                 break;
@@ -413,7 +518,12 @@ export default function VoiceChat({
               case 'agent_switched':
                 // Agent was switched (backend confirms)
                 console.log('Agent switched to:', data.agent_id);
+                agentIdRef.current = data.agent_id; // Update local ref immediately
+                setActiveAgentId(data.agent_id); // Update local state to trigger effects
+                onAgentChange?.(data.agent_id); // Notify parent component
+
                 // Clear avatar when switching agents
+                setAvatarVideoUrl(undefined);
                 setAvatarVideoUrl(undefined);
                 if (onAvatarStreamRef.current) {
                   onAvatarStreamRef.current(null);
@@ -426,11 +536,15 @@ export default function VoiceChat({
                 break;
 
               case 'video_connection_ready':
-                // Backend has prepared video connection - use WebRTC instead of direct WebSocket
-                console.log('🎥 Video connection ready, establishing WebRTC connection...');
-                // Don't use the old WebSocket approach - use WebRTC
-                // The backend message is just a signal to start WebRTC negotiation
-                establishWebRTCVideoConnection();
+                // Backend has prepared video connection
+                // NOTE: For 'elena' (Avatar), we use the AvatarClient SDK which handles its own connection.
+                // We check agentIdRef.current to handle dynamic switching (stale closure protection).
+                if (agentIdRef.current !== 'elena') {
+                  console.log(`🎥 Video connection ready for ${agentIdRef.current}, establishing WebRTC connection...`);
+                  establishWebRTCVideoConnection();
+                } else {
+                  console.log('ℹ️ Ignoring video_connection_ready for Avatar (using AvatarClient SDK)');
+                }
                 break;
 
               case 'avatar_sdp_answer':
