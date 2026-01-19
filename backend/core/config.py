@@ -217,18 +217,8 @@ class Settings(BaseSettings):
     ms_graph_user_email: str = Field("elena@zimax.net", alias="MS_GRAPH_USER_EMAIL")
 
     # ==========================================================================
-    # Azure AI Foundry Agent Service (Optional - POC)
+    # Feature Flags (Foundry Integration)
     # ==========================================================================
-    # Azure AI Foundry Agent Service endpoint (e.g., https://<account>.services.ai.azure.com)
-    azure_foundry_agent_endpoint: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_ENDPOINT")
-    # Foundry project name for Agent Service
-    azure_foundry_agent_project: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_PROJECT")
-    # Optional API key (falls back to Managed Identity if not provided)
-    azure_foundry_agent_key: Optional[str] = Field(None, alias="AZURE_FOUNDRY_AGENT_KEY")
-    # API version for Agent Service REST API
-    azure_foundry_agent_api_version: str = Field("2025-11-15-preview", alias="AZURE_FOUNDRY_AGENT_API_VERSION")
-    
-    # Feature flags - all disabled by default (zero production impact)
     # Enable Foundry thread management (replaces in-memory sessions)
     use_foundry_threads: bool = Field(False, alias="USE_FOUNDRY_THREADS")
     # Enable Foundry file storage (additive, doesn't replace existing ingestion)
@@ -239,9 +229,6 @@ class Settings(BaseSettings):
     use_foundry_tools: bool = Field(False, alias="USE_FOUNDRY_TOOLS")
     # Enable Foundry IQ for enterprise document search (hybrid with openContextGraph tri-search)
     use_foundry_iq: bool = Field(False, alias="USE_FOUNDRY_IQ")
-    
-    # Foundry Agent IDs (for agents created in Foundry)
-    elena_foundry_agent_id: Optional[str] = Field(None, alias="ELENA_FOUNDRY_AGENT_ID")
     # Enable Foundry Elena (uses Foundry agent runtime instead of LangGraph)
     use_foundry_elena: bool = Field(False, alias="USE_FOUNDRY_ELENA")
     
