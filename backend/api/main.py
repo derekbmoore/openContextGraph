@@ -107,6 +107,31 @@ def create_app() -> FastAPI:
             headers=headers,
         )
 
+    @app.exception_handler(Exception)
+    async def generic_exception_handler(request: Request, exc: Exception):
+        """Catch-all for unhandled exceptions - ensures CORS headers on 500 errors"""
+        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        
+        origin = request.headers.get("origin")
+        allowed_origins = settings.cors_origins
+        is_allowed = origin and (origin in allowed_origins or "*" in allowed_origins)
+        
+        headers = {}
+        if is_allowed and origin:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+        elif "*" in allowed_origins:
+            headers["Access-Control-Allow-Origin"] = "*"
+        
+        headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        headers["Access-Control-Allow-Headers"] = "authorization, content-type"
+        
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+            headers=headers,
+        )
+
     # Custom middleware
     # NOTE: Middleware runs in REVERSE order from how they're added.
     app.add_middleware(CORSPreflightMiddleware)
