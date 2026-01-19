@@ -424,3 +424,126 @@ async def enrich_memory(request: EnrichRequest, user: SecurityContext = Depends(
             message=f"Enrichment failed: {str(e)}",
         )
 
+
+# =============================================================================
+# Episode Processing (Metadata Generation)
+# =============================================================================
+
+class EpisodeProcessResponse(BaseModel):
+    success: bool
+    id: str
+    summary: str
+    topics: list[str]
+    agent_id: str
+    processed_at: str
+
+@router.post("/episodes/{session_id}/process", response_model=EpisodeProcessResponse)
+async def process_episode(session_id: str, user: SecurityContext = Depends(get_current_user)):
+    """
+    Trigger LLM processing to generate metadata for an episode.
+    
+    Generates:
+    - Title
+    - Summary
+    - Topics
+    - Agent Identification
+    """
+    try:
+        memory_client = get_memory_client()
+        
+        # 1. Fetch transcript
+        messages = await memory_client.get_session_messages(session_id, limit=50) # First 50 turns enough for summary
+        if not messages:
+            raise HTTPException(status_code=404, detail="Episode has no messages to process")
+            
+        transcript_text = ""
+        for msg in messages:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            transcript_text += f"{role.upper()}: {content}\n"
+            
+        # 2. Use Safe/LLM to analyze
+        # We'll use the ClaudeClient directly here for the analysis
+        from llm.claude_client import get_claude_client
+        claude = get_claude_client()
+        
+        if not claude.client:
+             raise HTTPException(status_code=503, detail="LLM client unavailable for processing")
+
+        prompt = f"""Analyze this conversation transcript and extract metadata.
+        
+Transcript:
+{transcript_text[:10000]}
+
+Identify:
+1. The primary Agent (Marcus, Elena, Sage, or 'System').
+2. A concise summary (max 2 sentences).
+3. A short title (max 6 words).
+4. Key topics (tags).
+
+Output JSON only:
+{{
+  "agent_id": "marcus|elena|sage", 
+  "summary": "...", 
+  "title": "...", 
+  "topics": ["tag1", "tag2"]
+}}
+"""
+        # Call Claude (using story generation method as a generic generation wrapper for now, 
+        # or we could add a purely generic 'generate' method. 
+        # For expediency, we'll use the generate_story method's client directly if possible,
+        # but better to add a 'analyze' method to ClaudeClient or just use raw client if accessible.
+        # Since ClaudeClient exposes .client, we use it directly.)
+        
+        import json
+        
+        completion = await claude.client.messages.create(
+            model=claude.model,
+            max_tokens=1000,
+            system="You are an expert metadata extraction system.",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        response_text = completion.content[0].text
+        
+        # Parse JSON
+        import re
+        clean_text = re.sub(r'```json\s*', '', response_text)
+        clean_text = re.sub(r'```\s*$', '', clean_text)
+        data = json.loads(clean_text)
+        
+        agent_id = data.get("agent_id", "unknown").lower()
+        if agent_id not in ["marcus", "elena", "sage"]:
+            agent_id = "unknown"
+            
+        # 3. Update Session Metadata
+        # We need to fetching existing to merge or just overwrite specific fields
+        # Zep update_session usually merges metadata
+        
+        metadata_update = {
+            "agent_id": agent_id,
+            "summary": data.get("summary", "Processed summary"),
+            "title": data.get("title", "Untitled Episode"),
+            "topics": data.get("topics", []),
+            "processed_at": datetime.now().isoformat()
+        }
+        
+        await memory_client.update_session(
+            session_id=session_id,
+            metadata=metadata_update
+        )
+        
+        return EpisodeProcessResponse(
+            success=True,
+            id=session_id,
+            summary=metadata_update["summary"],
+            topics=metadata_update["topics"],
+            agent_id=metadata_update["agent_id"],
+            processed_at=metadata_update["processed_at"]
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to process episode {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+

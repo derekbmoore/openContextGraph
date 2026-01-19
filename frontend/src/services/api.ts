@@ -274,6 +274,19 @@ export class ApiClient {
     }>(`/memory/episodes/${episodeId}`)
   }
 
+  async processEpisode(episodeId: string) {
+    return this.request<{
+      success: boolean
+      id: string
+      summary: string
+      topics: string[]
+      agent_id: string
+      processed_at: string
+    }>(`/memory/episodes/${episodeId}/process`, {
+      method: 'POST'
+    })
+  }
+
   async addFact(content: string, metadata: Record<string, unknown> = {}) {
     return this.request<{
       success: boolean
@@ -656,6 +669,7 @@ export const searchMemory = (query: string, limit?: number) => apiClient.searchM
 
 export const listEpisodes = (limit?: number, offset?: number) => apiClient.listEpisodes(limit, offset)
 export const getEpisode = (episodeId: string) => apiClient.getEpisode(episodeId)
+export const processEpisode = (episodeId: string) => apiClient.processEpisode(episodeId)
 
 export const addFact = (content: string, metadata?: Record<string, unknown>) => apiClient.addFact(content, metadata)
 export const getMemoryGraph = (query?: string) => apiClient.getMemoryGraph(query)

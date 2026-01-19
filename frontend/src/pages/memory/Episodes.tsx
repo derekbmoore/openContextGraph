@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listEpisodes, getEpisode } from '../../services/api';
+import { listEpisodes, getEpisode, processEpisode } from '../../services/api';
 import { AGENTS, type AgentId } from '../../types';
 
 interface Episode {
@@ -21,18 +21,19 @@ export function Episodes() {
     const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingTranscript, setLoadingTranscript] = useState(false);
+    const [processingId, setProcessingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [selectedTranscript, setSelectedTranscript] = useState<{ role: string; content: string }[] | null>(null);
     const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
+
     // Filtering and search state
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAgent, setSelectedAgent] = useState<string>('all');
     const [selectedTopic, setSelectedTopic] = useState<string>('all');
     const [dateFrom, setDateFrom] = useState<string>('');
     const [dateTo, setDateTo] = useState<string>('');
-    
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [_totalCount, setTotalCount] = useState(0);
@@ -65,7 +66,7 @@ export function Episodes() {
         // Text search (summary, topics)
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(ep => 
+            filtered = filtered.filter(ep =>
                 ep.summary.toLowerCase().includes(query) ||
                 ep.topics.some(topic => topic.toLowerCase().includes(query))
             );
@@ -93,7 +94,7 @@ export function Episodes() {
         }
 
         // Sort by most recent first
-        filtered.sort((a, b) => 
+        filtered.sort((a, b) =>
             new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
         );
 
@@ -138,11 +139,11 @@ export function Episodes() {
     const handleDiscussWithAgent = (episodeId: string, agentId: string) => {
         try {
             sessionStorage.setItem('engram_session_id', episodeId);
-            navigate('/', { 
-                state: { 
+            navigate('/', {
+                state: {
                     sessionId: episodeId,
-                    agentId: agentId 
-                } 
+                    agentId: agentId
+                }
             });
         } catch (err) {
             console.error('Failed to set session ID:', err);
@@ -150,11 +151,32 @@ export function Episodes() {
         }
     };
 
+    const handleProcessEpisode = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setProcessingId(id);
+        try {
+            const result = await processEpisode(id);
+            if (result.success) {
+                // Update local state
+                setAllEpisodes(prev => prev.map(ep =>
+                    ep.id === id
+                        ? { ...ep, summary: result.summary, topics: result.topics, agent_id: result.agent_id }
+                        : ep
+                ));
+            }
+        } catch (err) {
+            console.error('Failed to process episode:', err);
+            // Optional: show toast error
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -191,8 +213,18 @@ export function Episodes() {
     };
 
     return (
-        <div className="column column-center">
-            <div style={{ padding: '2rem', color: 'var(--color-text)', maxWidth: '1200px', width: '100%' }}>
+        <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            position: 'relative',
+            zIndex: 1,
+            overflowY: 'auto',
+            paddingTop: '2rem'
+        }}>
+            <div style={{ padding: '0 2rem 2rem 2rem', color: 'var(--color-text)', maxWidth: '1000px', width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
                         <h2>Episodes</h2>
@@ -358,7 +390,7 @@ export function Episodes() {
                 <div className="episodes-list">
                     {loading && (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>
-                            <div style={{ 
+                            <div style={{
                                 display: 'inline-block',
                                 width: '40px',
                                 height: '40px',
@@ -408,7 +440,7 @@ export function Episodes() {
                         }}>
                             <p style={{ fontSize: '1.1em', marginBottom: '0.5rem' }}>No episodes found</p>
                             <p style={{ fontSize: '0.9em' }}>
-                                {allEpisodes.length === 0 
+                                {allEpisodes.length === 0
                                     ? 'No episodes have been created yet.'
                                     : 'Try adjusting your filters to see more results.'}
                             </p>
@@ -418,7 +450,7 @@ export function Episodes() {
                     {!loading && !error && paginatedEpisodes.map((episode: Episode) => {
                         const agent = AGENTS[episode.agent_id as AgentId];
                         const agentColor = getAgentColor(episode.agent_id);
-                        
+
                         return (
                             <div key={episode.id} style={{
                                 padding: '1.5rem',
@@ -429,14 +461,14 @@ export function Episodes() {
                                 transition: 'transform 0.2s, box-shadow 0.2s',
                                 cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = 'none';
-                            }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                     <div style={{ flex: 1 }}>
@@ -465,14 +497,34 @@ export function Episodes() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
                                         alignItems: 'flex-end',
                                         gap: '0.5rem'
                                     }}>
-                                        <span style={{ 
-                                            opacity: 0.7, 
+                                        {(episode.summary === "No summary available" || episode.agent_id === "unknown") && (
+                                            <button
+                                                onClick={(e) => handleProcessEpisode(e, episode.id)}
+                                                disabled={processingId === episode.id}
+                                                style={{
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid var(--color-primary)',
+                                                    color: 'var(--color-primary)',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75em',
+                                                    cursor: processingId === episode.id ? 'wait' : 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.25rem'
+                                                }}
+                                            >
+                                                {processingId === episode.id ? 'Generating...' : '✨ Generate Metadata'}
+                                            </button>
+                                        )}
+                                        <span style={{
+                                            opacity: 0.7,
                                             fontSize: '0.85em',
                                             background: 'rgba(255,255,255,0.1)',
                                             padding: '0.25rem 0.5rem',
@@ -483,8 +535,8 @@ export function Episodes() {
                                     </div>
                                 </div>
 
-                                <p style={{ 
-                                    opacity: 0.9, 
+                                <p style={{
+                                    opacity: 0.9,
                                     marginBottom: '1rem',
                                     lineHeight: '1.6'
                                 }}>
@@ -492,9 +544,9 @@ export function Episodes() {
                                 </p>
 
                                 {episode.topics.length > 0 && (
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        gap: '0.5rem', 
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '0.5rem',
                                         flexWrap: 'wrap',
                                         marginBottom: '1rem'
                                     }}>
@@ -512,8 +564,8 @@ export function Episodes() {
                                     </div>
                                 )}
 
-                                <div style={{ 
-                                    display: 'flex', 
+                                <div style={{
+                                    display: 'flex',
                                     gap: '0.75rem',
                                     justifyContent: 'flex-end'
                                 }}>
@@ -590,15 +642,15 @@ export function Episodes() {
                         >
                             Previous
                         </button>
-                        
-                        <span style={{ 
+
+                        <span style={{
                             padding: '0.5rem 1rem',
                             opacity: 0.7,
                             fontSize: '0.9em'
                         }}>
                             Page {currentPage} of {totalPages}
                         </span>
-                        
+
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
@@ -649,13 +701,13 @@ export function Episodes() {
                                     </p>
                                 )}
                             </div>
-                            <button 
-                                onClick={() => setIsModalOpen(false)} 
-                                style={{ 
-                                    background: 'none', 
-                                    border: 'none', 
-                                    color: '#fff', 
-                                    cursor: 'pointer', 
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#fff',
+                                    cursor: 'pointer',
                                     fontSize: '1.5em',
                                     padding: '0.25rem 0.5rem',
                                     borderRadius: '4px',
@@ -671,10 +723,10 @@ export function Episodes() {
                                 ×
                             </button>
                         </div>
-                        
+
                         {loadingTranscript ? (
                             <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                <div style={{ 
+                                <div style={{
                                     display: 'inline-block',
                                     width: '32px',
                                     height: '32px',
@@ -694,9 +746,9 @@ export function Episodes() {
                                     </p>
                                 ) : (
                                     selectedTranscript?.map((msg: { role: string; content: string }, i: number) => (
-                                        <div key={i} style={{ 
-                                            marginBottom: '1.5rem', 
-                                            paddingBottom: '1.5rem', 
+                                        <div key={i} style={{
+                                            marginBottom: '1.5rem',
+                                            paddingBottom: '1.5rem',
                                             borderBottom: '1px solid rgba(255,255,255,0.1)'
                                         }}>
                                             <div style={{
@@ -709,8 +761,8 @@ export function Episodes() {
                                                     width: '24px',
                                                     height: '24px',
                                                     borderRadius: '50%',
-                                                    background: msg.role === 'user' 
-                                                        ? 'var(--color-accent-pink)' 
+                                                    background: msg.role === 'user'
+                                                        ? 'var(--color-accent-pink)'
                                                         : 'var(--color-accent-cyan)',
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -723,8 +775,8 @@ export function Episodes() {
                                                 </div>
                                                 <span style={{
                                                     fontWeight: 'bold',
-                                                    color: msg.role === 'user' 
-                                                        ? 'var(--color-accent-pink)' 
+                                                    color: msg.role === 'user'
+                                                        ? 'var(--color-accent-pink)'
                                                         : 'var(--color-accent-cyan)',
                                                     textTransform: 'capitalize',
                                                     fontSize: '0.9em'
@@ -732,7 +784,7 @@ export function Episodes() {
                                                     {msg.role === 'user' ? 'You' : selectedEpisode?.agent_id || 'Agent'}
                                                 </span>
                                             </div>
-                                            <div style={{ 
+                                            <div style={{
                                                 lineHeight: '1.6',
                                                 paddingLeft: '2rem',
                                                 whiteSpace: 'pre-wrap'
@@ -744,10 +796,10 @@ export function Episodes() {
                                 )}
                             </div>
                         )}
-                        
+
                         {selectedEpisode && (
-                            <div style={{ 
-                                marginTop: '1.5rem', 
+                            <div style={{
+                                marginTop: '1.5rem',
                                 paddingTop: '1.5rem',
                                 borderTop: '1px solid rgba(255,255,255,0.1)',
                                 display: 'flex',
@@ -775,18 +827,18 @@ export function Episodes() {
                                     fontWeight: '500',
                                     transition: 'opacity 0.2s'
                                 }}
-                                onClick={() => {
-                                    if (selectedEpisode) {
-                                        handleDiscussWithAgent(selectedEpisode.id, selectedEpisode.agent_id);
-                                        setIsModalOpen(false);
-                                    }
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.opacity = '0.9';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.opacity = '1';
-                                }}
+                                    onClick={() => {
+                                        if (selectedEpisode) {
+                                            handleDiscussWithAgent(selectedEpisode.id, selectedEpisode.agent_id);
+                                            setIsModalOpen(false);
+                                        }
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.opacity = '0.9';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.opacity = '1';
+                                    }}
                                 >
                                     Continue with {getAgentDisplayName(selectedEpisode.agent_id)}
                                 </button>
