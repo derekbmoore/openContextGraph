@@ -104,3 +104,23 @@ After initial deployment, a 500 error revealed an import issue.
 
 * **Corrected Import:** `from backend.integrations.foundry` instead of `from integrations.foundry`.
 * **Package Init:** Added `backend/integrations/__init__.py`.
+
+## 6. Operations & Validation (New)
+
+To support Day 2 operations and Trust, we added dedicated endpoints for Telemetry and Validation.
+
+### 6.1 Telemetry API (`/metrics/evidence`)
+
+* **Purpose:** Drives the "Evidence & Telemetry" dashboard.
+* **Data Class:** Operational Telemetry (Class C).
+* **Return Type:** `EvidenceTelemetrySnapshot` (JSON).
+* **Current State:** Returns mock signals for Reliability, Ingestion, and Memory Quality to validate UI integration.
+
+### 6.2 Golden Thread API (`/validation/*`)
+
+* **Purpose:** Runs the "Golden Thread" acceptance test suite (canonical proof of life).
+* **Endpoints:**
+  * `GET /validation/datasets`: Lists test corpuses (e.g., "Cognitive Architecture Baseline").
+  * `POST /validation/run`: Triggers a "deterministic" or "acceptance" run.
+  * `GET /validation/runs/:id`: Retrieves evidence bundles and narratives.
+* **Current State:** Returns mock run results (PASS) with synthetic trace IDs and narratives from Elena/Marcus.

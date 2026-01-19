@@ -30,6 +30,8 @@ openai>=1.0.0
 # Azure AI Foundry (Agent Service) - Using stable release
 azure-ai-projects>=1.0.0
 azure-ai-agents>=1.0.0b1
+anthropic>=0.18.0
+google-generativeai>=0.4.0
 # google-genai>=0.1.0  # Optional: Gemini
 
 # ETL & Document Processing
