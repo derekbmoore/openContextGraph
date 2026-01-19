@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, type FormEvent, type CSSProperties } from 'react'
 import type { Agent } from '../../types'
-import { sendChatMessage, clearSession, type ApiError } from '../../services/api'
+import { chatService } from '../../services/ChatService'
+import { clearSession, type ApiError } from '../../services/api'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './ChatPanel.css'
@@ -205,18 +206,18 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
     setError(null)
 
     try {
-      // Call backend API
-      const response = await sendChatMessage(userInput, agent.id, sessionId)
+      // Call backend API via strict ChatService
+      const response = await chatService.sendMessage(userInput, agent.id, sessionId)
 
       const assistantMessage: Message = {
-        id: response.message_id,
+        id: Date.now().toString(), // We might gain ID from response later e.g. response.message_id
         role: 'assistant',
-        content: response.content,
-        agentId: response.agent_id,
-        agentName: response.agent_name,
-        timestamp: new Date(response.timestamp),
-        tokensUsed: response.tokens_used,
-        avatarVideoUrl: response.avatar_video_url,  // Include avatar video URL if available
+        content: response.response,
+        agentId: response.agent,
+        agentName: response.agent === 'marcus' ? 'Marcus - PM' : response.agent === 'sage' ? 'Sage - Storyteller' : 'Elena - Analyst', // Basic mapping
+        timestamp: new Date(),
+        tokensUsed: 0, // Not currently returned in ChatResponse interface
+        avatarVideoUrl: undefined,
       }
 
       setMessages(prev => [...prev, assistantMessage])
@@ -225,23 +226,23 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
       // Update metrics
       const totalMessages = messages.length + 2
       onMetricsUpdate({
-        tokensUsed: response.tokens_used || 0,
-        latency: (response.latency_ms || 0) / 1000,
+        tokensUsed: 0,
+        latency: 0,
         memoryNodes: Math.floor(Math.random() * 20) + 30, // TODO: Get from API
         duration: Math.floor((Date.now() - new Date(messages[0]?.timestamp || Date.now()).getTime()) / 60000),
         turns: totalMessages,
-        cost: (response.tokens_used || 0) * 0.00003 // Approximate cost per token
+        cost: 0
       })
     } catch (err) {
       setIsTyping(false)
-      const apiError = err as ApiError
-      setError(apiError.message || 'Failed to send message. Please try again.')
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMsg || 'Failed to send message. Please try again.')
 
       // Show error message in chat
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: `I apologize, but I encountered an error: ${apiError.message}. Please try again.`,
+        content: `I apologize, but I encountered an error: ${errorMsg}. Please try again.`,
         agentId: agent.id,
         agentName: agent.name,
         timestamp: new Date()
