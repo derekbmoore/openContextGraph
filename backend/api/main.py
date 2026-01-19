@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from core import get_settings
 from .routes import health, chat, memory, etl, stories, voice, images, mcp, graph, tools
 from .middleware.cors_preflight import CORSPreflightMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -51,6 +52,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Trust X-Forwarded-* headers from Azure Load Balancer
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
     
     # Exception handlers to ensure CORS headers are added to error responses
     @app.exception_handler(HTTPException)
