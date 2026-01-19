@@ -61,9 +61,12 @@ export class AvatarClient {
             speechConfig.speechSynthesisVoiceName = 'en-US-AvaMultilingualNeural'; // Fixed for now
 
             // 3. Configure Avatar
-            const avatarConfig = new SpeechSDK.AvatarConfig(
-                'lisa', // Fixed for now
-                'graceful'
+            // Using 'any' cast because TS definitions might be out of sync with experimental Avatar SDK features
+            const videoFormat = new (SpeechSDK as any).AvatarVideoFormat(1920, 1080);
+            const avatarConfig = new (SpeechSDK as any).AvatarConfig(
+                'lisa',
+                'graceful',
+                videoFormat
             );
 
             // 4. Create Synthesizer
@@ -174,9 +177,10 @@ export class AvatarClient {
         return new Promise((resolve, reject) => {
             if (!this.connector) return reject("No connector");
 
-            this.connector.speakTextAsync(
+            // Cast to any to allow 3-argument signature (text, successCb, errorCb)
+            (this.connector as any).speakTextAsync(
                 text,
-                (result) => {
+                (result: any) => {
                     if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
                         console.log("AvatarClient: Speech complete.");
                         resolve();
@@ -185,7 +189,7 @@ export class AvatarClient {
                         reject(result.errorDetails);
                     }
                 },
-                (error) => {
+                (error: any) => {
                     console.error("AvatarClient: Speak error", error);
                     reject(error);
                 }

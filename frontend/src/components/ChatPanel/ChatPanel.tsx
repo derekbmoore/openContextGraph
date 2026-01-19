@@ -109,7 +109,6 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
         ...agent,
         id: 'elena',
         name: 'Elena',
-        role: 'analyst',
         title: 'Analyst',
         avatarUrl: 'https://raw.githubusercontent.com/zimaxnet/assets/main/avatars/elena.png', // Reasonable fallback or reuse current if generic
         accentColor: '#ef4444', // Red

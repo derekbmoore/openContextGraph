@@ -115,6 +115,7 @@ export default function VoiceChat({
     if (activeAgentId === 'elena') {
       console.log('🤖 Initializing AvatarClient for Elena...');
       const client = new AvatarClient(
+        null, // Target element is handled by parent or manual stream usage
         (stream) => {
           if (onAvatarStreamRef.current) {
             onAvatarStreamRef.current(stream);
