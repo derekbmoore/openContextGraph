@@ -156,6 +156,47 @@ async def chat(
             logger.error(f"Foundry chat failed: {e}", exc_info=True)
             # Fallback to local
 
+    # Fallback to local if Foundry didn't produce a result
+    if result is None:
+        logger.info(f"Falling back to local agent for {request.agent}")
+        from agents import get_agent_router
+        agent_router = get_agent_router()
+        
+        agent = agent_router.get_agent(request.agent)
+        if agent:
+            try:
+                agent_response = await agent.run(request.message, context)
+                result = {
+                    "response": agent_response.content if hasattr(agent_response, 'content') else str(agent_response),
+                    "agent_id": request.agent,
+                    "sources": [],
+                    "tool_calls": []
+                }
+            except Exception as e:
+                logger.error(f"Local agent failed: {e}", exc_info=True)
+                result = {
+                    "response": f"I encountered an issue processing your request. Please try again.",
+                    "agent_id": request.agent,
+                    "sources": [],
+                    "tool_calls": []
+                }
+        else:
+            result = {
+                "response": f"Agent '{request.agent}' is not available.",
+                "agent_id": request.agent,
+                "sources": [],
+                "tool_calls": []
+            }
+    
+    # Always return a valid ChatResponse
+    return ChatResponse(
+        response=result["response"],
+        session_id=session_id,
+        agent=result.get("agent_id", request.agent),
+        sources=result.get("sources", []),
+        tool_calls=result.get("tool_calls", [])
+    )
+
 
 
 @router.get("/sessions", response_model=list[SessionInfo])
