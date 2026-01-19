@@ -344,3 +344,38 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Voice Activation Buttons */
+.voice-activate-btn {
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.voice-activate-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.chat-only-btn {
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.chat-only-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}

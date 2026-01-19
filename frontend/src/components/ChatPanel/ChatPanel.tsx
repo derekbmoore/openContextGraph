@@ -473,21 +473,20 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
               </div>
 
               {!voiceReady ? (
-                <button
-                  className="voice-activate-btn"
-                  onClick={() => setVoiceReady(true)}
-                  style={{
-                    padding: '0.75rem 1.25rem',
-                    borderRadius: '999px',
-                    border: '1px solid var(--glass-border)',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    color: 'var(--color-text)',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
-                >
-                  Activate Voice
-                </button>
+                <>
+                  <button
+                    className="voice-activate-btn"
+                    onClick={() => setVoiceReady(true)}
+                  >
+                    Activate Avatar
+                  </button>
+                  <button
+                    className="chat-only-btn"
+                    onClick={() => setIsVoiceOpen(false)}
+                  >
+                    Chat Only
+                  </button>
+                </>
               ) : (
                 <>
                   <VoiceChat

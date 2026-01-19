@@ -34,7 +34,7 @@
   );
   border: 2px solid var(--accent-color, var(--color-primary));
   box-shadow: 
-    0 0 20px rgba(0, 212, 255, 0.2),
+    0 0 20px rgba(0, 0, 0, 0.2),
     inset 0 0 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   transition: all 0.3s ease;
