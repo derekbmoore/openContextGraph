@@ -149,13 +149,15 @@ You can proxy SDP negotiation through the same token service so the browser neve
 
 ## 5) Avatar Video — Speech Avatar Relay (WebRTC)
 
-**Entry:** `POST /api/v1/voice/avatar/ice-credentials`
+**Primary entry (Speech SDK auth):** `POST /api/v1/voice/avatar/token`
+
+**Supporting entry (TURN config):** `POST /api/v1/voice/avatar/ice-credentials`
 
 ### Sequence
 
-1. Browser asks for ICE/TURN credentials.
-2. Backend requests ICE/TURN from Azure Speech (regional).
-3. Browser builds `RTCPeerConnection` and negotiates SDP via backend signaling.
+1. Browser requests a short-lived Speech STS token via `/api/v1/voice/avatar/token`.
+2. (Recommended) Browser requests ICE/TURN via `/api/v1/voice/avatar/ice-credentials`.
+3. Browser Speech SDK starts the Avatar session and completes WebRTC negotiation directly with Azure Speech Avatar Relay.
 
 ### Region requirement (Speech avatar voice sync)
 

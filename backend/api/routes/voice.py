@@ -67,6 +67,12 @@ class IceCredentialsResponse(BaseModel):
     ttl: Optional[int] = None  # Time-to-live in seconds
 
 
+class AvatarTokenResponse(BaseModel):
+    """STS token response for Azure Speech SDK (Avatar client)."""
+    token: str
+    region: str
+
+
 def validate_voicelive_endpoint(endpoint: str) -> tuple[bool, str]:
     """
     Validate and detect VoiceLive endpoint type.
@@ -1054,6 +1060,38 @@ async def get_voice_health():
         },
         "reference": "See docs/operations/avatar_voice_deployment_guide.md for configuration guidance"
     }
+
+
+# -----------------------------------------------------------------------------
+# Speech Avatar (Client SDK): STS Token Endpoint
+# -----------------------------------------------------------------------------
+
+@router.post("/avatar/token", response_model=AvatarTokenResponse)
+async def get_avatar_token(user: SecurityContext = Depends(get_current_user)):
+    """
+    Issue a short-lived Azure Speech STS token for the browser Speech SDK.
+
+    This enables the avatar client to connect directly to the Azure Speech
+    Avatar Relay without exposing the Speech resource key to the frontend.
+
+    Auth:
+    - Uses the standard API auth (JWT) when AUTH_REQUIRED=true
+    - Falls back to POC user when auth is disabled
+    """
+    settings = get_settings()
+
+    if not settings.azure_speech_key or not settings.azure_speech_region:
+        raise HTTPException(
+            status_code=503,
+            detail="Azure Speech not configured. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION.",
+        )
+
+    try:
+        token = await voicelive_service.issue_speech_token()
+        return AvatarTokenResponse(token=token, region=settings.azure_speech_region)
+    except Exception as e:
+        logger.error(f"Failed to issue Speech STS token for user {user.user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to issue Speech STS token")
 
 
 # -----------------------------------------------------------------------------

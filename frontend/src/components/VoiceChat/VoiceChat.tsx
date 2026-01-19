@@ -108,6 +108,9 @@ export default function VoiceChat({
   const isPlayingRef = useRef(false);
   const nextStartTimeRef = useRef(0);
   const avatarClientRef = useRef<AvatarClient | null>(null);
+  const avatarSpokenRef = useRef<string>(''); // track what we've already sent to Avatar TTS
+  const avatarPendingRef = useRef<string>(''); // buffer incremental text before speaking
+  const avatarLastSendMsRef = useRef<number>(0);
 
   // Initialize Avatar Client for Elena
   useEffect(() => {
@@ -412,7 +415,7 @@ export default function VoiceChat({
                 if (data.data) {
                   // If Avatar is active (Elena), we ignore backend audio IF the Avatar Client is handling it.
                   // If AvatarClient failed to init, we fallback to backend audio so the user at least hears voice.
-                  if (agentId === 'elena' && avatarClientRef.current?.isConnected) {
+                  if (agentIdRef.current === 'elena' && avatarClientRef.current?.isConnected) {
                     // Drop backend audio, Avatar SDK will generate it from text
                     // console.log('Dropping backend audio for Avatar');
                   } else {
@@ -467,41 +470,53 @@ export default function VoiceChat({
                     assistantTranscriptRef.current = data.text || '';
                     setIsProcessing(false);
 
-                    // Drive Avatar (Lip Sync / TTS)
-                    if (agentId === 'elena' && avatarClientRef.current && data.text) {
-                      // We typically wait for complete sentences or final text
-                      // But for "Realtime" feel, maybe we send chunks?
-                      // SDK speakTextAsync queues them.
-                      // However, we receive "processing" updates which are accumulative full text usually?
-                      // Or delta? 
-                      // VoiceLive sends "Full Text So Far" in `processing` usually.
-                      // We need DELTAS to avoid repeating.
-
-                      // Actually, let's wait for 'complete' to hold the turn?
-                      // No, then it's not realtime.
-                      // VoiceLive 'audio' comes in stream.
-
-                      // IF we rely on 'complete', it might be too late.
-                      // Let's rely on `data.delta` if available? 
-                      // VoiceLive output format:
-                      // processing -> text = "Hello"
-                      // processing -> text = "Hello world"
-
-                      // AvatarClient needs non-overlapping text.
-                      // This is hard to sync with acculumating text.
-
-                      // SIMPLIFICATION:
-                      // Only speak on 'complete' for this POC.
-                      // Start spinning/speaking animation?
-                    }
                   } else if (data.status === 'complete_phrase' || (data.status === 'complete' && !data.text)) {
                     // Handle phrase completion if backend supports it
                   }
 
                   // Trigger Avatar on COMPLETE (safer for POC)
-                  if (data.status === 'complete' && agentId === 'elena' && avatarClientRef.current && data.text) {
-                    avatarClientRef.current.speak(data.text);
-                    setIsSpeaking(true); // Ensure UI shows speaking state
+                  if (agentIdRef.current === 'elena' && avatarClientRef.current?.isConnected && typeof data.text === 'string') {
+                    const fullText = data.text;
+                    const prev = avatarSpokenRef.current;
+
+                    // Compute incremental delta (VoiceLive "processing" is typically "full so far").
+                    let delta = '';
+                    if (fullText.startsWith(prev)) {
+                      delta = fullText.slice(prev.length);
+                    } else if (fullText.length < prev.length) {
+                      // New response / reset
+                      avatarSpokenRef.current = '';
+                      avatarPendingRef.current = '';
+                      delta = fullText;
+                    } else {
+                      // Non-prefix mismatch; treat as full replace
+                      avatarSpokenRef.current = '';
+                      avatarPendingRef.current = '';
+                      delta = fullText;
+                    }
+
+                    if (delta) {
+                      avatarPendingRef.current += delta;
+                      avatarSpokenRef.current = fullText;
+                    }
+
+                    const now = Date.now();
+                    const pending = avatarPendingRef.current.trim();
+                    const timeSinceLast = now - avatarLastSendMsRef.current;
+                    const shouldFlush =
+                      data.status === 'complete' ||
+                      pending.length >= 40 ||
+                      /[.!?]\s*$/.test(pending) ||
+                      timeSinceLast >= 700;
+
+                    if (shouldFlush && pending) {
+                      avatarLastSendMsRef.current = now;
+                      avatarPendingRef.current = '';
+                      avatarClientRef.current.speak(pending).catch((e: any) => {
+                        console.warn('Avatar speak failed, falling back to backend audio:', e);
+                      });
+                      setIsSpeaking(true);
+                    }
                   }
                 }
                 break;

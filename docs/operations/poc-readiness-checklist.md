@@ -61,9 +61,12 @@ Verify secrets exist and match the target resource:
 **Go/no‑go:** Voice status OK and audio response received.
 
 ## 5) Avatar (WebRTC) Readiness
-**Endpoint:** `POST /api/v1/voice/avatar/ice-credentials`
-- Returns TURN credentials.
-- Browser completes SDP negotiation and receives video track.
+**Primary Endpoint (Speech SDK auth):** `POST /api/v1/voice/avatar/token`
+- Returns `{ token, region }` (Speech STS token + speech region).
+- Browser Speech SDK starts the Avatar session and receives a video track.
+
+**Supporting Endpoint (TURN config, used by client WebRTC PC):** `POST /api/v1/voice/avatar/ice-credentials`
+- Returns TURN credentials to improve connectivity behind NAT/corporate firewalls.
 
 **Go/no‑go:** Avatar video stream plays in UI.
 

@@ -110,7 +110,26 @@ Use this checklist before declaring the environment ready:
 
 Use this checklist to verify the system post-deployment.
 
-### Step 0: Health Check (Recommended)
+### Step 0: Preflight Validation Script (Automated)
+
+**Goal:** Run the automated preflight check locally or in CI/CD to verify all endpoints (Health, Token, ICE).
+
+1. **Run the script:**
+
+   ```bash
+   python3 scripts/avatar_preflight.py [BACKEND_API_URL]
+   # Example: python3 scripts/avatar_preflight.py https://api.my-customer-env.com
+   ```
+
+2. **Output:**
+   The script checks:
+   * **Backend Health:** (Status 200, Avatar config present)
+   * **Speech Token (STS):** (Status 200, Valid Token + Region)
+   * **ICE Credentials:** (Status 200, Valid TURN config)
+
+**Go/No-Go:** If any check fails, resolve before manual testing.
+
+### Step 1: Manual Health Check (Recommended)
 
 **Goal:** Verify VoiceLive + Avatar configuration in one call.
 
