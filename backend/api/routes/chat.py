@@ -12,6 +12,8 @@ NIST AI RMF: GOVERN 1.2 (Attribution), MAP 1.1 (Context)
 
 import logging
 import uuid
+import json
+import ast
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Any
@@ -25,6 +27,34 @@ from core.context import (
     OperationalContext,
 )
 from agents import get_agent_router
+from memory import get_memory_client
+
+def _extract_content(response: Any) -> str:
+    """Helper to extract clean text from potentially nested response structures."""
+    # If already a dict, extract key
+    if isinstance(response, dict):
+        return str(response.get("response", response.get("content", str(response))))
+    
+    text = str(response).strip()
+    
+    # Check for nested JSON/Dict string (e.g. "{'response': ...}")
+    # This handles cases where agents output JSON string instead of raw text
+    if (text.startswith('{') and text.endswith('}')):
+        try:
+            # Try proper JSON first
+            data = json.loads(text)
+            if isinstance(data, dict):
+                return str(data.get("response", data.get("content", text)))
+        except json.JSONDecodeError:
+            try:
+                # Try python dict literal (single quotes) - common in python str(dict)
+                data = ast.literal_eval(text)
+                if isinstance(data, dict):
+                    return str(data.get("response", data.get("content", text)))
+            except (ValueError, SyntaxError):
+                pass
+                
+    return text
 from memory import get_memory_client
 
 logger = logging.getLogger(__name__)
@@ -143,7 +173,7 @@ async def chat(
             
             if foundry_response.status == "completed":
                 result = {
-                    "response": foundry_response.response, # No stripped quotes here
+                    "response": _extract_content(foundry_response.response),
                     "agent_id": request.agent,
                     "sources": ["Azure AI Foundry"],
                     "tool_calls": foundry_response.tool_calls
@@ -168,7 +198,8 @@ async def chat(
                 agent_response = await agent.process(request.message, context)
                 # agent.process returns dict with 'response', 'tool_calls', etc.
                 result = {
-                    "response": agent_response.get('response', str(agent_response)) if isinstance(agent_response, dict) else str(agent_response),
+                    # Use helper to clean potentially nested response
+                    "response": _extract_content(agent_response),
                     "agent_id": request.agent,
                     "sources": agent_response.get('sources', []) if isinstance(agent_response, dict) else [],
                     "tool_calls": agent_response.get('tool_calls', []) if isinstance(agent_response, dict) else []
