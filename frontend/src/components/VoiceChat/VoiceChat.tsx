@@ -290,10 +290,9 @@ export default function VoiceChat({
         }
 
         if (isAuthRequired() && !token) {
-          setError('Sign-in required to use voice. Please sign in and try again.');
-          setConnectionStatus('error');
-          onStatusChangeRef.current?.('error');
-          return;
+          // Don't block here - let the backend decide if auth is required
+          // Backend has its own AUTH_REQUIRED setting and will close with code 1008 if needed
+          console.warn('No auth token available for voice, attempting connection anyway (backend will validate)');
         }
 
         // Connect to backend WebSocket proxy endpoint
