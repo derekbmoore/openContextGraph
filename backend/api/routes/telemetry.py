@@ -5,29 +5,29 @@ from pydantic import BaseModel
 router = APIRouter()
 
 class MetricCard(BaseModel):
-    label: string
-    value: string
+    label: str
+    value: str
     status: Literal['ok', 'warn', 'bad']
-    note: Optional[string] = None
+    note: Optional[str] = None
 
 class AlertItem(BaseModel):
-    id: string
+    id: str
     severity: Literal['P0', 'P1', 'P2', 'P3']
-    title: string
-    detail: string
-    time_label: string
+    title: str
+    detail: str
+    time_label: str
     status: Literal['open', 'closed']
 
 class Narrative(BaseModel):
-    elena: string
-    marcus: string
+    elena: str
+    marcus: str
 
 class ChangeItem(BaseModel):
-    label: string
-    value: string
+    label: str
+    value: str
 
 class EvidenceTelemetrySnapshot(BaseModel):
-    range_label: string
+    range_label: str
     reliability: List[MetricCard]
     ingestion: List[MetricCard]
     memory_quality: List[MetricCard]
