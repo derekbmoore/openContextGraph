@@ -130,7 +130,7 @@ async def chat(
             logger.info(f"Routing chat to Foundry Agent: {request.agent} ({foundry_agent_id})")
             
             # Initialize Foundry Client
-            from integrations.foundry import FoundryClient
+            from backend.integrations.foundry import FoundryClient
             foundry_client = FoundryClient(settings)
             
             # Send message
