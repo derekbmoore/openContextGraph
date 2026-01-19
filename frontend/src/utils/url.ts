@@ -11,6 +11,11 @@ export const normalizeApiBase = (rawUrl: string | undefined, fallback: string): 
     url = url.replace(/^http:\/\//i, 'https://');
   }
 
+  // FORCE HTTPS for production API domain (bypasses any other logic)
+  if (url.includes('api.ctxeco.com')) {
+    url = url.replace(/^http:\/\//i, 'https://');
+  }
+
   url = url.replace(/\/$/, '');
   url = url.replace(/\/api\/v1\/?$/i, '');
 
