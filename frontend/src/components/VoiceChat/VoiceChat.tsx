@@ -114,39 +114,47 @@ export default function VoiceChat({
     // Only initialize if agent is elena
     if (activeAgentId === 'elena') {
       console.log('🤖 Initializing AvatarClient for Elena...');
-      const client = new AvatarClient(
-        null, // Target element is handled by parent or manual stream usage
-        (stream) => {
-          if (onAvatarStreamRef.current) {
-            onAvatarStreamRef.current(stream);
+      try {
+        const client = new AvatarClient(
+          null, // Target element is handled by parent or manual stream usage
+          (stream) => {
+            if (onAvatarStreamRef.current) {
+              onAvatarStreamRef.current(stream);
+            }
           }
-        }
-      );
+        );
 
-      // Connect immediately
-      const connectAvatar = async () => {
-        try {
-          // Fetch our own token securely
-          const tokenData = await client.fetchToken();
-          if (!tokenData) {
-            console.error('Failed to fetch Avatar token');
-            return;
+        // Connect immediately
+        const connectAvatar = async () => {
+          try {
+            // Fetch our own token securely
+            const tokenData = await client.fetchToken();
+            if (!tokenData) {
+              console.error('Failed to fetch Avatar token');
+              return;
+            }
+
+            await client.connect(tokenData);
+            avatarClientRef.current = client;
+            console.log('✅ AvatarClient connected successfully');
+          } catch (e) {
+            console.error('❌ Failed to connect AvatarClient:', e);
+            avatarClientRef.current = null;
           }
+        };
 
-          await client.connect(tokenData);
-          avatarClientRef.current = client;
-          console.log('✅ AvatarClient connected successfully');
-        } catch (e) {
-          console.error('❌ Failed to connect AvatarClient:', e);
-        }
-      };
-
-      connectAvatar();
+        connectAvatar();
+      } catch (initError) {
+        console.error("❌ Critical Error initializing AvatarClient:", initError);
+        avatarClientRef.current = null;
+      }
 
       return () => {
         console.log('🔌 Disconnecting AvatarClient...');
-        client.disconnect();
-        avatarClientRef.current = null;
+        if (avatarClientRef.current) {
+          avatarClientRef.current.disconnect();
+          avatarClientRef.current = null;
+        }
       };
     } else {
       // If switching AWAY from Elena, verify cleanup
@@ -402,10 +410,9 @@ export default function VoiceChat({
               case 'audio':
                 // Audio chunk from assistant
                 if (data.data) {
-                  // If Avatar is active (Elena), we ignore backend audio and let Avatar TTS handle it
-                  // UNLESS the Avatar failed to connect? 
-                  // For now, simple check:
-                  if (agentId === 'elena') {
+                  // If Avatar is active (Elena), we ignore backend audio IF the Avatar Client is handling it.
+                  // If AvatarClient failed to init, we fallback to backend audio so the user at least hears voice.
+                  if (agentId === 'elena' && avatarClientRef.current?.isConnected) {
                     // Drop backend audio, Avatar SDK will generate it from text
                     // console.log('Dropping backend audio for Avatar');
                   } else {

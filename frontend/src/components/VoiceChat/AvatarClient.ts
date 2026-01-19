@@ -62,12 +62,23 @@ export class AvatarClient {
 
             // 3. Configure Avatar
             // Using 'any' cast because TS definitions might be out of sync with experimental Avatar SDK features
-            const videoFormat = new (SpeechSDK as any).AvatarVideoFormat(1920, 1080);
-            const avatarConfig = new (SpeechSDK as any).AvatarConfig(
-                'lisa',
-                'graceful',
-                videoFormat
-            );
+            // Robust check: ensure constructors exist
+            let avatarConfig;
+            try {
+                const sdkAny = SpeechSDK as any;
+                if (sdkAny.AvatarVideoFormat && sdkAny.AvatarConfig) {
+                    const videoFormat = new sdkAny.AvatarVideoFormat(1920, 1080);
+                    avatarConfig = new sdkAny.AvatarConfig('lisa', 'graceful', videoFormat);
+                } else if (sdkAny.AvatarConfig) {
+                    console.warn("AvatarClient: AvatarVideoFormat not found, trying 2-arg AvatarConfig");
+                    avatarConfig = new sdkAny.AvatarConfig('lisa', 'graceful');
+                } else {
+                    throw new Error("AvatarConfig not found in SpeechSDK");
+                }
+            } catch (configError) {
+                console.error("AvatarClient: Failed to create AvatarConfig", configError);
+                throw configError;
+            }
 
             // 4. Create Synthesizer
             // We cast to any to avoid strict type mismatch if SDK types are slightly off in this version
