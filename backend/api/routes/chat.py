@@ -166,9 +166,9 @@ async def chat(
         if agent:
             try:
                 agent_response = await agent.process(request.message, context)
-                # agent.process returns dict with 'content', 'tool_calls', etc.
+                # agent.process returns dict with 'response', 'tool_calls', etc.
                 result = {
-                    "response": agent_response.get('content', str(agent_response)) if isinstance(agent_response, dict) else str(agent_response),
+                    "response": agent_response.get('response', str(agent_response)) if isinstance(agent_response, dict) else str(agent_response),
                     "agent_id": request.agent,
                     "sources": agent_response.get('sources', []) if isinstance(agent_response, dict) else [],
                     "tool_calls": agent_response.get('tool_calls', []) if isinstance(agent_response, dict) else []
