@@ -130,7 +130,7 @@ async def chat(
             logger.info(f"Routing chat to Foundry Agent: {request.agent} ({foundry_agent_id})")
             
             # Initialize Foundry Client
-            from backend.integrations.foundry import FoundryClient
+            from integrations.foundry import FoundryClient
             foundry_client = FoundryClient(settings)
             
             # Send message
@@ -165,12 +165,13 @@ async def chat(
         agent = agent_router.get_agent(request.agent)
         if agent:
             try:
-                agent_response = await agent.run(request.message, context)
+                agent_response = await agent.process(request.message, context)
+                # agent.process returns dict with 'content', 'tool_calls', etc.
                 result = {
-                    "response": agent_response.content if hasattr(agent_response, 'content') else str(agent_response),
+                    "response": agent_response.get('content', str(agent_response)) if isinstance(agent_response, dict) else str(agent_response),
                     "agent_id": request.agent,
-                    "sources": [],
-                    "tool_calls": []
+                    "sources": agent_response.get('sources', []) if isinstance(agent_response, dict) else [],
+                    "tool_calls": agent_response.get('tool_calls', []) if isinstance(agent_response, dict) else []
                 }
             except Exception as e:
                 logger.error(f"Local agent failed: {e}", exc_info=True)
