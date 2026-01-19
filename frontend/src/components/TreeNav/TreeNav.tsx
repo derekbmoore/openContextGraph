@@ -67,7 +67,8 @@ export function TreeNav({ activeAgent, onAgentChange, onNavigate }: TreeNavProps
           label: 'Marcus - PM',
           status: activeAgent === 'marcus' ? 'active' : 'idle',
           onClick: () => {
-            window.location.assign('https://ctxeco.com/agents/marcus');
+            onAgentChange('marcus');
+            navigate('/');
           }
         },
         {
@@ -75,7 +76,8 @@ export function TreeNav({ activeAgent, onAgentChange, onNavigate }: TreeNavProps
           label: 'Sage - Storyteller',
           status: activeAgent === 'sage' ? 'active' : 'idle',
           onClick: () => {
-            window.location.assign('https://ctxeco.com/agents/sage');
+            onAgentChange('sage');
+            navigate('/');
           }
         },
         {
