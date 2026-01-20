@@ -560,13 +560,18 @@ export default function VoiceChat({
 
               case 'video_connection_ready':
                 // Backend has prepared video connection
-                // CRITICAL FIX: For 'elena' (Avatar), we explicitly ignore backend WebRTC signal
-                // because we use the Azure AvatarClient SDK which handles its own connection.
-                // We check both the ref AND the data payload if available to prevent race conditions.
-                if (agentIdRef.current === 'elena' || activeAgentId === 'elena') {
-                  console.log('ℹ️ Ignoring backend video_connection_ready for Avatar (using AvatarClient SDK)');
-                } else if (agentIdRef.current !== 'elena') {
-                  console.log(`🎥 Video connection ready for ${agentIdRef.current}, establishing WebRTC connection...`);
+                // CRITICAL FIX: If 'video_connection' payload exists (token), it is meant for the Avatar Client SDK.
+                // We MUST NOT trigger the legacy backend-proxy WebRTC flow (establishWebRTCVideoConnection)
+                // regardless of what agentIdRef says (fixes race conditions).
+                if (data.video_connection) {
+                  console.log('ℹ️ Ignoring backend video_connection_ready for Avatar (SDK Token received)', data.video_connection.endpoint);
+                  // The AvatarClient handles its own connection via fetchToken() or we could use this token.
+                  // For now, we rely on AvatarClient's internal logic which is already running.
+                } else if (agentIdRef.current === 'elena' || activeAgentId === 'elena') {
+                  console.log('ℹ️ Ignoring backend video_connection_ready for Avatar (Agent is Elena)');
+                } else {
+                  // Only legacy agents without SDK support use this path
+                  console.log(`🎥 Video connection ready for ${agentIdRef.current}, establishing legacy WebRTC connection...`);
                   establishWebRTCVideoConnection();
                 }
                 break;
