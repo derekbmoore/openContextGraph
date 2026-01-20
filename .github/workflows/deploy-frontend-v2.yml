@@ -21,7 +21,7 @@ on:
 env:
   AZURE_RESOURCE_GROUP: ctxeco-rg
   AZURE_LOCATION: eastus2
-  SWA_APP_NAME: ${{ secrets.AZURE_SWA_NAME || 'ctxEco-env-web' }}
+  SWA_APP_NAME: "ctxeco-web"
 
 jobs:
   deploy-frontend:
