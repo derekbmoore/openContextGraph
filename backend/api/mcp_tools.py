@@ -131,6 +131,18 @@ Uses ripgrep for fast, regex-capable code search.""",
         ],
         handler="api.mcp_handlers.create_github_issue",
     ),
+    
+    # ---------------------------------------------------------------------
+    # Database Tools (Admin/Analyst)
+    # ---------------------------------------------------------------------
+    "query_database": ToolDefinition(
+        name="query_database",
+        description="Execute a read-only SQL SELECT query against the internal PostgreSQL database.",
+        parameters=[
+            ToolParameter(name="query", type="string", description="SQL SELECT query to execute"),
+        ],
+        handler="api.mcp_handlers.query_database",
+    ),
 }
 
 
