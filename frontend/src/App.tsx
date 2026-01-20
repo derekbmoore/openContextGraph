@@ -32,29 +32,29 @@ function AppContent() {
   // Agent-specific session IDs: Each agent (Elena, Marcus, Sage) has its own conversation thread
   // This ensures agents maintain separate contexts and can validate each other's work
   const getSessionKey = (agentId: AgentId) => `engram_session_${agentId}`
-  
+
   const [sessionIds, setSessionIds] = useState<Record<AgentId, string>>(() => {
     const sessions: Record<AgentId, string> = {
       elena: '',
       marcus: '',
       sage: ''
     }
-    
-    // Initialize session IDs for each agent
-    ;(['elena', 'marcus', 'sage'] as AgentId[]).forEach(agentId => {
-      const key = getSessionKey(agentId)
-      const fallback = `session-${agentId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-      try {
-        const existing = sessionStorage.getItem(key)
-        sessions[agentId] = existing || fallback
-        if (!existing) {
-          sessionStorage.setItem(key, fallback)
+
+      // Initialize session IDs for each agent
+      ; (['elena', 'marcus', 'sage'] as AgentId[]).forEach(agentId => {
+        const key = getSessionKey(agentId)
+        const fallback = `session-${agentId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+        try {
+          const existing = sessionStorage.getItem(key)
+          sessions[agentId] = existing || fallback
+          if (!existing) {
+            sessionStorage.setItem(key, fallback)
+          }
+        } catch {
+          sessions[agentId] = fallback
         }
-      } catch {
-        sessions[agentId] = fallback
-      }
-    })
-    
+      })
+
     return sessions
   })
 
@@ -170,4 +170,4 @@ function App() {
 }
 
 export default App;
-// Rebuild trigger Sun Jan 18 18:23:09 MST 2026
+// Rebuild trigger Mon Jan 19 17:56:00 MST 2026
