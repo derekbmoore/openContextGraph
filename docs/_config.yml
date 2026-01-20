@@ -1,0 +1,36 @@
+title: OpenContextGraph (ctxEco)
+description: Enterprise AI Context Orchestration Platform
+baseurl: "/openContextGraph"
+url: ""
+
+remote_theme: just-the-docs/just-the-docs
+
+# Search
+search_enabled: true
+search:
+  tokenizer_separator: /[\s/]+/
+
+# Appearance
+color_scheme: dark
+
+# Aux links
+aux_links:
+  "GitHub Repository": "https://github.com/derekbmoore/openContextGraph"
+
+# Navigation
+back_to_top: true
+back_to_top_text: "Back to top"
+
+# Markdown settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+include: [".gitignore"]
+
+# Plugins
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - jekyll-remote-theme
