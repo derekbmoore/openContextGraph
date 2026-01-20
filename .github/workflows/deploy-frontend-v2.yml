@@ -1,4 +1,4 @@
-name: Deploy Frontend v2
+name: Deploy Frontend (Debug)
 
 on:
   push:
@@ -57,6 +57,12 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+      - name: Debug Build Artifacts
+        run: |
+          echo "Listing dist folder:"
+          ls -F frontend/dist/assets || echo "No assets found"
+          echo "SWA Name Target: ${{ env.SWA_APP_NAME }}"
 
       - name: Azure Login
         uses: azure/login@v2
