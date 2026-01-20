@@ -130,6 +130,8 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false)
   const [voiceReady, setVoiceReady] = useState(false)
 
+  const [voiceMode, setVoiceMode] = useState<'voice' | 'avatar'>('avatar'); // Default to avatar, but user can choose
+
   // Disable auto-open of voice mode - user should have text input available by default
   // useEffect(() => {
   //   if (agent.voiceEnabled) {
@@ -141,6 +143,7 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
   useEffect(() => {
     if (!isVoiceOpen) {
       setVoiceReady(false)
+      // Reset mode to default if needed, or keep last choice
     }
   }, [isVoiceOpen])
 
@@ -503,13 +506,29 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
 
               {!voiceReady ? (
                 <>
-                  <button
-                    className="voice-activate-btn"
-                    onClick={() => setVoiceReady(true)}
-                  >
-                    Activate Avatar
+                  <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+                    <button
+                      className="voice-activate-btn"
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}
+                      onClick={() => {
+                        setVoiceMode('voice');
+                        setVoiceReady(true);
+                      }}
+                    >
+                      Start Voice Chat
+                    </button>
+                    <button
+                      className="voice-activate-btn"
+                      style={{ flex: 1 }}
+                      onClick={() => {
+                        setVoiceMode('avatar');
+                        setVoiceReady(true);
+                      }}
+                    >
+                      Start Avatar Chat
+                    </button>
+                  </div>
 
-                  </button>
                   <div className="voice-text-input-wrapper" style={{ width: '100%', marginTop: '1rem' }}>
                     <input
                       type="text"
@@ -553,6 +572,7 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                     onAvatarStream={setAvatarStream}
                     onSpeaking={setIsAvatarSpeaking}
                     onAgentChange={handleVoiceAgentChange}
+                    enableAvatar={voiceMode === 'avatar'} // Only enable avatar if mode is avatar
                   />
                   <p style={{
                     fontSize: '0.875rem',
@@ -561,7 +581,7 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
                     margin: 0
                   }}>
                     {activeAgent.id === 'elena'
-                      ? "Elena is listening..."
+                      ? (voiceMode === 'avatar' ? "Elena is listening (Avatar)..." : "Elena is listening (Voice)...")
                       : "Press and hold the ring to speak."}
                   </p>
                 </>

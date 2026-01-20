@@ -38,6 +38,7 @@ interface VoiceChatProps {
   onSpeaking?: (speaking: boolean) => void;
   onAgentChange?: (agentId: string) => void; // Callback when agent switches dynamically
   disabled?: boolean;
+  enableAvatar?: boolean;
 }
 
 export default function VoiceChat({
@@ -50,7 +51,8 @@ export default function VoiceChat({
   onAvatarStream,
   onSpeaking,
   onAgentChange,
-  disabled = false
+  disabled = false,
+  enableAvatar = true
 }: VoiceChatProps) {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -114,8 +116,8 @@ export default function VoiceChat({
 
   // Initialize Avatar Client for Elena
   useEffect(() => {
-    // Only initialize if agent is elena
-    if (activeAgentId === 'elena') {
+    // Only initialize if agent is elena AND avatar is enabled
+    if (activeAgentId === 'elena' && enableAvatar) {
       console.log('🤖 Initializing AvatarClient for Elena...');
       try {
         const client = new AvatarClient(
@@ -166,7 +168,7 @@ export default function VoiceChat({
         avatarClientRef.current = null;
       }
     }
-  }, [activeAgentId]); // Depend on activeAgentId, not prop
+  }, [activeAgentId, enableAvatar]); // Depend on activeAgentId and enableAvatar
   useEffect(() => {
     onMessageRef.current = onMessage;
     onVisemesRef.current = onVisemes;
@@ -413,9 +415,9 @@ export default function VoiceChat({
               case 'audio':
                 // Audio chunk from assistant
                 if (data.data) {
-                  // If Avatar is active (Elena), we ignore backend audio IF the Avatar Client is handling it.
-                  // If AvatarClient failed to init, we fallback to backend audio so the user at least hears voice.
-                  if (agentIdRef.current === 'elena' && avatarClientRef.current?.isConnected) {
+                  // If Avatar is active (Elena) and avatar is enabled, we ALWAYS ignore backend audio.
+                  // This allows the Avatar SDK to handle TTS fully and prevents "double audio" race conditions.
+                  if (agentIdRef.current === 'elena' && enableAvatar) {
                     // Drop backend audio, Avatar SDK will generate it from text
                     // console.log('Dropping backend audio for Avatar');
                   } else {

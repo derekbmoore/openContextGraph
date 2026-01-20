@@ -167,17 +167,20 @@ GET /api/v1/voice/health
     * **Success:** JSON 200 OK with `token` and `region`.
     * **Failure:** 500 Error -> Check `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` in backend secrets.
 
-### Step 3: "Activate Avatar" Flow (End-to-End)
+### Step 3: "Activate Avatar" vs "Voice Chat" Flow
 
 **Goal:** Confirm Frontend <-> Backend <-> Azure relay.
 
 1. Open the Chat UI.
-2. Click **"Activate Avatar"** (previously "Activate Voice").
-3. **Observation:**
-    * **Phase 1 (Connecting):** Overlay appears. Spinner/Loader.
-    * **Phase 2 (Audio):** "Mic" icon appears. Speak "Hello".
-    * **Phase 3 (Video):** Avatar video should appear within 3-5 seconds.
-    * **Phase 4 (Legacy Fallback):** If video fails, you will see a static image but hear audio.
+2. Click the **Microphone** button to open the overlay.
+3. You will see two options:
+   * **Start Voice Chat:** Audio-only mode (VoiceLive). Good for low bandwidth.
+   * **Start Avatar Chat:** Full video mode (VoiceLive + Speech SDK).
+4. **Select "Start Avatar Chat":**
+   * **Phase 1 (Connecting):** Overlay appears. Spinner/Loader.
+   * **Phase 2 (Audio):** "Mic" icon appears. Speak "Hello".
+   * **Phase 3 (Video):** Avatar video should appear within 3-5 seconds.
+   * **Phase 4 (Legacy Fallback):** If video fails, you will see a static image but hear audio.
 
 ---
 
