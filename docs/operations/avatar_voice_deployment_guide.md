@@ -1,25 +1,34 @@
 # Avatar & Voice System: Deployment & Verification Guide
 
-**Status:** Draft / POC Verified
+**Status:** Live / RT-Client Integration
 **Component:** VoiceLive / WebRTC Avatar
 **Context:** Deployment, Verification, and Configuration
 
-This document serves as the **operational guide** for deploying, configuring, and verifying the **Chat Voice Avatar** system. It bridges the gap between the [Architecture Flow](../architecture/06-chat-voice-avatar-flow.md) and deployment reality.
+This document serves as the **operational guide** for deploying, configuring, and verifying the **Chat Voice Avatar** system. It reflects the architecture using **Microsoft's `rt-client`** for direct VoiceLive connectivity.
 
 ---
 
 ## 1. System Overview
 
-The **Avatar & Voice System** enables real-time multimodal interaction:
+The **Avatar & Voice System** enables real-time multimodal interaction through two distinct modes:
 
-1. **Voice Interaction (Audio)**: Handled via **VoiceLive** (WebSocket Proxy) for low latency.
-    * *Path:* Browser ↔ specific Backend Proxy (`/api/v1/voice/voicelive/{session_id}`) ↔ Azure VoiceLive (WebSocket).
-2. **Avatar Visualization (Video)**: Handled via **Azure Speech SDK** (Direct Client-to-Azure).
-    * *Path:* Browser (SDK) ↔ Azure Speech Service (Avatar Relay).
-    * *Auth:* Backend issues secure STS token via `POST /api/v1/voice/avatar/token`.
-    * *Signaling:* SDK handles WebRTC negotiation internally properly (bypassing the need for manual ICE relay).
+### Mode A: Avatar (Video + Audio) - **"Elena"**
 
-This **Client-Side SDK** architecture solves the video transmission issues by establishing a direct, optimized connection for the heavy video stream, while the backend maintains control over audio transcription and memory persistence.
+* **Architecture:** Direct Client-to-Azure (Bypasses Backend Proxy).
+* **Technology:** `rt-client` (Azure AI Realtime Audio SDK).
+* **Path:** Browser `RTClient` ↔ Azure VoiceLive (WebSocket/WebRTC).
+* **Auth:**
+    1. Frontend requests credentials from Backend (`POST /api/v1/voice/avatar/ice-credentials`).
+    2. Backend returns **ICE Servers** (for NAT traversal) and **Speech API Key** (securely scoped).
+    3. Frontend establishes direct connection to Azure using these credentials.
+* **Benefits:** Lowest possible latency for video syncing; uses Azure's native WebRTC signaling.
+
+### Mode B: Voice Only (Audio)
+
+* **Architecture:** WebSocket Proxy.
+* **Technology:** FastApi WebSocket Relay.
+* **Path:** Browser ↔ Backend Proxy (`/api/v1/voice/voicelive/{session_id}`) ↔ Azure VoiceLive.
+* **Auth:** JWT (Entra ID) between Browser and Backend; Managed Identity between Backend and Azure.
 
 ---
 
@@ -29,185 +38,79 @@ Success depends on 3 layers of configuration: **Azure Resources**, **Backend Env
 
 ### 2.1 Azure Resources
 
-You must provision these resources in a supported region (Standard 2026/2025 Preview).
+You must provision these resources in a supported region.
 
 | Resource | Service | Region Constraint | Purpose |
 | :--- | :--- | :--- | :--- |
-| **VoiceLive** | Azure AI Services | `eastus2`, `swedencentral` | Orchestrates voice conversation (GPT-4o Realtime). |
-| **Speech** | Azure Speech | `westus2`, `westeurope`, `southeastasia` | **CRITICAL for Avatar.** Must be in a region supporting Avatar Relay. |
-| **Foundry** | Azure AI Foundry | Same as VoiceLive | Project hosting for agents. |
+| **VoiceLive** | Azure AI Services | `eastus2`, `swedencentral` | **Audio-only** backend proxy connection. |
+| **Speech** | Azure Speech | `westus2` | **CRITICAL for Avatar.** Must be in `westus2` for Avatar Video Relay. |
 
 > [!IMPORTANT]
-> **Avatar Region Mismatch:** A common failure mode is deploying Speech in `eastus` (standard) instead of `westus2` (avatar-enabled). If ICE credentials fail, check your Speech resource region.
+> **Avatar Region:** The simple `rt-client` implementation for avatars requires the **West US 2** endpoint (`https://westus2.api.cognitive.microsoft.com/`) to successfully negotiate WebRTC video.
 
 ### 2.2 Backend Configuration (`.env` / ACA Secrets)
 
 Ensure these variables are set in your backend container environment:
 
 ```bash
-# === VoiceLive (Audio) ===
-AZURE_VOICELIVE_ENDPOINT="wss://{ai-services-resource-name}.services.ai.azure.com/voice-live/realtime?api-version=2024-10-01-preview&model=gpt-realtime"
-# Optional overrides (defaults live in backend/core/config.py)
-AZURE_VOICELIVE_API_VERSION="2024-10-01-preview"
-AZURE_VOICELIVE_MODEL="gpt-realtime"
-AZURE_VOICELIVE_PROJECT_NAME="{foundry-project-name}"  # Only for project-based unified endpoints
-# Auth strategy: Service Principal (Entra) preferred over Key
-AZURE_TENANT_ID="{tenant-id}"          # For Azure SDK (DefaultAzureCredential)
-AZURE_CLIENT_ID="{client-id}"          # For Azure SDK (Managed Identity or SPN)
-AZURE_CLIENT_SECRET="{client-secret}"  # For Azure SDK (SPN only)
-# OR (Fallback):
-AZURE_VOICELIVE_KEY="{key}"
+# === VoiceLive (Audio Proxy) ===
+AZURE_VOICELIVE_ENDPOINT="wss://{ai-resource}.services.ai.azure.com/voice-live/realtime?..."
 
-# === Avatar (Video) ===
-# Must be a standard Speech resource key, NOT a VoiceLive key
-AZURE_SPEECH_KEY="{speech-key}"
-AZURE_SPEECH_REGION="westus2"  # Must match resource region
-
-# === Security ===
-# Entra ID JWT validation (API auth)
-AZURE_AD_TENANT_ID="{entra-tenant-id}"
-AZURE_AD_CLIENT_ID="{entra-app-client-id}"
-AUTH_REQUIRED="true" # Enforce JWT for WebSocket connections
-CORS_ORIGINS="https://your-frontend-domain.com,http://localhost:5173"
+# === Avatar (Video & Direct Client Auth) ===
+# CRITICAL: This key is returned to the frontend for direct connection
+AZURE_SPEECH_KEY="{speech-resource-key}"
+AZURE_SPEECH_REGION="westus2"
 ```
 
 ### 2.3 Frontend Configuration (`.env`)
 
 ```bash
-# API Base URL (adjust for production)
+# API Base URL
 VITE_API_URL="https://your-backend-api.containerapps.io"
-# WebSocket Base URL (wss://)
-VITE_WS_URL="wss://your-backend-api.containerapps.io"
-# Auth (Enables "Activate Avatar" button security)
-VITE_AUTH_REQUIRED="true"
 ```
-
-### 2.4 Deployment Readiness Checklist (Customer Environments)
-
-Use this checklist before declaring the environment ready:
-
-1. **Azure resource alignment**
-    * VoiceLive resource in `eastus2` or `swedencentral` (Realtime-capable).
-    * Speech resource in `westus2`, `westeurope`, or `southeastasia` (Avatar Relay).
-    * Foundry project (if used) matches `AZURE_VOICELIVE_PROJECT_NAME`.
-2. **Model availability**
-    * `gpt-realtime` is deployed/available on the VoiceLive resource.
-    * If using project-based unified endpoints, ensure the model is deployed within the project.
-3. **Authentication posture**
-    * **Production:** Prefer Managed Identity or Service Principal (Azure SDK env vars).
-    * **POC/Staging:** API key is acceptable but should be scoped and rotated.
-    * JWT validation enabled with `AUTH_REQUIRED=true` and Entra app IDs configured.
-4. **Networking / firewall**
-    * Browser egress allows UDP `3478` + `49152–65535`.
-    * Backend allows outbound to `*.services.ai.azure.com` and `*.tts.speech.microsoft.com`.
-5. **Backend validation logs**
-    * Startup logs include “Voice Configuration Validation” with ✅ status (or warnings only).
-    * No “Avatar Region Mismatch” errors from `VoiceConfigValidator`.
 
 ---
 
-## 3. Verification Steps (POC & Deployment)
+## 3. Deployment Checklist
 
-Use this checklist to verify the system post-deployment.
+1. **Backend Update:**
+    * Ensure `backend/api/routes/voice.py` has the **ICE Credentials Fix** (returns `api_key`).
+    * Deploy backend container.
 
-### Step 0: Preflight Validation Script (Automated)
+2. **Frontend Update:**
+    * Ensure `VoiceChat.tsx` uses `RTClientAvatar`.
+    * Deploy frontend (SWA).
 
-**Goal:** Run the automated preflight check locally or in CI/CD to verify all endpoints (Health, Token, ICE).
+3. **Firewall / Network:**
+    * **UDP Ports:** Allow `3478` (STUN/TURN) and `49152–65535` (Media) outbound.
+    * **Domains:** Allow `*.cognitive.microsoft.com` and `*.services.ai.azure.com`.
 
-1. **Run the script:**
+---
 
-   ```bash
-   python3 scripts/avatar_preflight.py [BACKEND_API_URL]
-   # Example: python3 scripts/avatar_preflight.py https://api.my-customer-env.com
-   ```
+## 4. Verification Steps
 
-2. **Output:**
-   The script checks:
-   * **Backend Health:** (Status 200, Avatar config present)
-   * **Speech Token (STS):** (Status 200, Valid Token + Region)
-   * **ICE Credentials:** (Status 200, Valid TURN config)
+### Step 1: Preflight (Backend Credentials)
 
-**Go/No-Go:** If any check fails, resolve before manual testing.
-
-### Step 1: Manual Health Check (Recommended)
-
-**Goal:** Verify VoiceLive + Avatar configuration in one call.
+Verify the backend is serving the correct credentials.
 
 ```bash
-GET /api/v1/voice/health
+# Request ICE credentials + API Key
+curl -X POST "https://api.ctxeco.com/api/v1/voice/avatar/ice-credentials" \
+     -H "Content-Type: application/json" \
+     -d '{"agent_id": "elena", "get_api_key": true}'
 ```
 
-* **Success:** `status: healthy` and `validation.errors` is empty.
-* **Warnings only:** `status: healthy` with `validation.warnings` (audio-only mode may still work).
-* **Failure:** `status: unhealthy` with actionable errors (fix before go-live).
+* **Success:** JSON response includes `Urls` (ICE servers) AND `api_key` (string).
+* **Failure:** Missing `api_key` means backend code is outdated or `AZURE_SPEECH_KEY` env var is missing.
 
-### Step 1: Connectivity Check
+### Step 2: "Connect Avatar" Flow
 
-**Goal:** Confirm backend can talk to Azure APIs.
-
-1. **Hit the Status Endpoint:**
-
-    ```bash
-    GET /api/v1/voice/config/elena
-    ```
-
-    * **Success:** JSON 200 OK with `endpoint_configured: true`.
-    * **Failure:** 500 Error -> Check `AZURE_VOICELIVE_ENDPOINT` variable.
-
-### Step 2: STS Token Generation (Avatar Auth)
-
-**Goal:** Confirm backend can issue secure tokens for the Speech SDK.
-
-1. **Test Token Endpoint:**
-
-    ```bash
-    POST /api/v1/voice/avatar/token
-    ```
-
-    * **Success:** JSON 200 OK with `token` and `region`.
-    * **Failure:** 500 Error -> Check `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` in backend secrets.
-
-### Step 3: "Activate Avatar" Flow (Center Stage)
-
-**Goal:** Confirm Frontend <-> Backend <-> Azure relay.
-
-1. Open the Chat UI (`/`).
-2. **Observation:**
-   * **Center Panel:** Shows the Avatar Placeholder (Dr. Elena).
-   * **Right Panel:** Shows the Text Chat interface.
-3. **Action:** Click the **"Connect Avatar"** button in the *Center Panel*.
-4. **Observation:**
-    * **Phase 1 (Connecting):** Spinner appears in the center.
-    * **Phase 2 (Video):** Avatar video stream appears in the center (High Fidelity).
-    * **Phase 3 (Chat):** You can type in the Right Panel while watching the avatar.
-
-### Step 4: "Voice Only" Flow (Voice Page)
-
-1. Navigate to the **Voice Interaction** page (`/voice`).
-2. **Observation:** Simplified UI with Agent Profile.
-3. Click **"Start Voice Session"**.
-4. **Observation:** Status changes to "Connected". Speak to interact (Audio Only).
-
----
-
-## 4. Refinements & Best Practices
-
-### 4.1 UI "Glow" & Visual Polish
-
-* **Static State:** We reduced the cyan "glow" on the static avatar circle to prevent it from looking glitchy behind UI panels.
-* **Active State:** The glow now pulses *only* when the avatar is speaking (VAD-triggered).
-
-### 4.2 Network & Firewalls (Corporate Deployments)
-
-* **WebRTC Ports:** Ensure usage of UDP ports `3478` (STUN/TURN) and the ephemeral range `49152–65535` is allowed for outbound traffic from client browsers.
-* **WebSocket:** Ensure `wss://` (TCP 443) is allowed to your backend domain.
-
-### 4.3 Chat-Only Mode
-
-We introduced a **"Chat Only"** button in the overlay.
-
-* **Use Case:** User started voice but changed their mind or is in a noisy environment.
-* **Behavior:** Immediately closes WebRTC/WebSocket and returns to the text chat interface without error.
+1. Open Chat UI (`/`).
+2. Click **"Connect Avatar"**.
+3. **Open Console (F12):**
+    * Look for: `RTClientAvatar: Connected successfully`.
+    * Look for: `RTClientAvatar: WebRTC connected!`.
+4. **Verify Video:** The static placeholder should disappear, replaced by the live video stream.
 
 ---
 
@@ -215,24 +118,17 @@ We introduced a **"Chat Only"** button in the overlay.
 
 | Symptom | Probable Cause | Fix |
 | :--- | :--- | :--- |
-| **"Activate Avatar" button missing** | `voiceEnabled: false` in Agent config | Check `frontend/src/types.ts` (AGENTS definition) or backend agent configuration in `backend/core/config.py`. |
-| **Audio works, Video is black** | Region mismatch or Token failure | 1. Check `AZURE_SPEECH_REGION` is `westus2` (or supported). <br> 2. Check Console for "AvatarClient" errors. <br> 3. Verify `POST /api/v1/voice/avatar/token` is returning 200 OK. |
-| **"Connection Error" immediately** | 401 Unauthorized / CORS | 1. Check `CORS_ORIGINS` in backend (and `ALLOWED_ORIGINS`). <br> 2. Confirm `AZURE_AD_TENANT_ID` + `AZURE_AD_CLIENT_ID` match the Entra app. <br> 3. Ensure `VITE_API_URL` uses `https://` (not http) for prod. |
-| **"Glowing" artifact behind panel** | Old CSS | **Fixed in latest version**. Ensure you have the latest `ChatPanel.css` with reduced `box-shadow`. |
-| **Avatar sync is lip-flapping only** | WebRTC failed, fallback active | System fell back to "Viseme-based animation" (CSS) because the video stream didn't arrive. Check Step 2 (Token/ICE). |
-| **Double Audio / Echo** | Backend Audio Leak | The Avatar SDK generates its own audio. Ensure `VoiceChat.tsx` logic is suppressing backend audio chunks when `agentId === 'elena'`. |
-| **Component Crash (Blank Screen)** | SDK Version Mismatch / Missing Features | **Fixed.** `AvatarClient.ts` now uses robust `try/catch` and existence checks for experimental SDK features (`AvatarVideoFormat`), falling back to safe defaults if missing. |
-| **Voice WebSocket Closed 1005 (Disconnect)** | Race Condition (Legacy vs Avatar) | **Fixed.** Older WebRTC logic in `VoiceChat.tsx` was conflicting with the Avatar SDK connection. We now explicitly ignore backend `video_connection_ready` signals when `elena` is active. |
+| **"HTTP Authentication failed"** | Backend didn't return API Key | 1. Check if backend is deployed with `get_avatar_ice_credentials` fix. <br> 2. Check `AZURE_SPEECH_KEY` in backend secrets. |
+| **Video is black / Loading forever** | WebRTC Stalled | 1. Check Console for `RTClientAvatar: WebRTC connected!`. <br> 2. If missing, check UDP port blocking (Firewall). <br> 3. Verify Region is `westus2`. |
+| **"Refused to connect"** | CORS | Check `ALLOW_ORIGINS` in backend config. |
+| **Audio works, no mouth movement** | Video track missing | Verify `addTransceiver('video', { direction: 'sendrecv' })` is set (Done in `RTClientAvatar.ts`). |
 
 ---
 
-## 6. POC "Working Document" Notes
+## 6. Architecture Notes (`rt-client`)
 
-For the **Proof of Concept (POC)**, stick to this "Golden Path":
+We moved from the hybrid "AvatarSynthesizer" approach to the **VoiceLive Sample** architecture:
 
-1. **Agent:** Use `elena` (default).
-2. **Voice:** Use `en-US-Ava:DragonHDLatestNeural` (default VoiceLive voice, most expressive).
-3. **Region:** `westus2` (safest bet for Video).
-4. **Client:** Chrome or Edge (Safari WebRTC implementation can be finicky with strict corporate firewalls).
-
-*End of Guide.*
+* **Logic:** `RTClientAvatar.ts`
+* **Signaling:** Uses `RTClient.connectAvatar()` to exchange SDP directly with Azure.
+* **Protocol:** This implementation uses the VoiceLive `2026-01-01-preview` API which handles both GPT-4o Realtime audio and Avatar video in a single session.
