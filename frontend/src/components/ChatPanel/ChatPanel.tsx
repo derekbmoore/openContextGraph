@@ -44,44 +44,9 @@ function createWelcomeMessage(agent: Agent): Message {
   }
 }
 
-// Voice Chat Overlay Styles
-import VoiceChat from '../VoiceChat/VoiceChat';
-import AvatarDisplay from '../AvatarDisplay/AvatarDisplay';
-
-const overlayStyles: CSSProperties = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(0, 0, 0, 0.85)',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  zIndex: 2000,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexDirection: 'column',
-  padding: '1rem',
-};
-
-const closeButtonStyles: CSSProperties = {
-  position: 'absolute',
-  top: '1rem',
-  right: '1rem',
-  background: 'rgba(255, 255, 255, 0.1)',
-  border: 'none',
-  borderRadius: '50%',
-  width: '48px',
-  height: '48px',
-  color: 'white',
-  fontSize: '1.5rem',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 2001,
-};
+// Voice Chat Overlay Styles removed - handled by AvatarCenterPanel
+// import VoiceChat from '../VoiceChat/VoiceChat';
+// import AvatarDisplay from '../AvatarDisplay/AvatarDisplay';
 
 
 
@@ -99,53 +64,10 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
     setActiveAgent(agent);
   }, [agent.id]);
 
-  const handleVoiceAgentChange = (newAgentId: string) => {
-    if (newAgentId === activeAgent.id) return;
-
-    console.log('ChatPanel: Voice agent switched to', newAgentId);
-    if (newAgentId === 'elena') {
-      // Mock Elena object for the UI display
-      setActiveAgent({
-        ...agent,
-        id: 'elena',
-        name: 'Elena',
-        title: 'Analyst',
-        avatarUrl: 'https://raw.githubusercontent.com/zimaxnet/assets/main/avatars/elena.png', // Reasonable fallback or reuse current if generic
-        accentColor: '#ef4444', // Red
-        description: 'Senior Analyst'
-      });
-    } else if (newAgentId === agent.id) {
-      setActiveAgent(agent);
-    }
-  };
-
   const [messages, setMessages] = useState<Message[]>([initialMessage])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Voice Live Mode State
-  const [isVoiceOpen, setIsVoiceOpen] = useState(false)
-  const [avatarStream, setAvatarStream] = useState<MediaStream | null>(null)
-  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false)
-  const [voiceReady, setVoiceReady] = useState(false)
-
-  const [voiceMode, setVoiceMode] = useState<'voice' | 'avatar'>('avatar'); // Default to avatar, but user can choose
-
-  // Disable auto-open of voice mode - user should have text input available by default
-  // useEffect(() => {
-  //   if (agent.voiceEnabled) {
-  //     setIsVoiceOpen(true);
-  //   }
-  // }, [agent.id, agent.voiceEnabled]);
-
-  // Reset activation gate when overlay closes
-  useEffect(() => {
-    if (!isVoiceOpen) {
-      setVoiceReady(false)
-      // Reset mode to default if needed, or keep last choice
-    }
-  }, [isVoiceOpen])
 
   // Initialize local sessionId once (used when caller doesn't supply a shared sessionId)
   const [localSessionId] = useState<string>(() =>
@@ -299,12 +221,6 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
     }
   }
 
-  const toggleVoiceMode = () => {
-    setIsVoiceOpen(!isVoiceOpen)
-  }
-
-
-
   return (
     <div className="chat-panel">
       {/* Messages Area */}
@@ -317,43 +233,14 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
           >
             {message.role === 'assistant' && (
               <div className="message-avatar">
-                {message.avatarVideoUrl ? (
-                  // Show Foundry avatar video if available
-                  <video
-                    src={message.avatarVideoUrl}
-                    autoPlay
-                    loop={false}
-                    muted={false}
-                    playsInline
-                    className="avatar-video"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      borderRadius: '50%',
-                    }}
-                    onError={(e) => {
-                      // Fallback to static image if video fails
-                      const target = e.target as HTMLVideoElement;
-                      const img = document.createElement('img');
-                      img.src = agent.avatarUrl;
-                      img.alt = agent.name;
-                      img.onerror = () => {
-                        img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%233b82f6"/></svg>';
-                      };
-                      target.parentElement?.replaceChild(img, target);
-                    }}
-                  />
-                ) : (
-                  // Fallback to static image
-                  <img
-                    src={agent.avatarUrl}
-                    alt={agent.name}
-                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%233b82f6"/></svg>'
-                    }}
-                  />
-                )}
+                {/* Text Chat Only - Static Avatar */}
+                <img
+                  src={agent.avatarUrl}
+                  alt={agent.name}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%233b82f6"/></svg>'
+                  }}
+                />
               </div>
             )}
             <div className="message-content">
@@ -428,16 +315,6 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
 
       {/* Input Area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>
-        {agent.voiceEnabled && (
-          <button
-            type="button"
-            className={`voice-button ${isVoiceOpen ? 'recording' : ''}`}
-            onClick={toggleVoiceMode}
-            title={'Tap to talk (Voice Live)'}
-          >
-            🎤
-          </button>
-        )}
         <button
           type="button"
           onClick={handleClearSession}
@@ -464,132 +341,6 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
           Send →
         </button>
       </form>
-
-      {/* Voice Overlay */}
-      {
-        isVoiceOpen && (
-          <div style={overlayStyles}>
-            <button
-              style={closeButtonStyles}
-              onClick={() => setIsVoiceOpen(false)}
-              aria-label="Close voice chat"
-            >
-              ×
-            </button>
-            <div style={{
-              background: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '16px',
-              padding: '2rem',
-              width: '100%',
-              maxWidth: '500px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '1.5rem',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-            }}>
-              <h3 style={{ margin: 0, fontWeight: 600 }}>Speaking with {agent.name}</h3>
-
-              {/* Avatar Display (WebRTC Video) */}
-              <div style={{ width: '200px', height: '200px', margin: '0 0' }}>
-                <AvatarDisplay
-                  agentId={agent.id as 'elena' | 'marcus' | 'sage'}
-                  isSpeaking={isAvatarSpeaking}
-                  avatarStream={avatarStream}
-                  size="lg"
-                  showName={false}
-                />
-              </div>
-
-              {!voiceReady ? (
-                <>
-                  <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
-                    <button
-                      className="voice-activate-btn"
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}
-                      onClick={() => {
-                        setVoiceMode('voice');
-                        setVoiceReady(true);
-                      }}
-                    >
-                      Start Voice Chat
-                    </button>
-                    <button
-                      className="voice-activate-btn"
-                      style={{ flex: 1 }}
-                      onClick={() => {
-                        setVoiceMode('avatar');
-                        setVoiceReady(true);
-                      }}
-                    >
-                      Start Avatar Chat
-                    </button>
-                  </div>
-
-                  <div className="voice-text-input-wrapper" style={{ width: '100%', marginTop: '1rem' }}>
-                    <input
-                      type="text"
-                      placeholder="Or type to chat..."
-                      className="chat-input"
-                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)' }}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          setIsVoiceOpen(false); // Close overlay to send via main flow?
-                          // Actually, we can just close overlay, the main input is synced.
-                          // But we need to trigger send?
-                          // The main form handles submit. Let's just close overlay and let user hit send, 
-                          // OR duplicate send logic. 
-                          // User said: "start typing". Even just closing overlay on focus might be enough, but let's let them type.
-                          // If they hit enter, they probably expect send.
-                          // But we are outside the form.
-                          // Let's just close overlay and focus main input?
-                          // Or better: call a send handler? 
-                          // ChatPanel's handleSubmit is form-bound.
-                          // Let's just close for now, as syncing `input` state means the text appears in the main box.
-                          setIsVoiceOpen(false);
-                          // Optional: setTimeout(() => inputRef.current?.focus(), 100);
-                        }
-                      }}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <VoiceChat
-                    agentId={activeAgent.id} // Pass active ID so VoiceChat inits correctly
-                    sessionId={sessionId}
-                    onStatusChange={(status) => {
-                      if (status === 'error') {
-                        // Optional: handle error state
-                      }
-                    }}
-                    onAvatarStream={setAvatarStream}
-                    onSpeaking={setIsAvatarSpeaking}
-                    onAgentChange={handleVoiceAgentChange}
-                    enableAvatar={voiceMode === 'avatar'} // Only enable avatar if mode is avatar
-                  />
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text-dim)',
-                    textAlign: 'center',
-                    margin: 0
-                  }}>
-                    {activeAgent.id === 'elena'
-                      ? (voiceMode === 'avatar' ? "Elena is listening (Avatar)..." : "Elena is listening (Voice)...")
-                      : "Press and hold the ring to speak."}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        )
-      }
     </div >
   )
 }
