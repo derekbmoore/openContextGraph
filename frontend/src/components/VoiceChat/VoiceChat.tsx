@@ -12,7 +12,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import './VoiceChat.css';
 import { getAccessToken } from '../../auth/authConfig';
 import { normalizeApiBase } from '../../utils/url';
-import { AvatarClient } from './AvatarClient';
+import { RTClientAvatar } from './RTClientAvatar';
 
 interface VoiceMessage {
   id: string;
@@ -109,53 +109,73 @@ export default function VoiceChat({
   const audioQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
   const nextStartTimeRef = useRef(0);
-  const avatarClientRef = useRef<AvatarClient | null>(null);
+  const avatarClientRef = useRef<RTClientAvatar | null>(null);
   const avatarSpokenRef = useRef<string>(''); // track what we've already sent to Avatar TTS
   const avatarPendingRef = useRef<string>(''); // buffer incremental text before speaking
   const avatarLastSendMsRef = useRef<number>(0);
 
-  // Initialize Avatar Client for Elena
+  // Initialize Avatar Client for Elena using RTClientAvatar (VoiceLive pattern)
   useEffect(() => {
     // Only initialize if agent is elena AND avatar is enabled
     if (activeAgentId === 'elena' && enableAvatar) {
-      console.log('🤖 Initializing AvatarClient for Elena...');
-      try {
-        const client = new AvatarClient(
-          null, // Target element is handled by parent or manual stream usage
-          (stream) => {
-            if (onAvatarStreamRef.current) {
-              onAvatarStreamRef.current(stream);
-            }
-          }
-        );
+      console.log('🤖 Initializing RTClientAvatar for Elena...');
 
-        // Connect immediately
-        const connectAvatar = async () => {
+      const client = new RTClientAvatar((stream: MediaStream) => {
+        if (onAvatarStreamRef.current) {
+          onAvatarStreamRef.current(stream);
+        }
+      });
+
+      // Connect to VoiceLive Avatar service
+      const connectAvatar = async () => {
+        try {
+          // Use westus2 regional endpoint for VoiceLive Avatar
+          const endpoint = 'https://westus2.api.cognitive.microsoft.com/';
+
+          // Fetch API key from backend (or use env var in dev)
+          const baseUrl = normalizeApiBase(import.meta.env.VITE_API_URL as string | undefined, window.location.origin);
+          const authToken = await getAccessToken().catch(() => null);
+
+          let apiKey = '';
           try {
-            // Fetch our own token securely
-            const tokenData = await client.fetchToken();
-            if (!tokenData) {
-              console.error('Failed to fetch Avatar token');
-              return;
+            const response = await fetch(`${baseUrl}/api/v1/voice/avatar/ice-credentials`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+              },
+              body: JSON.stringify({ agent_id: 'elena', get_api_key: true })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              apiKey = data.api_key || '';
             }
-
-            await client.connect(tokenData);
-            avatarClientRef.current = client;
-            console.log('✅ AvatarClient connected successfully');
-          } catch (e) {
-            console.error('❌ Failed to connect AvatarClient:', e);
-            avatarClientRef.current = null;
+          } catch {
+            console.warn('Could not fetch API key from backend, trying without');
           }
-        };
 
-        connectAvatar();
-      } catch (initError) {
-        console.error("❌ Critical Error initializing AvatarClient:", initError);
-        avatarClientRef.current = null;
-      }
+          await client.connect({
+            endpoint,
+            apiKey,
+            model: 'gpt-realtime',
+            voice: 'en-US-AvaMultilingualNeural',
+            instructions: 'You are Elena, a helpful AI assistant.',
+            avatarCharacter: 'lisa',
+            avatarStyle: 'casual-sitting',
+          });
+
+          avatarClientRef.current = client;
+          console.log('✅ RTClientAvatar connected successfully');
+        } catch (e) {
+          console.error('❌ Failed to connect RTClientAvatar:', e);
+          avatarClientRef.current = null;
+        }
+      };
+
+      connectAvatar();
 
       return () => {
-        console.log('🔌 Disconnecting AvatarClient...');
+        console.log('🔌 Disconnecting RTClientAvatar...');
         if (avatarClientRef.current) {
           avatarClientRef.current.disconnect();
           avatarClientRef.current = null;

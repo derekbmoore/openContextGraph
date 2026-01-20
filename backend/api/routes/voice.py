@@ -65,6 +65,7 @@ class IceCredentialsResponse(BaseModel):
     username: str
     credential: str
     ttl: Optional[int] = None  # Time-to-live in seconds
+    api_key: Optional[str] = None  # Speech API Key (if requested and authorized)
 
 
 class AvatarTokenResponse(BaseModel):
@@ -1101,6 +1102,7 @@ async def get_avatar_token(user: SecurityContext = Depends(get_current_user)):
 class AvatarIceRequest(BaseModel):
     """Request for avatar ICE credentials"""
     agent_id: str = "elena"
+    get_api_key: bool = False  # Request Speech API Key for direct client connection
 
 
 @router.post("/avatar/ice-credentials", response_model=IceCredentialsResponse)
@@ -1193,12 +1195,19 @@ async def get_avatar_ice_credentials(
             data = response.json()
             logger.info(f"ICE credentials obtained successfully")
             
+            # If get_api_key requested, include it (if available)
+            api_key = None
+            if request.get_api_key and auth_key:
+                clean_key = auth_key.strip()
+                api_key = clean_key
+
             # Azure returns: {Urls: [...], Username: "...", Password: "...", TurnTokenTtl: 0}
             return IceCredentialsResponse(
                 urls=data.get("Urls", []),
                 username=data.get("Username", ""),
                 credential=data.get("Password", ""),
-                ttl=data.get("TurnTokenTtl", 0)
+                ttl=data.get("TurnTokenTtl", 0),
+                api_key=api_key
             )
             
     except HTTPException:
