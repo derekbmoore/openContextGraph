@@ -167,20 +167,26 @@ GET /api/v1/voice/health
     * **Success:** JSON 200 OK with `token` and `region`.
     * **Failure:** 500 Error -> Check `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` in backend secrets.
 
-### Step 3: "Activate Avatar" vs "Voice Chat" Flow
+### Step 3: "Activate Avatar" Flow (Center Stage)
 
 **Goal:** Confirm Frontend <-> Backend <-> Azure relay.
 
-1. Open the Chat UI.
-2. Click the **Microphone** button to open the overlay.
-3. You will see two options:
-   * **Start Voice Chat:** Audio-only mode (VoiceLive). Good for low bandwidth.
-   * **Start Avatar Chat:** Full video mode (VoiceLive + Speech SDK).
-4. **Select "Start Avatar Chat":**
-   * **Phase 1 (Connecting):** Overlay appears. Spinner/Loader.
-   * **Phase 2 (Audio):** "Mic" icon appears. Speak "Hello".
-   * **Phase 3 (Video):** Avatar video should appear within 3-5 seconds.
-   * **Phase 4 (Legacy Fallback):** If video fails, you will see a static image but hear audio.
+1. Open the Chat UI (`/`).
+2. **Observation:**
+   * **Center Panel:** Shows the Avatar Placeholder (Dr. Elena).
+   * **Right Panel:** Shows the Text Chat interface.
+3. **Action:** Click the **"Connect Avatar"** button in the *Center Panel*.
+4. **Observation:**
+    * **Phase 1 (Connecting):** Spinner appears in the center.
+    * **Phase 2 (Video):** Avatar video stream appears in the center (High Fidelity).
+    * **Phase 3 (Chat):** You can type in the Right Panel while watching the avatar.
+
+### Step 4: "Voice Only" Flow (Voice Page)
+
+1. Navigate to the **Voice Interaction** page (`/voice`).
+2. **Observation:** Simplified UI with Agent Profile.
+3. Click **"Start Voice Session"**.
+4. **Observation:** Status changes to "Connected". Speak to interact (Audio Only).
 
 ---
 
