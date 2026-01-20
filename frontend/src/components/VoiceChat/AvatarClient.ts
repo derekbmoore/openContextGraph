@@ -100,10 +100,35 @@ export class AvatarClient {
             });
             this.pc = pc;
 
+            // Debug: Log ICE/Signaling state changes
+            pc.oniceconnectionstatechange = () => {
+                console.log('AvatarClient: ICE connection state:', pc.iceConnectionState);
+            };
+            pc.onsignalingstatechange = () => {
+                console.log('AvatarClient: Signaling state:', pc.signalingState);
+            };
+            pc.onconnectionstatechange = () => {
+                console.log('AvatarClient: Connection state:', pc.connectionState);
+            };
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('AvatarClient: ICE candidate:', event.candidate.type, event.candidate.address);
+                } else {
+                    console.log('AvatarClient: ICE gathering complete');
+                }
+            };
+            pc.onicegatheringstatechange = () => {
+                console.log('AvatarClient: ICE gathering state:', pc.iceGatheringState);
+            };
+
             // Receive tracks (video + audio) from Avatar Relay
             pc.ontrack = (event) => {
+                console.log('AvatarClient: ontrack fired!', event.track.kind, event.streams?.length);
                 const stream = event.streams?.[0];
-                if (!stream) return;
+                if (!stream) {
+                    console.warn('AvatarClient: ontrack but no stream!');
+                    return;
+                }
 
                 if (event.track.kind === 'video') {
                     console.log('AvatarClient: Received video track');
@@ -122,7 +147,7 @@ export class AvatarClient {
                             this.element.appendChild(video);
                         }
                         video.srcObject = stream;
-                        video.play().catch(() => {});
+                        video.play().catch(() => { });
                     }
                 } else if (event.track.kind === 'audio') {
                     // Play avatar audio (primary POC path). If you want VoiceLive audio instead,
@@ -135,13 +160,13 @@ export class AvatarClient {
                         document.body.appendChild(this.audioElement);
                     }
                     this.audioElement.srcObject = stream;
-                    this.audioElement.play().catch(() => {});
+                    this.audioElement.play().catch(() => { });
                 }
             };
 
-            // Ensure we can receive media.
-            pc.addTransceiver('video', { direction: 'recvonly' });
-            pc.addTransceiver('audio', { direction: 'recvonly' });
+            // Offer to receive one video track, and one audio track (per MS docs)
+            pc.addTransceiver('video', { direction: 'sendrecv' });
+            pc.addTransceiver('audio', { direction: 'sendrecv' });
 
             // 5. Start avatar session (SDK performs signaling against Azure Speech Avatar Relay)
             const startFn = this.connector?.startAvatarAsync || this.connector?.startAvatar;
@@ -176,6 +201,14 @@ export class AvatarClient {
             });
 
             console.log('AvatarClient: Connected (Avatar session started)');
+            console.log('AvatarClient: Post-connect PC state:', {
+                signalingState: pc.signalingState,
+                iceConnectionState: pc.iceConnectionState,
+                iceGatheringState: pc.iceGatheringState,
+                connectionState: pc.connectionState,
+                localDescription: pc.localDescription?.type,
+                remoteDescription: pc.remoteDescription?.type,
+            });
 
         } catch (e) {
             console.error('AvatarClient: Connection failed', e);
