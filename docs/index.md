@@ -12,6 +12,11 @@ permalink: /
 
 OpenContextGraph is an enterprise-grade AI platform that solves the **Memory Wall Problem** in Large Language Models through innovative context engineering. Built on the **Brain + Spine** architecture pattern, it provides durable, scalable, and cost-effective AI agent orchestration.
 
+# 🧪 [Interactive AI Periodic Table](ai-periodic-table-interactive.html)
+>
+> **Explore the Elements of AI Agents** — Our interactive roadmap for context engineering maturity.
+> **[Open Interactive Map](ai-periodic-table-interactive.html)**
+
 ## Documentation Structure
 
 ### [Architecture](architecture/)
