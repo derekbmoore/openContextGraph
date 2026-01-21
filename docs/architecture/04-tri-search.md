@@ -21,6 +21,10 @@ POST /api/v1/memory/search
 
 See: `backend/memory/client.py`
 
+## Deep dive
+
+- [Graph Knowledge (Gk) + Tri-Search™](../knowledge/01-graph-knowledge-tri-search.md)
+
 ## TODO
 
 - [ ] Document RRF tuning

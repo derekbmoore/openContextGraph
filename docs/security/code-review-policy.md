@@ -14,7 +14,7 @@ All changes to the openContextGraph codebase require review before merging to `m
 - **Compliance**: NIST AI RMF alignment (GOVERN 1.1, MANAGE 4.1)
 
 > [!IMPORTANT]
-> openContextGraph is the **UAT environment**. All features should be tested in the dev environment (engram) before promotion here.
+> openContextGraph is the **UAT environment**. All features should be tested in the dev environment (ctxEco dev) before promotion here.
 
 ## CODEOWNERS
 

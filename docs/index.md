@@ -23,6 +23,17 @@ OpenContextGraph is an enterprise-grade AI platform that solves the **Memory Wal
 
 System design, diagrams, and core concepts.
 
+**Start here (Foundry integration):**  
+- [Foundry IQ + ctxEco Integration Master](architecture/08-foundry-iq-ctxeco-integration-master.md)
+
+### [Knowledge](knowledge/)
+
+Knowledge bases, retrieval, and governed memory (DIKW: Knowledge).
+
+### [Tools](tools/)
+
+MCP tools, action groups, and tool governance (DIKW: Wisdom enablers).
+
 ### [Operations](operations/)
 
 Deployment, security, and maintenance guides.
@@ -40,6 +51,10 @@ Context engineering research and strategy.
 ### [Key Features](features/)
 
 Feature specifications and implementation details.
+
+### [Stories](stories/)
+
+Narrative descriptions and scenarios.
 
 ---
 

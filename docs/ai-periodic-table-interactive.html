@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engram AI Periodic Table - Interactive Matrix</title>
+    <title>ctxEco AI Periodic Table - Interactive Matrix</title>
     <style>
         :root {
             --strong: #10b981;
@@ -474,7 +474,7 @@
 
 <body>
     <header>
-        <h1>Engram AI Periodic Table</h1>
+        <h1>ctxEco AI Periodic Table</h1>
         <p class="subtitle">Interactive Competitive Matrix — Extended for GE Vernova ARC</p>
 
         <div class="legend">
@@ -719,9 +719,10 @@
             </div>
         </div>
         <p style="margin-top: 1.5rem; color: var(--text-secondary);">
-            Engram demonstrates <strong style="color: var(--strong);">Strong</strong> implementation in 80% of AI
+            ctxEco demonstrates <strong style="color: var(--strong);">Strong</strong> implementation in 80% of AI
             Periodic Table elements.<br>
-            <strong style="color: var(--unique);">Context Series (Ea, Kv, Gk)</strong> represents the core industrial differentiator for GE Vernova.
+            <strong style="color: var(--unique);">Context Series (Ea, Kv, Gk)</strong> represents the core industrial
+            differentiator for GE Vernova.
         </p>
     </div>
 
@@ -745,13 +746,13 @@
             <h3>🔗 Dashboards</h3>
             <p>
                 <a href="https://portal.azure.com" target="_blank">Azure Portal</a> |
-                <a href="https://temporal.engram.work" target="_blank">Temporal UI</a> |
+                <a href="https://temporal.ctxeco.com" target="_blank">Temporal UI</a> |
                 <a href="https://cloud.getzep.com" target="_blank">Zep Cloud</a> |
                 <a href="https://entra.microsoft.com" target="_blank">Entra ID</a>
             </p>
         </div>
         <div class="attribution">
-            <p>Engram AI Platform — AI Periodic Table Analysis</p>
+            <p>ctxEco AI Platform — AI Periodic Table Analysis</p>
             <p>Framework: <a href="https://youtu.be/ESBMgZHzfG0?si=Q2GME-RqGHjGaz_6" target="_blank">Martin Keen's AI
                     Periodic Table</a> (IBM Master Inventor)</p>
             <p>Updated: January 7, 2026 | Added Context Series (Lanthanides Block) with Interactive Details</p>
@@ -865,7 +866,7 @@
                 name: 'Agent',
                 classification: 'Behavioral Property',
                 classificationClass: 'classification-behavioral',
-                definition: 'Autonomous AI systems that can reason, plan, and execute tasks. Engram agents (Elena, Marcus, Sage) each have specialized roles and can delegate to one another.',
+                definition: 'Autonomous AI systems that can reason, plan, and execute tasks. ctxEco agents (Elena, Marcus, Sage) each have specialized roles and can delegate to one another.',
                 industrialValue: 'Enables autonomous monitoring and response to grid anomalies. Agents can coordinate complex maintenance procedures that require multiple steps and decisions.',
                 reactivity: 'Agents require Context Ecology (Ec) to function. They catalyze Emergent AI (Ea) when multiple agents interact.',
                 bondsWith: ['Context Ecology (Ec)', 'Multi-agent (Ma)', 'Emergence (Ea)', 'Framework (Fw)'],
@@ -877,7 +878,7 @@
                 name: 'Finetune',
                 classification: 'Deployment Technique',
                 classificationClass: 'classification-primitive',
-                definition: 'The process of training foundation models on domain-specific data to improve performance on specialized tasks. Currently not implemented in Engram.',
+                definition: 'The process of training foundation models on domain-specific data to improve performance on specialized tasks. Currently not implemented in ctxEco.',
                 industrialValue: 'Could enable more precise responses for GE Vernova-specific terminology and procedures. However, current RAG approach provides similar benefits with less maintenance overhead.',
                 reactivity: 'Finetuning would modify LLM (Lg) behavior directly. Alternative approach uses RAG (Rg) for domain adaptation.',
                 bondsWith: ['LLM (Lg)'],
@@ -1074,7 +1075,7 @@
 
             modalSymbol.textContent = spec.symbol;
             modalName.textContent = spec.name;
-            
+
             modalClassification.innerHTML = `<span class="classification-badge ${spec.classificationClass}">${spec.classification}</span>`;
 
             let html = `
@@ -1121,24 +1122,24 @@
         }
 
         // Close modal on outside click
-        document.getElementById('elementModal').addEventListener('click', function(e) {
+        document.getElementById('elementModal').addEventListener('click', function (e) {
             if (e.target === this) {
                 closeModal();
             }
         });
 
         // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeModal();
             }
         });
 
         // Add click handlers to all elements
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const elements = document.querySelectorAll('.element[data-element], .context-element[data-element]');
             elements.forEach(element => {
-                element.addEventListener('click', function() {
+                element.addEventListener('click', function () {
                     const elementKey = this.getAttribute('data-element');
                     openModal(elementKey);
                 });
@@ -1148,4 +1149,3 @@
 </body>
 
 </html>
-

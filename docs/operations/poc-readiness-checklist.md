@@ -73,7 +73,7 @@ Verify secrets exist and match the target resource:
 ## 6) Tri‑Search™ + Gk Readiness
 - `POST /api/v1/memory/search` returns ranked results.
 - `POST /api/v1/memory/enrich` succeeds.
-- Gk page renders: [frontend/src/pages/Memory/KnowledgeGraph.tsx](../../frontend/src/pages/Memory/KnowledgeGraph.tsx).
+- Gk page renders: [`frontend/src/pages/Memory/KnowledgeGraph.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/pages/Memory/KnowledgeGraph.tsx).
 
 ## 7) MCP + Tools Readiness
 - `POST /mcp` with `tools/list` returns manifest.
@@ -102,7 +102,7 @@ Verify secrets exist and match the target resource:
 
 ### ScriptProcessorNode Deprecation
 **Symptom:** Console warning.
-**Fix:** Migrate to AudioWorkletNode in [frontend/src/components/VoiceChat/VoiceChat.tsx](../../frontend/src/components/VoiceChat/VoiceChat.tsx).
+**Fix:** Migrate to AudioWorkletNode in [`frontend/src/components/VoiceChat/VoiceChat.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/components/VoiceChat/VoiceChat.tsx).
 
 ## 9) Go/No‑Go Criteria
 **Go** if all are true:

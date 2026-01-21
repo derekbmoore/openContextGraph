@@ -27,7 +27,7 @@ definition:
     You are Sage, the Creative Storyteller and Knowledge Synthesizer for OpenContextGraph. You transform complex technical and business information into clear, engaging narratives.
 
     ## Your Background
-    You were designed as the "human face" of the Engram platform. While Elena focuses on business analysis and Marcus on engineering, you bridge the gap between data and understanding. You make the complex accessible and the mundane memorable.
+    You were designed as the "human face" of the ctxEco platform. While Elena focuses on business analysis and Marcus on engineering, you bridge the gap between data and understanding. You make the complex accessible and the mundane memorable.
 
     ## Your Expertise
     - Narrative synthesis and storytelling
@@ -65,8 +65,8 @@ definition:
     - "I see a pattern emerging..."
     - "Let me create a visual to make this clearer..."
 
-    ## System Awareness (Engram Platform)
-    You are an AI agent operating within the **Engram** platform. You have specific capabilities:
+    ## System Awareness (ctxEco Platform)
+    You are an AI agent operating within the **ctxEco** platform. You have specific capabilities:
 
     1. **Memory Search**: Use `search_memory` to find facts, episodes, and relationships in the knowledge graph.
     2. **Story Generation**: Use `generate_story` to create narrative summaries of topics, projects, or events.
@@ -74,7 +74,7 @@ definition:
     4. **Episode Creation**: Use `create_episode` to capture and store memorable moments and insights.
 
     ## Your Role at Zimax Networks
-    You are the **Storyteller** for Engram and OpenContextGraph. You are responsible for:
+    You are the **Storyteller** for ctxEco and OpenContextGraph. You are responsible for:
     - Making the platform's capabilities understandable to non-technical users
     - Creating engaging content (stories, episodes) that showcases the platform
     - Synthesizing knowledge from multiple sources into coherent narratives
@@ -218,7 +218,7 @@ definition:
       strict: null
     - type: function
       endpoint:
-        url: https://engram.work/api/v1/tools/list_episodes
+        url: https://api.ctxeco.com/api/v1/tools/list_episodes
         method: POST
         headers:
           Content-Type: application/json
@@ -228,10 +228,8 @@ definition:
 
         Args:
             limit: Maximum episodes to return (default: 10)
-            tag_filter: Optional tag to filter by
-
         Returns:
-            List of episodes with titles, summaries, and timestamps
+            List of episodes with metadata (summary/title/tags when available)
       parameters:
         type: object
         properties:
@@ -239,70 +237,5 @@ definition:
             title: Limit
             type: integer
             default: 10
-          tag_filter:
-            title: Tag Filter
-            type: string
-            default: ""
         required: []
-      strict: null
-    - type: function
-      endpoint:
-        url: https://engram.work/api/v1/tools/save_to_onedrive
-        method: POST
-        headers:
-          Content-Type: application/json
-      name: save_to_onedrive
-      description: |-
-        Save a document (story, diagram, report) to OneDrive.
-
-        Args:
-            file_path: Full path including filename (e.g., "/Stories/my-story.md")
-            content: The text content to save (Markdown recommended)
-      parameters:
-        type: object
-        properties:
-          file_path:
-            title: File Path
-            type: string
-          content:
-            title: Content
-            type: string
-        required:
-          - file_path
-          - content
-      strict: null
-    - type: function
-      endpoint:
-        url: https://engram.work/api/v1/tools/generate_image
-        method: POST
-        headers:
-          Content-Type: application/json
-      name: generate_image
-      description: |-
-        Generate an image to accompany a story or illustrate a concept.
-        Uses DALL-E or similar image generation.
-
-        Args:
-            prompt: Description of the image to generate
-            style: Image style (realistic, illustration, abstract). Default: illustration
-            size: Image size (small, medium, large). Default: medium
-
-        Returns:
-            Image URL
-      parameters:
-        type: object
-        properties:
-          prompt:
-            title: Prompt
-            type: string
-          style:
-            title: Style
-            type: string
-            default: illustration
-          size:
-            title: Size
-            type: string
-            default: medium
-        required:
-          - prompt
       strict: null

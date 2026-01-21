@@ -23,20 +23,20 @@ User (Browser)
 
 Key modules:
 
-* **Chat API**: [backend/api/routes/chat.py](backend/api/routes/chat.py)
-* **Voice Router**: [backend/api/routes/voice.py](backend/api/routes/voice.py)
-* **Voice Service**: [backend/voice/voicelive_service.py](backend/voice/voicelive_service.py)
-* **MCP Server**: [backend/api/routes/mcp.py](backend/api/routes/mcp.py)
-* **MCP Tool Registry**: [backend/api/mcp_tools.py](backend/api/mcp_tools.py)
-* **Tri-Search™ client**: [backend/memory/client.py](backend/memory/client.py)
-* **UI Voice (WS proxy)**: [frontend/src/components/VoiceChat/VoiceChat.tsx](frontend/src/components/VoiceChat/VoiceChat.tsx)
-* **UI Voice (WebRTC direct)**: [frontend/src/components/VoiceChat/VoiceChatV2.tsx](frontend/src/components/VoiceChat/VoiceChatV2.tsx)
-* **WebRTC hook**: [frontend/src/hooks/useAzureRealtime.ts](frontend/src/hooks/useAzureRealtime.ts)
+* **Chat API**: [`backend/api/routes/chat.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/chat.py)
+* **Voice Router**: [`backend/api/routes/voice.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/voice.py)
+* **Voice Service**: [`backend/voice/voicelive_service.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/voice/voicelive_service.py)
+* **MCP Server**: [`backend/api/routes/mcp.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/mcp.py)
+* **MCP Tool Registry**: [`backend/api/mcp_tools.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/mcp_tools.py)
+* **Tri-Search™ client**: [`backend/memory/client.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/memory/client.py)
+* **UI Voice (WS proxy)**: [`frontend/src/components/VoiceChat/VoiceChat.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/components/VoiceChat/VoiceChat.tsx)
+* **UI Voice (WebRTC direct)**: [`frontend/src/components/VoiceChat/VoiceChatV2.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/components/VoiceChat/VoiceChatV2.tsx)
+* **WebRTC hook**: [`frontend/src/hooks/useAzureRealtime.ts`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/hooks/useAzureRealtime.ts)
 
-Related Engram SOPs:
+Related ctxEco SOPs:
 
-* [engram/docs/operations/webrtc-avatar-sop.md](../../engram/docs/operations/webrtc-avatar-sop.md)
-* [engram/docs/05-knowledge-base/azure-ai-configuration.md](../../engram/docs/05-knowledge-base/azure-ai-configuration.md)
+* [Avatar + Voice deployment guide](../operations/avatar_voice_deployment_guide.md)
+* [Deployment guide (Azure)](../operations/deployment-guide.md)
 
 ---
 
@@ -177,7 +177,7 @@ Speech processing is tied to the Speech resource region (document which region(s
 
 ## 6) Memory Tri-Search™ (keyword + semantic + Gk)
 
-Tri-Search is implemented in [backend/memory/client.py](backend/memory/client.py):
+Tri-Search is implemented in [`backend/memory/client.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/memory/client.py):
 
 * **Keyword**: BM25
 * **Semantic**: Vector search
@@ -193,13 +193,13 @@ Memory endpoints:
 
 UI:
 
-* Search page: [frontend/src/pages/Memory/Search.tsx](frontend/src/pages/Memory/Search.tsx)
-* Graph (Gk): [frontend/src/pages/Memory/KnowledgeGraph.tsx](frontend/src/pages/Memory/KnowledgeGraph.tsx)
+* Search page: [`frontend/src/pages/Memory/Search.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/pages/Memory/Search.tsx)
+* Graph (Gk): [`frontend/src/pages/Memory/KnowledgeGraph.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/pages/Memory/KnowledgeGraph.tsx)
 
 ### Tenant Isolation & Authorization
 
-* Tenant scoping is enforced in memory queries via `tenant_id` in `SecurityContext` (see [backend/api/routes/memory.py](backend/api/routes/memory.py)).
-* Tool endpoints enforce auth via JWT or agent API keys: [backend/api/routes/tools.py](backend/api/routes/tools.py), [backend/api/agent_keys.py](backend/api/agent_keys.py).
+* Tenant scoping is enforced in memory queries via `tenant_id` in `SecurityContext` (see [`backend/api/routes/memory.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/memory.py)).
+* Tool endpoints enforce auth via JWT or agent API keys: [`backend/api/routes/tools.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/tools.py), [`backend/api/agent_keys.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/agent_keys.py).
 
 ---
 
@@ -307,4 +307,4 @@ Ensure Speech key + region alignment. If Managed Identity is flaky in a given ac
 * Chat: `POST /api/v1/chat`
 * Tri-Search: `POST /api/v1/memory/search`
 
-See also [docs/research/chat-voice-avatar-integration.md](docs/research/chat-voice-avatar-integration.md).
+See also [chat + voice + avatar integration notes](../research/chat-voice-avatar-integration.md).

@@ -18,13 +18,13 @@ This runbook documents the full PoC provisioning path for customers so it can be
 - Entra ID app registration for SPA
 
 ## Key Runtime Files
-- Backend app: [backend/api/main.py](backend/api/main.py)
-- Memory API: [backend/api/routes/memory.py](backend/api/routes/memory.py)
-- Tools API: [backend/api/routes/tools.py](backend/api/routes/tools.py)
-- MCP endpoint: [backend/api/routes/mcp.py](backend/api/routes/mcp.py)
-- Tri-Search client: [backend/memory/client.py](backend/memory/client.py)
-- Agent tool definitions: [docs/agents/marcus.yaml](docs/agents/marcus.yaml), [docs/agents/sage.yaml](docs/agents/sage.yaml)
-- Feature flags: [config/features.json](config/features.json)
+- Backend app: [`backend/api/main.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/main.py)
+- Memory API: [`backend/api/routes/memory.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/memory.py)
+- Tools API: [`backend/api/routes/tools.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/tools.py)
+- MCP endpoint: [`backend/api/routes/mcp.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/mcp.py)
+- Tri-Search client: [`backend/memory/client.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/memory/client.py)
+- Agent tool definitions: [docs/agents/marcus.yaml](../agents/marcus.yaml), [docs/agents/sage.yaml](../agents/sage.yaml)
+- Feature flags: [`config/features.json`](https://github.com/derekbmoore/openContextGraph/blob/main/config/features.json)
 
 ## Required Secrets (Key Vault)
 Populate these secrets for each customer deployment (names are fixed):
@@ -42,7 +42,7 @@ Populate these secrets for each customer deployment (names are fixed):
 - `azure-openai-realtime-key` — Azure OpenAI Realtime key
 - `zep-api-key` — Zep API key (if Zep is exposed at zep.<domain>)
 
-> These are wired into the app by the Key Vault loader in [backend/core/config.py](backend/core/config.py) and the ACA secret references in [infra/modules/backend-aca.bicep](infra/modules/backend-aca.bicep).
+> These are wired into the app by the Key Vault loader in [`backend/core/config.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/core/config.py) and the ACA secret references in [`infra/modules/backend-aca.bicep`](https://github.com/derekbmoore/openContextGraph/blob/main/infra/modules/backend-aca.bicep).
 
 ## Environment Variables (App)
 Set these on the API Container App:
@@ -117,14 +117,14 @@ VITE_API_SCOPE=api://<api-application-id>/.default
 - Voice live endpoint: `https://zimax.services.ai.azure.com`
 
 ## Tri-Search™ + Gk (Graph Knowledge)
-Tri-Search is implemented in [backend/memory/client.py](backend/memory/client.py) and exposed via:
+Tri-Search is implemented in [`backend/memory/client.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/memory/client.py) and exposed via:
 
 - **Search**: POST `/api/v1/memory/search`
 - **Facts**: GET `/api/v1/memory/facts/{user_id}`
 - **Episodes**: GET `/api/v1/memory/episodes`
 - **Enrich**: POST `/api/v1/memory/enrich`
 
-The Knowledge Graph UI is in [frontend/src/pages/Memory/KnowledgeGraph.tsx](frontend/src/pages/Memory/KnowledgeGraph.tsx).
+The Knowledge Graph UI is in [`frontend/src/pages/Memory/KnowledgeGraph.tsx`](https://github.com/derekbmoore/openContextGraph/blob/main/frontend/src/pages/Memory/KnowledgeGraph.tsx).
 
 ### Demo Ingestion/Enrichment
 For customer demos, use tool endpoints that map to Tri-Search and enrichment:
@@ -135,15 +135,15 @@ For customer demos, use tool endpoints that map to Tri-Search and enrichment:
 - POST `/api/v1/tools/list_episodes`
 - POST `/api/v1/tools/create_episode`
 
-These are defined in [backend/api/routes/tools.py](backend/api/routes/tools.py).
+These are defined in [`backend/api/routes/tools.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/tools.py).
 
 ## Foundry Agents + Tooling
 Foundry agents can call ctxeco tools via HTTP endpoints:
 
-- Marcus tool config: [docs/agents/marcus.yaml](docs/agents/marcus.yaml)
-- Sage tool config: [docs/agents/sage.yaml](docs/agents/sage.yaml)
+- Marcus tool config: [docs/agents/marcus.yaml](../agents/marcus.yaml)
+- Sage tool config: [docs/agents/sage.yaml](../agents/sage.yaml)
 
-The MCP server is available at `/mcp` and tool definitions are registered in [backend/api/mcp_tools.py](backend/api/mcp_tools.py).
+The MCP server is available at `/mcp` and tool definitions are registered in [`backend/api/mcp_tools.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/mcp_tools.py).
 
 > Note: Tools are implemented twice (MCP and HTTP) for flexibility. Foundry action groups should point to the HTTP tools.
 
@@ -151,7 +151,7 @@ The MCP server is available at `/mcp` and tool definitions are registered in [ba
 The chat route attempts Foundry first, then falls back to local routing:
 
 - Route: POST `/api/v1/chat`
-- Logic: [backend/api/routes/chat.py](backend/api/routes/chat.py)
+- Logic: [`backend/api/routes/chat.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/chat.py)
 
 Ensure Foundry agent IDs and endpoint settings are populated or chat will fall back to local routing.
 
@@ -159,7 +159,7 @@ Ensure Foundry agent IDs and endpoint settings are populated or chat will fall b
 VoiceLive is configured via the environment variables listed above. Avatar requires Speech key.
 
 Reference:
-- Voice routes: [backend/api/routes/voice.py](backend/api/routes/voice.py)
+- Voice routes: [`backend/api/routes/voice.py`](https://github.com/derekbmoore/openContextGraph/blob/main/backend/api/routes/voice.py)
 
 ## Smoke Test Checklist
 1. **Health**: GET `/health`
@@ -170,7 +170,7 @@ Reference:
 6. **UI**: open Memory → Search + Gk graph
 
 ## Rollback Notes
-- All feature switches live in [config/features.json](config/features.json)
+- All feature switches live in [`config/features.json`](https://github.com/derekbmoore/openContextGraph/blob/main/config/features.json)
 - If Foundry agents fail, chat will fall back to local routing
 - If memory calls fail, the app continues with empty results
 

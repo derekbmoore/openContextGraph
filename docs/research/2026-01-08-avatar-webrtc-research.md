@@ -1,11 +1,13 @@
-# Technical Report: Deep Research on Integrating Azure AI Foundry Avatar with Engram Neural Memory Architectures
+# Technical Report: Deep Research on Integrating Azure AI Foundry Avatar with ctxEco Memory Architectures
 
 **Original Date:** Jan 8, 2026
-**Source:** Legacy Engram Documentation
+**Source:** Legacy documentation (pre-ctxEco rebrand)
+
+> Note: this report retains some legacy “Engram” terminology in deep technical sections and in the “Engram Network” disambiguation. For ctxEco product context, treat “Engram” as “ctxEco”.
 
 ## Executive Overview and Architectural Thesis
 
-The endeavor to integrate Azure AI Foundry’s Text-to-Speech (TTS) Avatar—specifically its Real-Time Synthesis capability via WebRTC—with Engram, a next-generation neural memory system utilized via the Model Context Protocol (MCP), represents a definitive step toward the creation of stateful, embodied artificial intelligence. This integration transcends simple chatbot deployment, moving into the domain of Digital Humans that possess both a high-fidelity visual presence (the Azure Avatar) and a persistent, semantic, and episodic memory (Engram).
+The endeavor to integrate Azure AI Foundry’s Text-to-Speech (TTS) Avatar—specifically its Real-Time Synthesis capability via WebRTC—with ctxEco (formerly “Engram”), a next-generation context ecology + memory system utilized via the Model Context Protocol (MCP), represents a definitive step toward the creation of stateful, embodied artificial intelligence. This integration transcends simple chatbot deployment, moving into the domain of Digital Humans that possess both a high-fidelity visual presence (the Azure Avatar) and a persistent, semantic, and episodic memory (ctxEco).
 
 However, the user’s query highlights a significant friction point: "many errors" and substantial difficulty in achieving a stable operational state. This report postulates that these difficulties are not merely configuration errors but are symptomatic of a fundamental architectural impedance mismatch between the synchronous, stream-oriented nature of Real-Time WebRTC and the asynchronous, transactional nature of the Model Context Protocol. Furthermore, the ambiguity of "Engram"—which refers to both a cognitive memory system (Lumetra) and a decentralized infrastructure protocol (Engram Network)—necessitates a dual-track analysis. The "errors" likely span the entire OSI stack, from Layer 4 (UDP/TCP transport failures in WebRTC) to Layer 7 (JSON schema validation failures in the API orchestration).
 
