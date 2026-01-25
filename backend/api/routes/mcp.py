@@ -378,5 +378,56 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
             "source": args.get("source_name"),
         }
     
+    elif tool_name == "query_database":
+        from api.mcp_handlers import query_database
+        query = args.get("query", "")
+        return await query_database(query)
+    
+    elif tool_name == "read_domain_memory":
+        from api.mcp_handlers import read_domain_memory
+        section = args.get("section")
+        return await read_domain_memory(section=section)
+    
+    elif tool_name == "update_domain_memory":
+        from api.mcp_handlers import update_domain_memory
+        return await update_domain_memory(
+            decision=args.get("decision", ""),
+            why=args.get("why", ""),
+            pattern=args.get("pattern"),
+            anti_pattern=args.get("anti_pattern"),
+            commit_hash=args.get("commit_hash"),
+            category=args.get("category", "architectural_decision"),
+            related_docs=args.get("related_docs"),
+        )
+    
+    elif tool_name == "scan_commit_history":
+        from api.mcp_handlers import scan_commit_history
+        return await scan_commit_history(
+            since_days=args.get("since_days", 30),
+            pattern=args.get("pattern"),
+            extract_decisions=args.get("extract_decisions", True),
+        )
+    
+    elif tool_name == "list_foundry_iq_kbs":
+        from api.mcp_handlers import list_foundry_iq_kbs
+        return await list_foundry_iq_kbs(
+            project_id=args.get("project_id"),
+        )
+    
+    elif tool_name == "query_foundry_iq_kb":
+        from api.mcp_handlers import query_foundry_iq_kb
+        return await query_foundry_iq_kb(
+            kb_id=args.get("kb_id", ""),
+            query=args.get("query", ""),
+            limit=args.get("limit", 5),
+            search_type=args.get("search_type", "hybrid"),
+        )
+    
+    elif tool_name == "get_foundry_iq_kb_status":
+        from api.mcp_handlers import get_foundry_iq_kb_status
+        return await get_foundry_iq_kb_status(
+            kb_id=args.get("kb_id", ""),
+        )
+    
     else:
         raise ValueError(f"No handler implemented for tool: {tool_name}")

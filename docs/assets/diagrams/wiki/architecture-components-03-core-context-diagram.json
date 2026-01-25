@@ -1,0 +1,43 @@
+{
+  "title": "EnterpriseContext — 4-Layer Enterprise Schema",
+  "type": "architecture",
+  "nodes": [
+    { "id": "ec", "label": "EnterpriseContext (flows through every request)", "type": "rect", "color": "#60a5fa" },
+
+    { "id": "l1", "label": "Layer 1: SecurityContext", "type": "rect", "color": "#f472b6" },
+    { "id": "l1_fields", "label": "user_id, tenant_id, roles, scopes", "type": "note", "color": "#94a3b8" },
+
+    { "id": "l2", "label": "Layer 2: EpisodicContext", "type": "rect", "color": "#34d399" },
+    { "id": "l2_fields", "label": "conversation_id, turn_count, recent_messages, channel", "type": "note", "color": "#94a3b8" },
+
+    { "id": "l3", "label": "Layer 3: SemanticContext", "type": "rect", "color": "#f59e0b" },
+    { "id": "l3_fields", "label": "facts, entities, graph_nodes, relevance_scores", "type": "note", "color": "#94a3b8" },
+
+    { "id": "l4", "label": "Layer 4: OperationalContext", "type": "rect", "color": "#a78bfa" },
+    { "id": "l4_fields", "label": "current_agent, tool_calls, latency_budget, cost_budget, request_id", "type": "note", "color": "#94a3b8" },
+
+    { "id": "agent", "label": "Agent execution uses context", "type": "rect", "color": "#60a5fa" },
+    { "id": "memory", "label": "Memory enrichment populates L2 + L3", "type": "rect", "color": "#f59e0b" },
+    { "id": "audit", "label": "Auditability: attribution + tool call history", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "ec", "target": "l1", "label": "contains" },
+    { "source": "l1", "target": "l1_fields", "label": "fields" },
+    { "source": "ec", "target": "l2", "label": "contains" },
+    { "source": "l2", "target": "l2_fields", "label": "fields" },
+    { "source": "ec", "target": "l3", "label": "contains" },
+    { "source": "l3", "target": "l3_fields", "label": "fields" },
+    { "source": "ec", "target": "l4", "label": "contains" },
+    { "source": "l4", "target": "l4_fields", "label": "fields" },
+
+    { "source": "l1", "target": "l2", "label": "identity enables session" },
+    { "source": "l2", "target": "l3", "label": "history informs retrieval" },
+    { "source": "l3", "target": "l4", "label": "knowledge informs actions" },
+
+    { "source": "ec", "target": "agent", "label": "input" },
+    { "source": "memory", "target": "l2", "label": "episodic updates" },
+    { "source": "memory", "target": "l3", "label": "semantic updates" },
+    { "source": "l4", "target": "audit", "label": "records" }
+  ]
+}
+

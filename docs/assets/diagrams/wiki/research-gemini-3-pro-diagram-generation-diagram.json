@@ -1,0 +1,31 @@
+{
+  "title": "Gemini 3 Pro Diagram Generation — JSON Spec → Image Pipeline",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "start", "label": "52 Nano Banana JSON Specs", "type": "rect", "color": "#94a3b8" },
+    { "id": "parse", "label": "Parse JSON Spec (title, type, nodes, edges)", "type": "rect", "color": "#34d399" },
+    { "id": "convert", "label": "Convert to Natural Language Prompt", "type": "rect", "color": "#60a5fa" },
+    { "id": "architecture", "label": "Architecture: Components + Connections + Style", "type": "rect", "color": "#a78bfa" },
+    { "id": "flowchart", "label": "Flowchart: Steps + Flow + Notation", "type": "rect", "color": "#a78bfa" },
+    { "id": "mindmap", "label": "Mindmap: Central + Branches + Radial", "type": "rect", "color": "#a78bfa" },
+    { "id": "gemini", "label": "Gemini 3 Pro Image (gemini-3-pro-image-preview)", "type": "rect", "color": "#f59e0b" },
+    { "id": "config", "label": "Config: responseModalities=[IMAGE], imageConfig (size, aspect)", "type": "rect", "color": "#94a3b8" },
+    { "id": "generate", "label": "Generate Image (2K/4K PNG)", "type": "rect", "color": "#22c55e" },
+    { "id": "save", "label": "Save to docs/assets/diagrams/wiki/images/", "type": "rect", "color": "#22c55e" },
+    { "id": "alternative", "label": "Alternative: JSON → Mermaid → Image (for precision)", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "start", "target": "parse", "label": "input" },
+    { "source": "parse", "target": "convert", "label": "extract" },
+    { "source": "convert", "target": "architecture", "label": "if type=architecture" },
+    { "source": "convert", "target": "flowchart", "label": "if type=flowchart" },
+    { "source": "convert", "target": "mindmap", "label": "if type=mindmap" },
+    { "source": "architecture", "target": "gemini", "label": "prompt" },
+    { "source": "flowchart", "target": "gemini", "label": "prompt" },
+    { "source": "mindmap", "target": "gemini", "label": "prompt" },
+    { "source": "gemini", "target": "config", "label": "configure" },
+    { "source": "config", "target": "generate", "label": "call API" },
+    { "source": "generate", "target": "save", "label": "output" },
+    { "source": "convert", "target": "alternative", "label": "or" }
+  ]
+}

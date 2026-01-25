@@ -1,0 +1,21 @@
+{
+  "title": "ctxEco.com Migration Plan — engram-rg → ctxeco-rg",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "from", "label": "From: engram-rg (Legacy - Deleted)", "type": "rect", "color": "#94a3b8" },
+    { "id": "to", "label": "To: ctxeco-rg (ctxeco.com)", "type": "rect", "color": "#22c55e" },
+    { "id": "phase1", "label": "Phase 1: Foundation (P0/P1) - CIAM, DB, Key Vault, Storage, ACA, Identities, Logs", "type": "rect", "color": "#ef4444" },
+    { "id": "phase2", "label": "Phase 2: Backend (P2) - API, Worker, Zep, Temporal containers", "type": "rect", "color": "#60a5fa" },
+    { "id": "phase3", "label": "Phase 3: Frontend (P3) - Static Web App, custom domain", "type": "rect", "color": "#34d399" },
+    { "id": "naming", "label": "Naming: staging-env-* → ctxeco-* (db, kv, store, aca, api, worker, zep, temporal, web, backend-id, worker-id, logs)", "type": "note", "color": "#94a3b8" },
+    { "id": "ciam", "label": "CIAM: engramai.onmicrosoft.com → ctxeco.onmicrosoft.com (created)", "type": "note", "color": "#22c55e" }
+  ],
+  "edges": [
+    { "source": "from", "target": "to", "label": "migrate" },
+    { "source": "to", "target": "phase1", "label": "step 1" },
+    { "source": "phase1", "target": "phase2", "label": "step 2" },
+    { "source": "phase2", "target": "phase3", "label": "step 3" },
+    { "source": "to", "target": "naming", "label": "follows" },
+    { "source": "to", "target": "ciam", "label": "includes" }
+  ]
+}

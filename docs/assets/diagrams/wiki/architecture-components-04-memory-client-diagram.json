@@ -1,0 +1,41 @@
+{
+  "title": "Memory Client — Zep Integration + Tri-Search™",
+  "type": "architecture",
+  "nodes": [
+    { "id": "agent", "label": "Agents / Context Engine", "type": "rect", "color": "#60a5fa" },
+    { "id": "mem_client", "label": "ZepMemoryClient (backend/memory/client.py)", "type": "rect", "color": "#f59e0b" },
+    { "id": "zep", "label": "Zep Server (Temporal Knowledge Graph)", "type": "rect", "color": "#f59e0b" },
+    { "id": "pg", "label": "PostgreSQL (storage)", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "episodic", "label": "Episodic Memory (sessions + messages)", "type": "rect", "color": "#34d399" },
+    { "id": "semantic", "label": "Semantic Memory (facts + entities)", "type": "rect", "color": "#22c55e" },
+    { "id": "tri", "label": "Tri-Search™", "type": "rect", "color": "#ef4444" },
+    { "id": "kw", "label": "Keyword (BM25)", "type": "rect", "color": "#60a5fa" },
+    { "id": "vec", "label": "Vector (pgvector)", "type": "rect", "color": "#a78bfa" },
+    { "id": "graph", "label": "Graph (Graphiti traversal)", "type": "rect", "color": "#22c55e" },
+    { "id": "rrf", "label": "Fusion: Reciprocal Rank Fusion (RRF)", "type": "rect", "color": "#ef4444" },
+
+    { "id": "governance", "label": "Governance: user/tenant scoping + provenance", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "agent", "target": "mem_client", "label": "enrich_context(query)" },
+    { "source": "agent", "target": "mem_client", "label": "add_memory(turns)" },
+
+    { "source": "mem_client", "target": "episodic", "label": "get_or_create_user/session" },
+    { "source": "mem_client", "target": "semantic", "label": "get_facts/search" },
+
+    { "source": "mem_client", "target": "tri", "label": "search_type=hybrid" },
+    { "source": "tri", "target": "kw", "label": "candidates" },
+    { "source": "tri", "target": "vec", "label": "candidates" },
+    { "source": "tri", "target": "graph", "label": "candidates" },
+    { "source": "kw", "target": "rrf", "label": "ranked list" },
+    { "source": "vec", "target": "rrf", "label": "ranked list" },
+    { "source": "graph", "target": "rrf", "label": "ranked list" },
+
+    { "source": "mem_client", "target": "zep", "label": "HTTP API calls" },
+    { "source": "zep", "target": "pg", "label": "persists" },
+
+    { "source": "mem_client", "target": "governance", "label": "must enforce" }
+  ]
+}
+

@@ -48,6 +48,13 @@ Context engineering research and strategy.
 
 - [Interactive AI Periodic Table](ai-periodic-table-interactive.html)
 
+### [Vision](vision/)
+
+The deeper purpose: system consciousness and sentience.
+
+**Start here:**
+- [System Consciousness & Sentience](vision/system-consciousness-sentience.md) — The foundational vision of ctxEco
+
 ### [Key Features](features/)
 
 Feature specifications and implementation details.

@@ -1,0 +1,29 @@
+{
+  "title": "Foundry IQ Implementation — POC → Production Checklist",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "start", "label": "Implement Foundry IQ Hybrid Search", "type": "rect", "color": "#94a3b8" },
+    { "id": "step1", "label": "Step 1: Add Foundry IQ client (backend/integrations/foundry_iq.py)", "type": "rect", "color": "#60a5fa" },
+    { "id": "client_ops", "label": "search(), list_knowledge_bases(), get_knowledge_base()", "type": "note", "color": "#94a3b8" },
+    { "id": "auth", "label": "Auth: Managed Identity/Entra (preferred) or API key (POC)", "type": "note", "color": "#f472b6" },
+    { "id": "step2", "label": "Step 2: Integrate into search_memory (backend/memory/client.py)", "type": "rect", "color": "#34d399" },
+    { "id": "normalize", "label": "Normalize Foundry IQ hits → same schema as Tri-Search™", "type": "rect", "color": "#94a3b8" },
+    { "id": "rrf", "label": "Fuse rankings with RRF", "type": "rect", "color": "#ef4444" },
+    { "id": "step3", "label": "Step 3: Evidence-first output (KB id + doc URL + chunk id + gating + score)", "type": "rect", "color": "#f59e0b" },
+    { "id": "step4", "label": "Step 4: Tests (golden thread)", "type": "rect", "color": "#22c55e" },
+    { "id": "tests", "label": "Test: disabled works, unreachable fallback, enabled fusion", "type": "note", "color": "#94a3b8" },
+    { "id": "config", "label": "Config: USE_FOUNDRY_IQ, FOUNDRY_IQ_KB_ID, endpoint, project", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "start", "target": "step1", "label": "begin" },
+    { "source": "step1", "target": "client_ops", "label": "implements" },
+    { "source": "step1", "target": "auth", "label": "uses" },
+    { "source": "step1", "target": "step2", "label": "next" },
+    { "source": "step2", "target": "normalize", "label": "then" },
+    { "source": "normalize", "target": "rrf", "label": "then" },
+    { "source": "step2", "target": "step3", "label": "next" },
+    { "source": "step3", "target": "step4", "label": "next" },
+    { "source": "step4", "target": "tests", "label": "validates" },
+    { "source": "start", "target": "config", "label": "requires" }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "title": "MCP User ID Attribution Test — Validation Flow",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "goal", "label": "Goal: Validate user attribution + tenant/project scoping", "type": "rect", "color": "#f472b6" },
+    { "id": "verify1", "label": "Verify 1: Tool calls scoped to tenant_id (+ project_id)", "type": "rect", "color": "#60a5fa" },
+    { "id": "verify2", "label": "Verify 2: Tool calls attributed to authenticated user (Entra OID)", "type": "rect", "color": "#60a5fa" },
+    { "id": "verify3", "label": "Verify 3: No fallback identity in production", "type": "rect", "color": "#60a5fa" },
+    { "id": "smoke", "label": "Smoke Test: POST /mcp tools/list (returns manifest)", "type": "rect", "color": "#22c55e" },
+    { "id": "tool_call", "label": "Tool Call Test: POST /mcp tools/call (search_memory example)", "type": "rect", "color": "#22c55e" },
+    { "id": "inspect", "label": "Inspect Logs: user_id/oid, tenant_id, project_id, tool name, inputs hash, ALLOW/DENY", "type": "rect", "color": "#f59e0b" },
+    { "id": "why", "label": "Why: Prevents cross-tenant leakage, enables audit, makes GTM demos credible", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "goal", "target": "verify1", "label": "check" },
+    { "source": "goal", "target": "verify2", "label": "check" },
+    { "source": "goal", "target": "verify3", "label": "check" },
+    { "source": "goal", "target": "smoke", "label": "test" },
+    { "source": "goal", "target": "tool_call", "label": "test" },
+    { "source": "smoke", "target": "inspect", "label": "validate" },
+    { "source": "tool_call", "target": "inspect", "label": "validate" },
+    { "source": "goal", "target": "why", "label": "rationale" }
+  ]
+}

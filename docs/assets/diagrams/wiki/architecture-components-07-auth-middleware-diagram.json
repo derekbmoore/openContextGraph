@@ -1,0 +1,39 @@
+{
+  "title": "Auth Middleware — OIDC JWT → SecurityContext → RBAC",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "client", "label": "Client Request", "type": "rect", "color": "#94a3b8" },
+    { "id": "header", "label": "Authorization: Bearer <JWT>", "type": "note", "color": "#94a3b8" },
+    { "id": "dep", "label": "FastAPI Depends(get_current_user)", "type": "rect", "color": "#34d399" },
+
+    { "id": "auth_required", "label": "AUTH_REQUIRED?", "type": "diamond", "color": "#ef4444" },
+    { "id": "poc_user", "label": "Dev/POC: return default SecurityContext", "type": "rect", "color": "#f59e0b" },
+
+    { "id": "validate", "label": "Validate JWT (issuer/audience/expiry + signature)", "type": "rect", "color": "#60a5fa" },
+    { "id": "jwks", "label": "Fetch JWKS via OIDC discovery", "type": "rect", "color": "#94a3b8" },
+    { "id": "claims", "label": "Extract claims: oid/sub, tid, roles, scp, email, name", "type": "rect", "color": "#94a3b8" },
+    { "id": "map_roles", "label": "Map roles → app Role enum; scopes → list", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "sec_ctx", "label": "SecurityContext (user_id, tenant_id, roles, scopes)", "type": "rect", "color": "#f472b6" },
+    { "id": "rbac", "label": "RBAC: require_roles(), require_scopes()", "type": "rect", "color": "#f472b6" },
+    { "id": "handler", "label": "Protected Route Handler", "type": "rect", "color": "#34d399" }
+  ],
+  "edges": [
+    { "source": "client", "target": "header", "label": "includes" },
+    { "source": "client", "target": "dep", "label": "request enters API" },
+    { "source": "dep", "target": "auth_required", "label": "check mode" },
+
+    { "source": "auth_required", "target": "poc_user", "label": "false" },
+    { "source": "poc_user", "target": "sec_ctx", "label": "returns" },
+
+    { "source": "auth_required", "target": "jwks", "label": "true" },
+    { "source": "jwks", "target": "validate", "label": "public keys" },
+    { "source": "validate", "target": "claims", "label": "decoded payload" },
+    { "source": "claims", "target": "map_roles", "label": "normalize" },
+    { "source": "map_roles", "target": "sec_ctx", "label": "build" },
+
+    { "source": "sec_ctx", "target": "rbac", "label": "enforce" },
+    { "source": "rbac", "target": "handler", "label": "allow/deny" }
+  ]
+}
+

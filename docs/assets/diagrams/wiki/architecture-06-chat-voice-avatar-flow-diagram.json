@@ -1,0 +1,62 @@
+{
+  "title": "End-to-End: Chat + Voice + Avatar → Foundry + Tools → Memory (Tri-Search™ + Gk)",
+  "type": "architecture",
+  "nodes": [
+    { "id": "user", "label": "User (Browser)", "type": "actor", "color": "#94a3b8" },
+    { "id": "ui", "label": "ctxEco UI (Chat + Voice + Avatar)", "type": "rect", "color": "#60a5fa" },
+    { "id": "api", "label": "ctxEco API (FastAPI)", "type": "rect", "color": "#34d399" },
+    { "id": "security", "label": "SecurityContext (tenant/user/roles)", "type": "rect", "color": "#f472b6" },
+
+    { "id": "chat", "label": "Chat: POST /api/v1/chat", "type": "rect", "color": "#60a5fa" },
+    { "id": "foundry_agent", "label": "Foundry Agent (Elena/Marcus/Sage)", "type": "rect", "color": "#a78bfa" },
+    { "id": "tools_http", "label": "Tools: HTTP Action Groups (preferred)", "type": "rect", "color": "#22c55e" },
+    { "id": "tools_mcp", "label": "Tools: MCP (optional)", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "voice_ws", "label": "Voice A: VoiceLive via WS proxy", "type": "rect", "color": "#34d399" },
+    { "id": "voicelive", "label": "Azure VoiceLive (WS transport)", "type": "rect", "color": "#a78bfa" },
+    { "id": "voice_webrtc", "label": "Voice B: Azure OpenAI Realtime via WebRTC (browser-direct)", "type": "rect", "color": "#22c55e" },
+    { "id": "realtime_token", "label": "Token mint: POST /api/v1/voice/realtime/token", "type": "rect", "color": "#94a3b8" },
+    { "id": "aoai_realtime", "label": "Azure OpenAI Realtime (WebRTC /calls)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "avatar", "label": "Avatar: Speech Avatar Relay (WebRTC)", "type": "rect", "color": "#22c55e" },
+    { "id": "avatar_token", "label": "Avatar token: POST /api/v1/voice/avatar/token", "type": "rect", "color": "#94a3b8" },
+    { "id": "ice", "label": "ICE creds: POST /api/v1/voice/avatar/ice-credentials", "type": "rect", "color": "#94a3b8" },
+    { "id": "speech_avatar", "label": "Azure Speech Avatar Relay (region-limited)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "memory", "label": "Memory: Tri-Search™ + Gk (keyword + vector + graph, RRF)", "type": "rect", "color": "#f59e0b" },
+    { "id": "tenant_isolation", "label": "Tenant isolation + tool auth boundaries", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "user", "target": "ui", "label": "interacts" },
+    { "source": "ui", "target": "api", "label": "HTTPS/WS calls" },
+    { "source": "api", "target": "security", "label": "auth → context" },
+    { "source": "security", "target": "tenant_isolation", "label": "enforces" },
+
+    { "source": "ui", "target": "chat", "label": "chat request" },
+    { "source": "chat", "target": "memory", "label": "enrich + persist" },
+    { "source": "chat", "target": "foundry_agent", "label": "route if configured" },
+    { "source": "foundry_agent", "target": "tools_http", "label": "calls tools" },
+    { "source": "foundry_agent", "target": "tools_mcp", "label": "calls tools (optional)" },
+    { "source": "tools_http", "target": "api", "label": "server-to-server" },
+    { "source": "tools_mcp", "target": "api", "label": "JSON-RPC tools/call" },
+    { "source": "api", "target": "memory", "label": "search / write" },
+
+    { "source": "ui", "target": "voice_ws", "label": "voice (WS proxy)" },
+    { "source": "voice_ws", "target": "voicelive", "label": "WS transport + headers" },
+    { "source": "voicelive", "target": "voice_ws", "label": "events + audio deltas" },
+    { "source": "voice_ws", "target": "memory", "label": "transcripts → persist" },
+
+    { "source": "ui", "target": "realtime_token", "label": "request ephemeral key" },
+    { "source": "realtime_token", "target": "aoai_realtime", "label": "mint calls_url + token" },
+    { "source": "ui", "target": "voice_webrtc", "label": "direct WebRTC" },
+    { "source": "voice_webrtc", "target": "aoai_realtime", "label": "audio stream" },
+    { "source": "aoai_realtime", "target": "api", "label": "events/transcripts forwarded" },
+    { "source": "api", "target": "memory", "label": "persist async" },
+
+    { "source": "ui", "target": "avatar_token", "label": "Speech STS token" },
+    { "source": "ui", "target": "ice", "label": "TURN/ICE config" },
+    { "source": "ui", "target": "avatar", "label": "WebRTC setup" },
+    { "source": "avatar", "target": "speech_avatar", "label": "media relay" }
+  ]
+}
+

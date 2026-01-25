@@ -1,0 +1,31 @@
+{
+  "title": "Antigravity Ingestion Router — Class A/B/C Truth-Value Routing",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "sources", "label": "16 Enterprise Connectors (S3, SharePoint, Slack, Teams, Email, DB, etc.)", "type": "rect", "color": "#22c55e" },
+    { "id": "router", "label": "Antigravity Router (classify by Truth Value)", "type": "rect", "color": "#ef4444" },
+    { "id": "classify", "label": "Classify: A (Immutable) / B (Ephemeral) / C (Operational)", "type": "diamond", "color": "#f59e0b" },
+    { "id": "class_a", "label": "Class A: Immutable Truth (Decay: 0.01)", "type": "rect", "color": "#60a5fa" },
+    { "id": "docling", "label": "Docling Engine (layout fidelity, TableFormer, bounding boxes)", "type": "rect", "color": "#94a3b8" },
+    { "id": "class_b", "label": "Class B: Ephemeral Chatter (Decay: 0.80)", "type": "rect", "color": "#a78bfa" },
+    { "id": "unstructured", "label": "Unstructured Engine (semantic chunking, HTML, images, threads)", "type": "rect", "color": "#94a3b8" },
+    { "id": "class_c", "label": "Class C: Operational Telemetry (Decay: 0.99)", "type": "rect", "color": "#34d399" },
+    { "id": "pandas", "label": "Pandas Engine (structured rows, numeric precision)", "type": "rect", "color": "#94a3b8" },
+    { "id": "metadata", "label": "Metadata: provenance_id, data_class, decay_rate, sensitivity_level, compliance_frameworks", "type": "rect", "color": "#f472b6" },
+    { "id": "nist", "label": "NIST-Aligned: High/Moderate/Low Impact classification", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "sources", "target": "router", "label": "documents" },
+    { "source": "router", "target": "classify", "label": "route decision" },
+    { "source": "classify", "target": "class_a", "label": "A" },
+    { "source": "classify", "target": "class_b", "label": "B" },
+    { "source": "classify", "target": "class_c", "label": "C" },
+    { "source": "class_a", "target": "docling", "label": "extract" },
+    { "source": "class_b", "target": "unstructured", "label": "extract" },
+    { "source": "class_c", "target": "pandas", "label": "extract" },
+    { "source": "docling", "target": "metadata", "label": "enrich" },
+    { "source": "unstructured", "target": "metadata", "label": "enrich" },
+    { "source": "pandas", "target": "metadata", "label": "enrich" },
+    { "source": "metadata", "target": "nist", "label": "includes" }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "title": "Foundry-Created Agents — Recommended Hybrid Split for GTM MVP",
+  "type": "architecture",
+  "nodes": [
+    { "id": "approach", "label": "Two approaches", "type": "rect", "color": "#94a3b8" },
+    { "id": "ctxeco_native", "label": "ctxEco-native agents (LangGraph)", "type": "rect", "color": "#60a5fa" },
+    { "id": "foundry_agents", "label": "Foundry agents (Foundry runtime)", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "recommend", "label": "Recommendation: Hybrid (default for GTM MVP)", "type": "highlight", "color": "#ef4444" },
+    { "id": "foundry_for", "label": "Foundry: agents + tool calling", "type": "rect", "color": "#a78bfa" },
+    { "id": "ctxeco_for", "label": "ctxEco: memory + ingestion + evidence + policy", "type": "rect", "color": "#f59e0b" },
+    { "id": "langgraph_keep", "label": "Keep LangGraph for complex multi-step reasoning", "type": "note", "color": "#94a3b8" },
+
+    { "id": "tools", "label": "Tool integration", "type": "rect", "color": "#22c55e" },
+    { "id": "mcp", "label": "MCP server (ctxEco): tools/list + tools/call", "type": "rect", "color": "#34d399" },
+    { "id": "http", "label": "HTTP tools (ctxEco): /api/v1/tools/*", "type": "rect", "color": "#34d399" }
+  ],
+  "edges": [
+    { "source": "approach", "target": "ctxeco_native", "label": "option 1" },
+    { "source": "approach", "target": "foundry_agents", "label": "option 2" },
+    { "source": "approach", "target": "recommend", "label": "what to ship" },
+
+    { "source": "recommend", "target": "foundry_for", "label": "use" },
+    { "source": "recommend", "target": "ctxeco_for", "label": "use" },
+    { "source": "recommend", "target": "langgraph_keep", "label": "note" },
+
+    { "source": "tools", "target": "mcp", "label": "preferred GTM" },
+    { "source": "tools", "target": "http", "label": "compatibility" },
+    { "source": "foundry_for", "target": "tools", "label": "invokes" }
+  ]
+}
+

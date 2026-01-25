@@ -1,0 +1,27 @@
+{
+  "title": "Infrastructure — Azure → On-Prem Mapping",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "Infrastructure Mapping", "type": "rect", "color": "#94a3b8" },
+    { "id": "azure", "label": "Azure", "type": "rect", "color": "#60a5fa" },
+    { "id": "onprem", "label": "On-Prem", "type": "rect", "color": "#a78bfa" },
+    { "id": "aca_k8s", "label": "Container Apps → Kubernetes", "type": "rect", "color": "#34d399" },
+    { "id": "pg", "label": "PostgreSQL Flex → PostgreSQL", "type": "rect", "color": "#f59e0b" },
+    { "id": "kv_vault", "label": "Key Vault → HashiCorp Vault", "type": "rect", "color": "#f472b6" },
+    { "id": "speech_whisper", "label": "Azure Speech → Whisper + Piper", "type": "rect", "color": "#22c55e" },
+    { "id": "aoai_vllm", "label": "Azure OpenAI → vLLM / Ollama", "type": "rect", "color": "#94a3b8" },
+    { "id": "modules", "label": "Modules: infra/k8s/, infra/helm/", "type": "note", "color": "#94a3b8" },
+    { "id": "todo", "label": "TODO: Helm charts, air-gapped deployment docs", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "root", "target": "azure", "label": "cloud" },
+    { "source": "root", "target": "onprem", "label": "on-prem" },
+    { "source": "azure", "target": "aca_k8s", "label": "maps to" },
+    { "source": "azure", "target": "pg", "label": "maps to" },
+    { "source": "azure", "target": "kv_vault", "label": "maps to" },
+    { "source": "azure", "target": "speech_whisper", "label": "maps to" },
+    { "source": "azure", "target": "aoai_vllm", "label": "maps to" },
+    { "source": "root", "target": "modules", "label": "see" },
+    { "source": "root", "target": "todo", "label": "next" }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "title": "Foundry (Azure AI Foundry) — Section Map",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "foundry", "label": "Foundry (Azure AI Foundry)", "type": "rect", "color": "#a78bfa" },
+    { "id": "master", "label": "Start: Foundry IQ + ctxEco Integration Master", "type": "highlight", "color": "#ef4444" },
+
+    { "id": "agent_service", "label": "Agent Service: Threads, Files, Vector stores, Tools", "type": "rect", "color": "#60a5fa" },
+    { "id": "created_agents", "label": "Foundry-created agents (Elena/Marcus/Sage)", "type": "rect", "color": "#34d399" },
+    { "id": "threads", "label": "Threads (feature-flagged persistence)", "type": "rect", "color": "#94a3b8" },
+    { "id": "orchestration", "label": "Multi-agent orchestration (GTM workflows)", "type": "rect", "color": "#f59e0b" },
+
+    { "id": "iq", "label": "Foundry IQ (Enterprise Knowledge Bases)", "type": "rect", "color": "#a78bfa" },
+    { "id": "config_sot", "label": "Config source of truth (Key Vault)", "type": "rect", "color": "#f472b6" },
+    { "id": "config_setup", "label": "Foundry configuration setup (endpoints, agent IDs)", "type": "rect", "color": "#22c55e" },
+    { "id": "impact", "label": "Impact analysis (additive integration)", "type": "rect", "color": "#94a3b8" },
+    { "id": "roadmap", "label": "Roadmap (GTM MVP phases)", "type": "rect", "color": "#fbbf24" }
+  ],
+  "edges": [
+    { "source": "foundry", "target": "master", "label": "anchor" },
+
+    { "source": "foundry", "target": "agent_service", "label": "capabilities" },
+    { "source": "foundry", "target": "created_agents", "label": "how to run agents" },
+    { "source": "foundry", "target": "threads", "label": "persistence" },
+    { "source": "foundry", "target": "orchestration", "label": "workflows" },
+
+    { "source": "foundry", "target": "iq", "label": "knowledge bases" },
+    { "source": "foundry", "target": "config_sot", "label": "config governance" },
+    { "source": "foundry", "target": "config_setup", "label": "setup checklist" },
+    { "source": "foundry", "target": "impact", "label": "risk view" },
+    { "source": "foundry", "target": "roadmap", "label": "plan" }
+  ]
+}
+

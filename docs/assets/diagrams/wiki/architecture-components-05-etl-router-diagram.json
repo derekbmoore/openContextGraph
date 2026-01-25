@@ -1,0 +1,41 @@
+{
+  "title": "ETL Router (Antigravity) — Classify → Extract → Provenance → Store",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "input", "label": "Input Document / Dataset", "type": "rect", "color": "#22c55e" },
+    { "id": "classify", "label": "Classify (A/B/C) by truth value", "type": "diamond", "color": "#ef4444" },
+    { "id": "a", "label": "Class A: Immutable Truth", "type": "rect", "color": "#60a5fa" },
+    { "id": "b", "label": "Class B: Ephemeral Stream", "type": "rect", "color": "#a78bfa" },
+    { "id": "c", "label": "Class C: Operational Pulse", "type": "rect", "color": "#34d399" },
+
+    { "id": "docling", "label": "Docling Engine (high-fidelity layout/tables)", "type": "rect", "color": "#94a3b8" },
+    { "id": "unstructured", "label": "Unstructured Engine (semantic chunking)", "type": "rect", "color": "#94a3b8" },
+    { "id": "pandas", "label": "Pandas Engine (structured rows)", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "fallback", "label": "Fallback: Docling → Unstructured (optional)", "type": "note", "color": "#f59e0b" },
+    { "id": "provenance", "label": "Attach metadata: provenance_id, data_class, ingested_at, decay_rate", "type": "rect", "color": "#f472b6" },
+    { "id": "chunks", "label": "Output: chunks[] (text + metadata)", "type": "rect", "color": "#f59e0b" },
+    { "id": "store", "label": "Store/Index into Memory (Tri-Search™ + graph)", "type": "rect", "color": "#f59e0b" }
+  ],
+  "edges": [
+    { "source": "input", "target": "classify", "label": "route decision" },
+    { "source": "classify", "target": "a", "label": "A" },
+    { "source": "classify", "target": "b", "label": "B" },
+    { "source": "classify", "target": "c", "label": "C" },
+
+    { "source": "a", "target": "docling", "label": "extract" },
+    { "source": "docling", "target": "fallback", "label": "if fails" },
+    { "source": "fallback", "target": "unstructured", "label": "fallback path" },
+
+    { "source": "b", "target": "unstructured", "label": "extract" },
+    { "source": "c", "target": "pandas", "label": "extract" },
+
+    { "source": "docling", "target": "provenance", "label": "chunks" },
+    { "source": "unstructured", "target": "provenance", "label": "chunks" },
+    { "source": "pandas", "target": "provenance", "label": "chunks" },
+
+    { "source": "provenance", "target": "chunks", "label": "enriched output" },
+    { "source": "chunks", "target": "store", "label": "persist + index" }
+  ]
+}
+

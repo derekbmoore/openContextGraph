@@ -1,0 +1,29 @@
+{
+  "title": "Avatar WebRTC Research — Azure Foundry Avatar + ctxEco Memory Integration",
+  "type": "architecture",
+  "nodes": [
+    { "id": "challenge", "label": "Challenge: Real-Time WebRTC (synchronous) vs MCP (asynchronous)", "type": "rect", "color": "#ef4444" },
+    { "id": "avatar", "label": "Azure AI Foundry Avatar (Real-Time Synthesis)", "type": "rect", "color": "#22c55e" },
+    { "id": "pipeline", "label": "Pipeline: Text → Neural TTS → Visemes → GAN/VASA-1 → H.264/VP8 → RTP/UDP", "type": "rect", "color": "#94a3b8" },
+    { "id": "signaling", "label": "Signaling: WebSocket (wss://) → session.update → SDP Exchange (Offer/Answer)", "type": "rect", "color": "#60a5fa" },
+    { "id": "webrtc", "label": "Media Transport: WebRTC + ICE (Host/Srflx/Relay via TURN)", "type": "rect", "color": "#a78bfa" },
+    { "id": "turn", "label": "TURN Server: GET /cognitiveservices/avatar/relay/token/v1 (CRITICAL)", "type": "rect", "color": "#f59e0b" },
+    { "id": "ctxeco", "label": "ctxEco Memory (MCP Server)", "type": "rect", "color": "#f59e0b" },
+    { "id": "hybrid", "label": "Hybrid: Episodic (Vector) + Semantic (Graph) → 800-1500ms latency", "type": "rect", "color": "#f59e0b" },
+    { "id": "problem", "label": "Problem: Thinking time (1.5s) → VAD silence → timeout/errors", "type": "rect", "color": "#ef4444" },
+    { "id": "bridge", "label": "Solution: Middleware Bridge (async tool calls + keep-alive + buffering)", "type": "rect", "color": "#22c55e" },
+    { "id": "errors", "label": "Common Errors: 4007 Protocol, ICE failures, SDP timeouts, latency race conditions", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "challenge", "target": "avatar", "label": "body" },
+    { "source": "challenge", "target": "ctxeco", "label": "mind" },
+    { "source": "avatar", "target": "pipeline", "label": "renders" },
+    { "source": "avatar", "target": "signaling", "label": "negotiates" },
+    { "source": "signaling", "target": "webrtc", "label": "enables" },
+    { "source": "webrtc", "target": "turn", "label": "requires" },
+    { "source": "ctxeco", "target": "hybrid", "label": "searches" },
+    { "source": "hybrid", "target": "problem", "label": "causes" },
+    { "source": "problem", "target": "bridge", "label": "solved by" },
+    { "source": "avatar", "target": "errors", "label": "fails with" }
+  ]
+}

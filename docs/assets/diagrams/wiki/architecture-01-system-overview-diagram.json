@@ -1,0 +1,42 @@
+{
+  "title": "System Overview — Mission + Differentiators",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "OpenContextGraph (ctxEco)", "type": "rect", "color": "#60a5fa" },
+    { "id": "mission", "label": "Mission: Solve the Memory Wall Problem", "type": "rect", "color": "#ef4444" },
+    { "id": "mission_detail", "label": "LLMs lack persistent, attributable, scoped memory", "type": "note", "color": "#94a3b8" },
+
+    { "id": "diffs", "label": "Unique Differentiators", "type": "rect", "color": "#34d399" },
+    { "id": "kg", "label": "Temporal Knowledge Graph", "type": "pill", "color": "#f59e0b" },
+    { "id": "kg_detail", "label": "Memory decays; relationships evolve over time", "type": "note", "color": "#94a3b8" },
+    { "id": "sec", "label": "4-Layer Security Context", "type": "pill", "color": "#f472b6" },
+    { "id": "sec_detail", "label": "Identity → Episodic → Semantic → Operational", "type": "note", "color": "#94a3b8" },
+    { "id": "trisearch", "label": "Tri-Search™", "type": "pill", "color": "#f59e0b" },
+    { "id": "trisearch_detail", "label": "Keyword + Vector + Graph fusion", "type": "note", "color": "#94a3b8" },
+    { "id": "antigravity", "label": "Antigravity Router", "type": "pill", "color": "#22c55e" },
+    { "id": "antigravity_detail", "label": "Truth-value document classification (A/B/C)", "type": "note", "color": "#94a3b8" },
+    { "id": "prov", "label": "Provenance Tracking", "type": "pill", "color": "#94a3b8" },
+    { "id": "prov_detail", "label": "Every fact links to a source", "type": "note", "color": "#94a3b8" },
+    { "id": "attrib", "label": "Agent Attribution", "type": "pill", "color": "#a78bfa" },
+    { "id": "attrib_detail", "label": "All actions traceable to a user identity", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "root", "target": "mission", "label": "why" },
+    { "source": "mission", "target": "mission_detail", "label": "problem statement" },
+
+    { "source": "root", "target": "diffs", "label": "how" },
+    { "source": "diffs", "target": "kg", "label": "differentiator" },
+    { "source": "kg", "target": "kg_detail", "label": "behavior" },
+    { "source": "diffs", "target": "sec", "label": "differentiator" },
+    { "source": "sec", "target": "sec_detail", "label": "layers" },
+    { "source": "diffs", "target": "trisearch", "label": "differentiator" },
+    { "source": "trisearch", "target": "trisearch_detail", "label": "retrieval" },
+    { "source": "diffs", "target": "antigravity", "label": "differentiator" },
+    { "source": "antigravity", "target": "antigravity_detail", "label": "ingestion" },
+    { "source": "diffs", "target": "prov", "label": "differentiator" },
+    { "source": "prov", "target": "prov_detail", "label": "evidence" },
+    { "source": "diffs", "target": "attrib", "label": "differentiator" },
+    { "source": "attrib", "target": "attrib_detail", "label": "governance" }
+  ]
+}
+

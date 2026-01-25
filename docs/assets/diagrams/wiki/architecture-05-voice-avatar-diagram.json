@@ -1,0 +1,33 @@
+{
+  "title": "Voice & Avatar System — WS + WebRTC Architecture",
+  "type": "architecture",
+  "nodes": [
+    { "id": "frontend", "label": "Frontend (Browser UI)", "type": "rect", "color": "#60a5fa" },
+    { "id": "voice_ws", "label": "VoiceLive Path: WebSocket (proxy)", "type": "rect", "color": "#34d399" },
+    { "id": "backend_ws", "label": "ctxEco Voice WS Endpoint", "type": "rect", "color": "#34d399" },
+    { "id": "voicelive", "label": "Azure VoiceLive (WS/events) + STT/TTS", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "webrtc", "label": "Avatar Video Path: WebRTC", "type": "rect", "color": "#22c55e" },
+    { "id": "signaling", "label": "Signaling / ICE Credentials", "type": "rect", "color": "#94a3b8" },
+    { "id": "avatar_relay", "label": "Azure Speech Avatar Relay (WebRTC)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "impl", "label": "Implementation: backend/voice/", "type": "note", "color": "#94a3b8" },
+    { "id": "webrtc_research", "label": "Deep WebRTC troubleshooting report", "type": "link", "color": "#f59e0b" }
+  ],
+  "edges": [
+    { "source": "frontend", "target": "voice_ws", "label": "voice UI" },
+    { "source": "voice_ws", "target": "backend_ws", "label": "WS audio frames" },
+    { "source": "backend_ws", "target": "voicelive", "label": "proxy WS + auth headers" },
+    { "source": "voicelive", "target": "backend_ws", "label": "events + audio deltas" },
+    { "source": "backend_ws", "target": "frontend", "label": "transcript + audio playback" },
+
+    { "source": "frontend", "target": "webrtc", "label": "avatar UI" },
+    { "source": "webrtc", "target": "signaling", "label": "SDP/ICE setup" },
+    { "source": "signaling", "target": "avatar_relay", "label": "TURN creds + region" },
+    { "source": "frontend", "target": "avatar_relay", "label": "WebRTC media" },
+
+    { "source": "frontend", "target": "impl", "label": "code" },
+    { "source": "webrtc", "target": "webrtc_research", "label": "when it breaks" }
+  ]
+}
+

@@ -55,7 +55,6 @@ def _extract_content(response: Any) -> str:
                 pass
                 
     return text
-from memory import get_memory_client
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,36 @@
+{
+  "title": "Architecture Section — Map of Core System Concepts",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "arch_root", "label": "Architecture", "type": "rect", "color": "#34d399" },
+
+    { "id": "sys_overview", "label": "System Overview", "type": "rect", "color": "#60a5fa" },
+    { "id": "layers", "label": "Architecture Layers", "type": "rect", "color": "#60a5fa" },
+    { "id": "antigravity", "label": "Antigravity Router", "type": "rect", "color": "#f59e0b" },
+    { "id": "trisearch", "label": "Tri-Search™", "type": "rect", "color": "#f59e0b" },
+    { "id": "voice_avatar", "label": "Voice & Avatar", "type": "rect", "color": "#22c55e" },
+    { "id": "chat_flow", "label": "Chat Flow", "type": "rect", "color": "#22c55e" },
+
+    { "id": "mcp_refactor", "label": "Foundry MCP Refactor", "type": "rect", "color": "#a78bfa" },
+    { "id": "foundry_master", "label": "Foundry IQ + ctxEco Integration Master", "type": "highlight", "color": "#ef4444" },
+    { "id": "platform_diagrams", "label": "Platform Architecture Diagram Set", "type": "rect", "color": "#94a3b8" },
+    { "id": "foundry_section", "label": "Foundry (Azure AI Foundry)", "type": "rect", "color": "#a78bfa" },
+    { "id": "deploy_info", "label": "Deployment Info (Azure)", "type": "rect", "color": "#22c55e" }
+  ],
+  "edges": [
+    { "source": "arch_root", "target": "sys_overview", "label": "start here" },
+    { "source": "arch_root", "target": "layers", "label": "conceptual model" },
+
+    { "source": "layers", "target": "antigravity", "label": "ingestion layer" },
+    { "source": "layers", "target": "trisearch", "label": "retrieval layer" },
+    { "source": "layers", "target": "voice_avatar", "label": "multimodal UX" },
+    { "source": "layers", "target": "chat_flow", "label": "chat runtime" },
+
+    { "source": "arch_root", "target": "mcp_refactor", "label": "tooling runtime" },
+    { "source": "arch_root", "target": "foundry_master", "label": "strategy + GTM MVP" },
+    { "source": "arch_root", "target": "foundry_section", "label": "deep dives" },
+    { "source": "arch_root", "target": "platform_diagrams", "label": "visual anchors" },
+    { "source": "arch_root", "target": "deploy_info", "label": "how it runs" }
+  ]
+}
+

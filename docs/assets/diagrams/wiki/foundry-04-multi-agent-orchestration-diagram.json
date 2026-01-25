@@ -1,0 +1,25 @@
+{
+  "title": "Multi-Agent Orchestration — Elena → Marcus → Sage Workflows",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "query", "label": "User Query", "type": "rect", "color": "#94a3b8" },
+    { "id": "analyzer", "label": "Task Analyzer (simple vs complex)", "type": "diamond", "color": "#ef4444" },
+    { "id": "simple", "label": "Simple → ctxEco router → single agent", "type": "rect", "color": "#22c55e" },
+    { "id": "complex", "label": "Complex → Foundry workflow orchestrator", "type": "rect", "color": "#a78bfa" },
+    { "id": "elena", "label": "Elena: requirements + acceptance criteria", "type": "rect", "color": "#60a5fa" },
+    { "id": "marcus", "label": "Marcus: milestones + risks + timeline", "type": "rect", "color": "#a78bfa" },
+    { "id": "sage", "label": "Sage: story + diagram + summary", "type": "rect", "color": "#fbbf24" },
+    { "id": "artifacts", "label": "Output: requirements + plan + narrative artifacts", "type": "rect", "color": "#f59e0b" },
+    { "id": "provenance", "label": "Each artifact: provenance + tenant/project gating + evidence bundle", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "query", "target": "analyzer", "label": "classify" },
+    { "source": "analyzer", "target": "simple", "label": "simple" },
+    { "source": "analyzer", "target": "complex", "label": "complex" },
+    { "source": "complex", "target": "elena", "label": "step 1" },
+    { "source": "elena", "target": "marcus", "label": "handoff" },
+    { "source": "marcus", "target": "sage", "label": "handoff" },
+    { "source": "sage", "target": "artifacts", "label": "produces" },
+    { "source": "artifacts", "target": "provenance", "label": "must include" }
+  ]
+}

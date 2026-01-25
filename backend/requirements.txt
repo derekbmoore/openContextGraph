@@ -14,6 +14,8 @@ httpx>=0.26.0
 azure-identity>=1.15.0
 azure-core>=1.29.5
 azure-storage-blob>=12.19.0
+# Azure AI Search (for Foundry IQ knowledge bases)
+azure-search-documents>=11.4.0
 
 # Azure AI VoiceLive (Real-time Voice)
 azure-ai-voicelive[aiohttp]>=1.0.0

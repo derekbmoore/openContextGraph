@@ -234,6 +234,10 @@ class Settings(BaseSettings):
     
     # Foundry IQ Configuration
     foundry_iq_knowledge_base_id: Optional[str] = Field(None, alias="FOUNDRY_IQ_KB_ID")
+    # Azure AI Search (for Foundry IQ KB direct queries)
+    azure_search_endpoint: Optional[str] = Field(None, alias="AZURE_SEARCH_ENDPOINT")
+    azure_search_key: Optional[str] = Field(None, alias="AZURE_SEARCH_KEY")
+    azure_search_index_name: Optional[str] = Field(None, alias="AZURE_SEARCH_INDEX_NAME")
 
     model_config = ConfigDict(
         env_file=[".env", "../.env"],

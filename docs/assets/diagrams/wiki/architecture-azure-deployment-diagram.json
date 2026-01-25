@@ -1,0 +1,48 @@
+{
+  "title": "ctxEco Azure Deployment — SWA + Container Apps + Data Services",
+  "type": "architecture",
+  "nodes": [
+    { "id": "internet", "label": "Public Internet", "type": "rect", "color": "#94a3b8" },
+    { "id": "swa", "label": "Frontend: Azure Static Web Apps (ctxeco.com)", "type": "rect", "color": "#60a5fa" },
+
+    { "id": "aca_env", "label": "Azure Container Apps Environment (ctxeco-aca)", "type": "rect", "color": "#34d399" },
+    { "id": "api", "label": "Container App: ctxeco-api (api.ctxeco.com :8082)", "type": "rect", "color": "#34d399" },
+    { "id": "zep", "label": "Container App: ctxeco-zep (zep.ctxeco.com :8000)", "type": "rect", "color": "#f59e0b" },
+    { "id": "temporal_server", "label": "Container App: Temporal Server (:7233)", "type": "rect", "color": "#a78bfa" },
+    { "id": "temporal_ui", "label": "Container App: Temporal UI (:8080)", "type": "rect", "color": "#a78bfa" },
+    { "id": "worker", "label": "Container App: ctxeco-worker (internal)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "db", "label": "Azure PostgreSQL (ctxeco-db)", "type": "rect", "color": "#f59e0b" },
+    { "id": "kv", "label": "Azure Key Vault (ctxecokv)", "type": "rect", "color": "#f472b6" },
+    { "id": "storage", "label": "Azure Storage (Blob + Files)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "idp", "label": "Identity: Azure AD B2C / External ID", "type": "rect", "color": "#f472b6" },
+    { "id": "mcp", "label": "MCP Server: https://api.ctxeco.com/mcp (x-api-key)", "type": "rect", "color": "#a78bfa" },
+    { "id": "checklist", "label": "Customer deployment checklist (RG → ACA → Apps → SWA → DNS → KV)", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "internet", "target": "swa", "label": "user traffic" },
+    { "source": "internet", "target": "api", "label": "API traffic" },
+    { "source": "swa", "target": "api", "label": "HTTPS calls" },
+
+    { "source": "aca_env", "target": "api", "label": "hosts" },
+    { "source": "aca_env", "target": "zep", "label": "hosts" },
+    { "source": "aca_env", "target": "temporal_server", "label": "hosts" },
+    { "source": "aca_env", "target": "temporal_ui", "label": "hosts" },
+    { "source": "aca_env", "target": "worker", "label": "hosts" },
+
+    { "source": "api", "target": "kv", "label": "reads secrets" },
+    { "source": "api", "target": "db", "label": "stores data" },
+    { "source": "zep", "target": "db", "label": "memory store (pg/pgvector)" },
+    { "source": "api", "target": "storage", "label": "ingestion artifacts" },
+
+    { "source": "idp", "target": "swa", "label": "user auth" },
+    { "source": "idp", "target": "api", "label": "bearer tokens" },
+
+    { "source": "api", "target": "mcp", "label": "exposes" },
+    { "source": "mcp", "target": "api", "label": "tools/list + tools/call" },
+
+    { "source": "internet", "target": "checklist", "label": "replicate per customer" }
+  ]
+}
+

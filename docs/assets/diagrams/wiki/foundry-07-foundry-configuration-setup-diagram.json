@@ -1,0 +1,25 @@
+{
+  "title": "Foundry Configuration Setup — Checklist Flow",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "start", "label": "Setup Foundry for ctxEco", "type": "rect", "color": "#94a3b8" },
+    { "id": "values", "label": "1) Gather values: endpoint, project, agent IDs", "type": "rect", "color": "#60a5fa" },
+    { "id": "kv", "label": "2) Store in Key Vault (az keyvault secret set)", "type": "rect", "color": "#f472b6" },
+    { "id": "github", "label": "3) Configure GitHub Secrets (CI/CD)", "type": "rect", "color": "#94a3b8" },
+    { "id": "verify", "label": "4) Verify deployment (provisioning runbook smoke tests)", "type": "rect", "color": "#22c55e" },
+    { "id": "endpoint", "label": "azure-foundry-agent-endpoint", "type": "note", "color": "#94a3b8" },
+    { "id": "project", "label": "azure-foundry-agent-project", "type": "note", "color": "#94a3b8" },
+    { "id": "agents", "label": "elena-foundry-agent-id (+ marcus, sage)", "type": "note", "color": "#94a3b8" },
+    { "id": "key", "label": "azure-foundry-agent-key (optional if using MI)", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "start", "target": "values", "label": "step 1" },
+    { "source": "values", "target": "endpoint", "label": "includes" },
+    { "source": "values", "target": "project", "label": "includes" },
+    { "source": "values", "target": "agents", "label": "includes" },
+    { "source": "values", "target": "key", "label": "optional" },
+    { "source": "values", "target": "kv", "label": "step 2" },
+    { "source": "kv", "target": "github", "label": "step 3" },
+    { "source": "github", "target": "verify", "label": "step 4" }
+  ]
+}

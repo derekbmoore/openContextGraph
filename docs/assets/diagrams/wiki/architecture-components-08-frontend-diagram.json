@@ -1,0 +1,45 @@
+{
+  "title": "Frontend (React) — Routes → Pages → Components → API Client → Backend",
+  "type": "architecture",
+  "nodes": [
+    { "id": "user", "label": "User (Browser)", "type": "actor", "color": "#94a3b8" },
+    { "id": "react", "label": "React App (Vite + TypeScript)", "type": "rect", "color": "#60a5fa" },
+    { "id": "router", "label": "Router: /chat /episodes /stories /settings", "type": "rect", "color": "#34d399" },
+
+    { "id": "chat_page", "label": "Chat Page", "type": "rect", "color": "#60a5fa" },
+    { "id": "episodes_page", "label": "Episodes Page", "type": "rect", "color": "#f59e0b" },
+    { "id": "stories_page", "label": "Stories Page", "type": "rect", "color": "#fbbf24" },
+    { "id": "settings_page", "label": "Settings Page", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "components", "label": "UI Components (AgentSelector, MessageList, ChatInput, ContextPanel, Voice/Avatar)", "type": "rect", "color": "#a78bfa" },
+    { "id": "context_panel", "label": "ContextPanel: exposes context + sources", "type": "rect", "color": "#f472b6" },
+
+    { "id": "api_client", "label": "API Client (fetch wrapper + timing)", "type": "rect", "color": "#34d399" },
+    { "id": "msal", "label": "MSAL.js (Azure AD auth) — access tokens", "type": "rect", "color": "#f472b6" },
+    { "id": "backend", "label": "Backend API (FastAPI)", "type": "rect", "color": "#34d399" },
+
+    { "id": "endpoints", "label": "Endpoints: /api/v1/chat, /api/v1/memory, /api/v1/etl", "type": "note", "color": "#94a3b8" },
+    { "id": "a11y", "label": "Accessibility (WCAG 2.1): keyboard, ARIA, contrast", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "user", "target": "react", "label": "uses" },
+    { "source": "react", "target": "router", "label": "navigates" },
+    { "source": "router", "target": "chat_page", "label": "/chat" },
+    { "source": "router", "target": "episodes_page", "label": "/episodes" },
+    { "source": "router", "target": "stories_page", "label": "/stories" },
+    { "source": "router", "target": "settings_page", "label": "/settings" },
+
+    { "source": "chat_page", "target": "components", "label": "renders" },
+    { "source": "episodes_page", "target": "components", "label": "renders" },
+    { "source": "stories_page", "target": "components", "label": "renders" },
+    { "source": "components", "target": "context_panel", "label": "context visibility" },
+
+    { "source": "components", "target": "api_client", "label": "calls" },
+    { "source": "msal", "target": "api_client", "label": "provides token" },
+    { "source": "api_client", "target": "backend", "label": "HTTPS requests" },
+    { "source": "api_client", "target": "endpoints", "label": "targets" },
+
+    { "source": "react", "target": "a11y", "label": "must satisfy" }
+  ]
+}
+

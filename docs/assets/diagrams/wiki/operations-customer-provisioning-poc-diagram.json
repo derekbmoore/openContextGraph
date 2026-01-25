@@ -1,0 +1,22 @@
+{
+  "title": "Customer Provisioning (PoC) — Repeatable Runbook Flow",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "scope", "label": "Scope: Backend + Frontend + Agents + Memory + Voice/Avatar", "type": "rect", "color": "#94a3b8" },
+    { "id": "prereq", "label": "Prerequisites: Subscription, RG, Key Vault, AI Services, ACA, SWA, Entra App", "type": "rect", "color": "#60a5fa" },
+    { "id": "kv_secrets", "label": "Key Vault Secrets: azure-ai-key, endpoint, project, agent IDs, voicelive, speech, realtime, zep", "type": "rect", "color": "#f472b6" },
+    { "id": "env_vars", "label": "Container App Env Vars: AZURE_FOUNDRY_AGENT_*, AZURE_VOICELIVE_*, AZURE_OPENAI_REALTIME_*, AZURE_SPEECH_*, ZEP_API_URL, AUTH_*, OIDC_*", "type": "rect", "color": "#34d399" },
+    { "id": "frontend_vars", "label": "Frontend Vite Vars: VITE_API_URL (HTTPS), VITE_WS_URL (wss://), VITE_API_SCOPE", "type": "rect", "color": "#60a5fa" },
+    { "id": "smoke", "label": "Smoke Tests: Chat, Voice, Avatar, Tri-Search, MCP Tools", "type": "rect", "color": "#22c55e" },
+    { "id": "files", "label": "Key Files: main.py, memory.py, tools.py, mcp.py, client.py, agent YAMLs, features.json", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "scope", "target": "prereq", "label": "requires" },
+    { "source": "prereq", "target": "kv_secrets", "label": "populate" },
+    { "source": "kv_secrets", "target": "env_vars", "label": "reference" },
+    { "source": "prereq", "target": "frontend_vars", "label": "configure" },
+    { "source": "env_vars", "target": "smoke", "label": "verify" },
+    { "source": "frontend_vars", "target": "smoke", "label": "verify" },
+    { "source": "scope", "target": "files", "label": "references" }
+  ]
+}

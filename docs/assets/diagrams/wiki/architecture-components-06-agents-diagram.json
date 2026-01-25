@@ -1,0 +1,36 @@
+{
+  "title": "Agents (Brain Layer) — Router → Specialized Agents → LangGraph → Memory/Tools/LLM",
+  "type": "architecture",
+  "nodes": [
+    { "id": "request", "label": "User Request (message + SecurityContext)", "type": "rect", "color": "#94a3b8" },
+    { "id": "router", "label": "Agent Router", "type": "rect", "color": "#34d399" },
+
+    { "id": "elena", "label": "Elena (Architect)", "type": "rect", "color": "#60a5fa" },
+    { "id": "marcus", "label": "Marcus (PM)", "type": "rect", "color": "#a78bfa" },
+    { "id": "sage", "label": "Sage (Storyteller)", "type": "rect", "color": "#fbbf24" },
+
+    { "id": "langgraph", "label": "LangGraph Engine (multi-step state machine)", "type": "rect", "color": "#ef4444" },
+    { "id": "memory", "label": "Memory Client (Tri-Search™ / Zep)", "type": "rect", "color": "#f59e0b" },
+    { "id": "tools", "label": "Tools (functions / MCP / HTTP)", "type": "rect", "color": "#22c55e" },
+    { "id": "llm", "label": "LLM Provider (e.g., Azure OpenAI / Foundry)", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "attrib", "label": "Attribution: user_id + tool_calls recorded", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "request", "target": "router", "label": "route(agent_id)" },
+    { "source": "router", "target": "elena", "label": "if agent=elena" },
+    { "source": "router", "target": "marcus", "label": "if agent=marcus" },
+    { "source": "router", "target": "sage", "label": "if agent=sage" },
+
+    { "source": "elena", "target": "langgraph", "label": "process()" },
+    { "source": "marcus", "target": "langgraph", "label": "process()" },
+    { "source": "sage", "target": "langgraph", "label": "process()" },
+
+    { "source": "langgraph", "target": "memory", "label": "enrich context" },
+    { "source": "langgraph", "target": "tools", "label": "tool calls" },
+    { "source": "langgraph", "target": "llm", "label": "generate response" },
+
+    { "source": "langgraph", "target": "attrib", "label": "audit trail" }
+  ]
+}
+

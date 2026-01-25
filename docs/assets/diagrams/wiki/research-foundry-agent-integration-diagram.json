@@ -1,0 +1,29 @@
+{
+  "title": "Foundry Agent Integration Blueprint — Hybrid Tooling Architecture",
+  "type": "architecture",
+  "nodes": [
+    { "id": "foundry", "label": "Azure AI Foundry (Agent Orchestration)", "type": "rect", "color": "#a78bfa" },
+    { "id": "agents", "label": "Elena / Marcus / Sage (gpt-5.2-chat)", "type": "rect", "color": "#60a5fa" },
+    { "id": "mcp", "label": "MCP Protocol (JSON-RPC)", "type": "rect", "color": "#34d399" },
+    { "id": "mcp_endpoint", "label": "ctxeco.com/mcp (FastAPI Router)", "type": "rect", "color": "#34d399" },
+    { "id": "tools", "label": "8 Tools: search_memory, list_episodes, generate_story, generate_diagram, search_codebase, get_project_status, create_github_issue, trigger_ingestion", "type": "rect", "color": "#f59e0b" },
+    { "id": "zep", "label": "Zep Memory (Tri-Search)", "type": "rect", "color": "#f59e0b" },
+    { "id": "temporal", "label": "Temporal (Workflows)", "type": "rect", "color": "#a78bfa" },
+    { "id": "claude", "label": "Claude (story generation)", "type": "rect", "color": "#94a3b8" },
+    { "id": "gemini", "label": "Gemini (diagram generation)", "type": "rect", "color": "#94a3b8" },
+    { "id": "github", "label": "GitHub API (pending)", "type": "rect", "color": "#94a3b8" },
+    { "id": "status", "label": "Status: Phase 2 Complete (MCP + Temporal), Phase 2.5 in progress (deployment)", "type": "note", "color": "#fbbf24" }
+  ],
+  "edges": [
+    { "source": "foundry", "target": "agents", "label": "hosts" },
+    { "source": "agents", "target": "mcp", "label": "calls" },
+    { "source": "mcp", "target": "mcp_endpoint", "label": "connects to" },
+    { "source": "mcp_endpoint", "target": "tools", "label": "exposes" },
+    { "source": "tools", "target": "zep", "label": "search_memory" },
+    { "source": "tools", "target": "temporal", "label": "generate_story" },
+    { "source": "temporal", "target": "claude", "label": "invokes" },
+    { "source": "tools", "target": "gemini", "label": "generate_diagram" },
+    { "source": "tools", "target": "github", "label": "create_github_issue (pending)" },
+    { "source": "foundry", "target": "status", "label": "current" }
+  ]
+}

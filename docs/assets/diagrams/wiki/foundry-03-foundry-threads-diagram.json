@@ -1,0 +1,25 @@
+{
+  "title": "Foundry Threads — Feature-Flagged Session Persistence",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "request", "label": "User Request", "type": "rect", "color": "#94a3b8" },
+    { "id": "get_session", "label": "get_or_create_session()", "type": "rect", "color": "#34d399" },
+    { "id": "cache_check", "label": "Cache hit?", "type": "diamond", "color": "#ef4444" },
+    { "id": "cache_hit", "label": "Return cached session", "type": "rect", "color": "#22c55e" },
+    { "id": "flag_check", "label": "USE_FOUNDRY_THREADS?", "type": "diamond", "color": "#ef4444" },
+    { "id": "foundry_path", "label": "Load/create Foundry thread → build context → cache", "type": "rect", "color": "#a78bfa" },
+    { "id": "fallback", "label": "Fallback: in-memory session", "type": "rect", "color": "#f59e0b" },
+    { "id": "zep", "label": "Still persist to Zep (long-term memory)", "type": "note", "color": "#f59e0b" },
+    { "id": "graceful", "label": "Failures degrade gracefully to in-memory", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "request", "target": "get_session", "label": "needs session" },
+    { "source": "get_session", "target": "cache_check", "label": "check cache" },
+    { "source": "cache_check", "target": "cache_hit", "label": "yes" },
+    { "source": "cache_check", "target": "flag_check", "label": "no" },
+    { "source": "flag_check", "target": "foundry_path", "label": "true" },
+    { "source": "flag_check", "target": "fallback", "label": "false" },
+    { "source": "foundry_path", "target": "zep", "label": "also persists" },
+    { "source": "foundry_path", "target": "graceful", "label": "on failure" }
+  ]
+}

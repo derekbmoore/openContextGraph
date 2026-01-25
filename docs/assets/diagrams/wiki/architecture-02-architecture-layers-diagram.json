@@ -1,0 +1,28 @@
+{
+  "title": "Architecture Layers — Brain + Spine + Memory (CtxGraph)",
+  "type": "architecture",
+  "nodes": [
+    { "id": "user", "label": "Users / Channels", "type": "actor", "color": "#94a3b8" },
+    { "id": "brain", "label": "Brain Layer: LangGraph Agents (Elena, Marcus, Sage)", "type": "rect", "color": "#60a5fa" },
+    { "id": "spine", "label": "Spine Layer: Temporal Workflows (durable orchestration)", "type": "rect", "color": "#34d399" },
+    { "id": "memory", "label": "CtxGraph Layer: Memory (Zep + Graphiti)", "type": "rect", "color": "#f59e0b" },
+    { "id": "sources", "label": "Enterprise Sources (docs, email, logs, M365, etc.)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "agents_path", "label": "Code: backend/agents/", "type": "note", "color": "#94a3b8" },
+    { "id": "workflows_path", "label": "Code: backend/workflows/", "type": "note", "color": "#94a3b8" },
+    { "id": "memory_path", "label": "Code: backend/memory/", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "user", "target": "brain", "label": "requests / conversations" },
+    { "source": "brain", "target": "spine", "label": "durable execution when needed" },
+    { "source": "spine", "target": "brain", "label": "task orchestration + retries" },
+    { "source": "brain", "target": "memory", "label": "retrieve context (Tri-Search™)" },
+    { "source": "brain", "target": "memory", "label": "persist facts + episodes" },
+    { "source": "sources", "target": "memory", "label": "ingest → index → relate" },
+
+    { "source": "brain", "target": "agents_path", "label": "implementation" },
+    { "source": "spine", "target": "workflows_path", "label": "implementation" },
+    { "source": "memory", "target": "memory_path", "label": "implementation" }
+  ]
+}
+

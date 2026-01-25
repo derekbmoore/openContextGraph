@@ -1,0 +1,61 @@
+{
+  "title": "Foundry IQ + ctxEco Integration Master — DIKW + Hybrid Knowledge Planes",
+  "type": "architecture",
+  "nodes": [
+    { "id": "dikw", "label": "DIKW in Foundry Portal", "type": "rect", "color": "#ef4444" },
+    { "id": "data", "label": "Data: Sources (SharePoint, OneLake, Blob, GitHub, Splunk, DB)", "type": "rect", "color": "#22c55e" },
+    { "id": "info", "label": "Information: Normalize + metadata (A/B/C, provenance, sensitivity)", "type": "rect", "color": "#f59e0b" },
+    { "id": "knowledge", "label": "Knowledge: Retrieve + graph + evidence", "type": "rect", "color": "#60a5fa" },
+    { "id": "wisdom", "label": "Wisdom: Tools + governance + audits", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "plane_foundry_iq", "label": "Plane 1: Foundry IQ Knowledge Bases (permission-trimmed)", "type": "rect", "color": "#a78bfa" },
+    { "id": "plane_ctxeco", "label": "Plane 2: ctxEco KeywordVectorGraph (Tri-Search™ + Gk + episodic)", "type": "rect", "color": "#f59e0b" },
+    { "id": "evidence", "label": "Evidence-first answers (citations + provenance + why)", "type": "note", "color": "#94a3b8" },
+    { "id": "gating", "label": "Gating: tenant_id + project_id + acl_groups + truth/sensitivity", "type": "note", "color": "#f472b6" },
+
+    { "id": "foundry_agent", "label": "Foundry Agent (Elena/Marcus/Sage)", "type": "rect", "color": "#a78bfa" },
+    { "id": "ctxeco_mcp", "label": "ctxEco MCP Server (BYO MCP URL)", "type": "rect", "color": "#34d399" },
+    { "id": "tools_mvp", "label": "MVP Tools: search_memory, trigger_ingestion, evidence, source_status, policy_check", "type": "rect", "color": "#34d399" },
+
+    { "id": "patterns", "label": "Integration Patterns (A/B/C)", "type": "rect", "color": "#94a3b8" },
+    { "id": "pattern_a", "label": "Pattern A (recommended): Agent + IQ KB + ctxEco MCP tools", "type": "rect", "color": "#22c55e" },
+    { "id": "pattern_b", "label": "Pattern B: IQ retrieval; ctxEco ingestion + governance", "type": "rect", "color": "#60a5fa" },
+    { "id": "pattern_c", "label": "Pattern C: ctxEco retrieval; IQ optional", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "gtm", "label": "GTM MVP: ship + sell in < 60 min setup", "type": "rect", "color": "#ef4444" },
+    { "id": "roles", "label": "Roles: Elena (sources), Marcus (tools), Sage (demo narrative)", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "dikw", "target": "data", "label": "1" },
+    { "source": "dikw", "target": "info", "label": "2" },
+    { "source": "dikw", "target": "knowledge", "label": "3" },
+    { "source": "dikw", "target": "wisdom", "label": "4" },
+
+    { "source": "data", "target": "plane_foundry_iq", "label": "ingest/connector" },
+    { "source": "data", "target": "plane_ctxeco", "label": "ingest/connector" },
+    { "source": "info", "target": "gating", "label": "required metadata" },
+
+    { "source": "knowledge", "target": "plane_foundry_iq", "label": "retrieve" },
+    { "source": "knowledge", "target": "plane_ctxeco", "label": "retrieve" },
+    { "source": "plane_foundry_iq", "target": "gating", "label": "permission trimming" },
+    { "source": "plane_ctxeco", "target": "gating", "label": "always-on enforcement" },
+    { "source": "plane_foundry_iq", "target": "evidence", "label": "citations" },
+    { "source": "plane_ctxeco", "target": "evidence", "label": "citations + graph why" },
+
+    { "source": "wisdom", "target": "foundry_agent", "label": "acts" },
+    { "source": "foundry_agent", "target": "ctxeco_mcp", "label": "tool calls" },
+    { "source": "ctxeco_mcp", "target": "tools_mvp", "label": "manifest" },
+    { "source": "tools_mvp", "target": "plane_ctxeco", "label": "operate on knowledge" },
+
+    { "source": "patterns", "target": "pattern_a", "label": "recommended" },
+    { "source": "patterns", "target": "pattern_b", "label": "alternate" },
+    { "source": "patterns", "target": "pattern_c", "label": "fallback" },
+    { "source": "pattern_a", "target": "foundry_agent", "label": "uses" },
+    { "source": "pattern_a", "target": "plane_foundry_iq", "label": "grounding" },
+    { "source": "pattern_a", "target": "ctxeco_mcp", "label": "tools" },
+
+    { "source": "gtm", "target": "pattern_a", "label": "ship first" },
+    { "source": "gtm", "target": "roles", "label": "owners" }
+  ]
+}
+

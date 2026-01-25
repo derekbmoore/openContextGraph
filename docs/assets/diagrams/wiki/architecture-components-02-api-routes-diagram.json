@@ -1,0 +1,41 @@
+{
+  "title": "API Routes — Edge Contract + Internal Routers",
+  "type": "architecture",
+  "nodes": [
+    { "id": "client", "label": "Client (Frontend / API consumer)", "type": "actor", "color": "#94a3b8" },
+    { "id": "fastapi", "label": "FastAPI Router (interface layer)", "type": "rect", "color": "#34d399" },
+    { "id": "auth", "label": "Auth Dependency: get_current_user() → SecurityContext", "type": "rect", "color": "#f472b6" },
+
+    { "id": "health", "label": "/health, /ready", "type": "rect", "color": "#94a3b8" },
+    { "id": "chat", "label": "/chat (POST)", "type": "rect", "color": "#60a5fa" },
+    { "id": "memory", "label": "/memory (search, facts, episodes)", "type": "rect", "color": "#f59e0b" },
+    { "id": "etl", "label": "/etl (ingest)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "agent_router", "label": "Agent Router (Elena/Marcus/Sage)", "type": "rect", "color": "#a78bfa" },
+    { "id": "memory_client", "label": "Memory Client (Tri-Search™ / Zep)", "type": "rect", "color": "#f59e0b" },
+    { "id": "etl_router", "label": "ETL Router (Antigravity A/B/C)", "type": "rect", "color": "#22c55e" },
+
+    { "id": "observability", "label": "Observability hooks (request logs, latency, audit)", "type": "note", "color": "#94a3b8" },
+    { "id": "governance", "label": "Governance (rate limits, audit trails) — TODOs", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "client", "target": "fastapi", "label": "HTTPS requests" },
+    { "source": "fastapi", "target": "auth", "label": "enforce identity" },
+    { "source": "auth", "target": "fastapi", "label": "SecurityContext available to routes" },
+
+    { "source": "fastapi", "target": "health", "label": "routes" },
+    { "source": "fastapi", "target": "chat", "label": "routes" },
+    { "source": "fastapi", "target": "memory", "label": "routes" },
+    { "source": "fastapi", "target": "etl", "label": "routes" },
+
+    { "source": "chat", "target": "agent_router", "label": "route to agent" },
+    { "source": "chat", "target": "memory_client", "label": "enrich + persist" },
+    { "source": "memory", "target": "memory_client", "label": "search / facts" },
+    { "source": "etl", "target": "etl_router", "label": "classify + extract" },
+    { "source": "etl_router", "target": "memory_client", "label": "store chunks + provenance" },
+
+    { "source": "fastapi", "target": "observability", "label": "instrument" },
+    { "source": "fastapi", "target": "governance", "label": "future hardening" }
+  ]
+}
+

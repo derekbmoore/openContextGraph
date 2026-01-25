@@ -1,0 +1,27 @@
+{
+  "title": "4-Layer Security Context — Enterprise Schema",
+  "type": "architecture",
+  "nodes": [
+    { "id": "root", "label": "4-Layer Security Context", "type": "rect", "color": "#f472b6" },
+    { "id": "l1", "label": "Layer 1: SecurityContext (Identity)", "type": "rect", "color": "#f472b6" },
+    { "id": "l1_fields", "label": "user_id, tenant_id, roles, scopes", "type": "note", "color": "#94a3b8" },
+    { "id": "l2", "label": "Layer 2: EpisodicContext (Conversation)", "type": "rect", "color": "#34d399" },
+    { "id": "l2_fields", "label": "conversation_id, messages, channel", "type": "note", "color": "#94a3b8" },
+    { "id": "l3", "label": "Layer 3: SemanticContext (Knowledge)", "type": "rect", "color": "#f59e0b" },
+    { "id": "l3_fields", "label": "facts, entities, graph_nodes", "type": "note", "color": "#94a3b8" },
+    { "id": "l4", "label": "Layer 4: OperationalContext (Runtime)", "type": "rect", "color": "#a78bfa" },
+    { "id": "l4_fields", "label": "current_agent, tool_calls, budgets", "type": "note", "color": "#94a3b8" },
+    { "id": "impl", "label": "Implementation: backend/core/context.py", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "root", "target": "l1", "label": "foundation" },
+    { "source": "l1", "target": "l1_fields", "label": "fields" },
+    { "source": "root", "target": "l2", "label": "builds on L1" },
+    { "source": "l2", "target": "l2_fields", "label": "fields" },
+    { "source": "root", "target": "l3", "label": "builds on L2" },
+    { "source": "l3", "target": "l3_fields", "label": "fields" },
+    { "source": "root", "target": "l4", "label": "builds on L3" },
+    { "source": "l4", "target": "l4_fields", "label": "fields" },
+    { "source": "root", "target": "impl", "label": "code" }
+  ]
+}

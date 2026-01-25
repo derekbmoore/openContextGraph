@@ -1,0 +1,33 @@
+{
+  "title": "Security Isolation & Controls — ABAC + RLS + Provenance (FedRAMP High)",
+  "type": "architecture",
+  "nodes": [
+    { "id": "root", "label": "Security Architecture (Zero Trust Data Isolation)", "type": "rect", "color": "#f472b6" },
+    { "id": "identity", "label": "Identity & Authorization (AuthN/AuthZ)", "type": "rect", "color": "#f472b6" },
+    { "id": "claims", "label": "OIDC Claims: tid (tenant), groups (Dept/Proj), wids", "type": "rect", "color": "#60a5fa" },
+    { "id": "sec_ctx", "label": "SecurityContext: user_id, tenant_id, roles, groups, clearance", "type": "rect", "color": "#a78bfa" },
+    { "id": "taxonomy", "label": "Group Taxonomy: OpenContext:Admin/Analyst/User + Dept:[Name] + Proj:[Codename]", "type": "note", "color": "#94a3b8" },
+    { "id": "ingestion", "label": "Data Classification & Ingestion", "type": "rect", "color": "#22c55e" },
+    { "id": "levels", "label": "Classification: Public, Internal, Confidential, Restricted", "type": "rect", "color": "#22c55e" },
+    { "id": "stamp", "label": "ACL Stamp: provenance_id, tenant_id, acl_groups, classification", "type": "rect", "color": "#f59e0b" },
+    { "id": "storage", "label": "Storage & Retrieval Controls", "type": "rect", "color": "#f59e0b" },
+    { "id": "abac_filter", "label": "Vector Store (Zep): Mandatory ABAC filter (tenant + groups intersection)", "type": "rect", "color": "#f59e0b" },
+    { "id": "rls", "label": "PostgreSQL RLS: tenant_isolation + group_access policies", "type": "rect", "color": "#a78bfa" },
+    { "id": "pii", "label": "PII Masking: Dynamic Data Masking by Role (email, ssn, credit_card)", "type": "rect", "color": "#94a3b8" },
+    { "id": "audit", "label": "Audit Logging (NIST AU-3): Who, What, Why, When (immutable ledger)", "type": "rect", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "root", "target": "identity", "label": "layer" },
+    { "source": "identity", "target": "claims", "label": "extracts" },
+    { "source": "claims", "target": "sec_ctx", "label": "builds" },
+    { "source": "identity", "target": "taxonomy", "label": "requires" },
+    { "source": "root", "target": "ingestion", "label": "layer" },
+    { "source": "ingestion", "target": "levels", "label": "classifies" },
+    { "source": "levels", "target": "stamp", "label": "tags with" },
+    { "source": "root", "target": "storage", "label": "layer" },
+    { "source": "storage", "target": "abac_filter", "label": "enforces" },
+    { "source": "storage", "target": "rls", "label": "enforces" },
+    { "source": "storage", "target": "pii", "label": "enforces" },
+    { "source": "root", "target": "audit", "label": "layer" }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Deployment — Local / On-Prem / Kubernetes",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "Deployment Options", "type": "rect", "color": "#94a3b8" },
+    { "id": "local", "label": "Local Development", "type": "rect", "color": "#22c55e" },
+    { "id": "docker", "label": "docker-compose up -d", "type": "rect", "color": "#34d399" },
+    { "id": "backend_local", "label": "Backend: uvicorn api.main:app --reload", "type": "rect", "color": "#34d399" },
+    { "id": "frontend_local", "label": "Frontend: npm run dev", "type": "rect", "color": "#60a5fa" },
+    { "id": "onprem", "label": "On-Prem (Kubernetes)", "type": "rect", "color": "#a78bfa" },
+    { "id": "helm", "label": "helm install ctxEco ./infra/helm/ctxEco", "type": "rect", "color": "#a78bfa" },
+    { "id": "prereq", "label": "Prerequisites: PostgreSQL 15+, Kubernetes 1.28+, 16GB RAM", "type": "note", "color": "#94a3b8" },
+    { "id": "todo", "label": "TODO: Production hardening, backup/restore, rollback procedures", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "root", "target": "local", "label": "option" },
+    { "source": "local", "target": "docker", "label": "step 1" },
+    { "source": "local", "target": "backend_local", "label": "step 2" },
+    { "source": "local", "target": "frontend_local", "label": "step 3" },
+    { "source": "root", "target": "onprem", "label": "option" },
+    { "source": "onprem", "target": "helm", "label": "deploy" },
+    { "source": "onprem", "target": "prereq", "label": "requires" },
+    { "source": "root", "target": "todo", "label": "future" }
+  ]
+}

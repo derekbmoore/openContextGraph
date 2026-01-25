@@ -1,0 +1,32 @@
+{
+  "title": "Foundry Agent Service Integration — Hybrid Brain/Spine Model",
+  "type": "architecture",
+  "nodes": [
+    { "id": "ui", "label": "Browser / UI", "type": "rect", "color": "#60a5fa" },
+    { "id": "api", "label": "ctxEco API (FastAPI)", "type": "rect", "color": "#34d399" },
+    { "id": "brain", "label": "Brain: LangGraph agent logic (ctxEco)", "type": "rect", "color": "#60a5fa" },
+    { "id": "foundry_client", "label": "Foundry Agent Service client (ctxEco)", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "threads", "label": "Foundry Threads (P0)", "type": "rect", "color": "#94a3b8" },
+    { "id": "files", "label": "Foundry Files (P1)", "type": "rect", "color": "#94a3b8" },
+    { "id": "vectors", "label": "Foundry Vector Stores (P2, optional)", "type": "rect", "color": "#94a3b8" },
+    { "id": "tools", "label": "Foundry Tool infra (P2, optional)", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "zep", "label": "Zep (long-term memory, keep initially)", "type": "rect", "color": "#f59e0b" },
+    { "id": "flags", "label": "Feature flags: USE_FOUNDRY_THREADS/FILES/VECTORS/TOOLS/IQ", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "ui", "target": "api", "label": "requests" },
+    { "source": "api", "target": "brain", "label": "execute reasoning" },
+    { "source": "api", "target": "foundry_client", "label": "managed capabilities" },
+
+    { "source": "foundry_client", "target": "threads", "label": "persistence" },
+    { "source": "foundry_client", "target": "files", "label": "uploads/artifacts" },
+    { "source": "foundry_client", "target": "vectors", "label": "optional storage" },
+    { "source": "foundry_client", "target": "tools", "label": "optional execution" },
+
+    { "source": "brain", "target": "zep", "label": "retrieve/persist memory" },
+    { "source": "api", "target": "flags", "label": "controls" }
+  ]
+}
+

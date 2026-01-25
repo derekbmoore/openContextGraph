@@ -1,0 +1,23 @@
+{
+  "title": "Foundry Features Roadmap — GTM MVP Phases",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "phase1", "label": "Phase 1 (GTM MVP): Knowledge + Tools", "type": "rect", "color": "#ef4444" },
+    { "id": "iq_kbs", "label": "Foundry IQ KBs (M365: SharePoint + OneLake)", "type": "rect", "color": "#a78bfa" },
+    { "id": "mcp", "label": "ctxEco MCP server (primary Tools surface)", "type": "rect", "color": "#34d399" },
+    { "id": "golden", "label": "Golden thread: repeatable DIKW demo", "type": "rect", "color": "#f59e0b" },
+    { "id": "phase2", "label": "Phase 2: Multi-agent orchestration", "type": "rect", "color": "#60a5fa" },
+    { "id": "workflows", "label": "Elena → Marcus → Sage workflows + shared context", "type": "rect", "color": "#a78bfa" },
+    { "id": "phase3", "label": "Phase 3: M365 integration", "type": "rect", "color": "#22c55e" },
+    { "id": "teams", "label": "Publish Elena to Teams + expand SharePoint + OneDrive", "type": "rect", "color": "#22c55e" }
+  ],
+  "edges": [
+    { "source": "phase1", "target": "iq_kbs", "label": "ship" },
+    { "source": "phase1", "target": "mcp", "label": "ship" },
+    { "source": "phase1", "target": "golden", "label": "ship" },
+    { "source": "phase1", "target": "phase2", "label": "next" },
+    { "source": "phase2", "target": "workflows", "label": "ship" },
+    { "source": "phase2", "target": "phase3", "label": "next" },
+    { "source": "phase3", "target": "teams", "label": "ship" }
+  ]
+}

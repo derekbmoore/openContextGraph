@@ -1,0 +1,21 @@
+{
+  "title": "Configuration Source of Truth — Key Vault → GitHub → Runtime",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "kv", "label": "Azure Key Vault (production source of truth)", "type": "rect", "color": "#f472b6" },
+    { "id": "github", "label": "GitHub Secrets (CI/CD deployment-time)", "type": "rect", "color": "#94a3b8" },
+    { "id": "bicep", "label": "Bicep parameters (infrastructure)", "type": "rect", "color": "#34d399" },
+    { "id": "runtime", "label": "Runtime env vars (Container Apps)", "type": "rect", "color": "#60a5fa" },
+    { "id": "local", "label": "Local .env (dev only, never committed)", "type": "rect", "color": "#f59e0b" },
+    { "id": "secrets", "label": "Secrets: endpoint, project, agent IDs, keys", "type": "note", "color": "#94a3b8" },
+    { "id": "naming", "label": "Naming: ctxeco-rg, ctxecokv, ctxeco-api, ctxeco-web", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "github", "target": "bicep", "label": "populates" },
+    { "source": "bicep", "target": "kv", "label": "writes" },
+    { "source": "kv", "target": "runtime", "label": "references via MI" },
+    { "source": "local", "target": "runtime", "label": "dev override" },
+    { "source": "kv", "target": "secrets", "label": "stores" },
+    { "source": "kv", "target": "naming", "label": "follows" }
+  ]
+}

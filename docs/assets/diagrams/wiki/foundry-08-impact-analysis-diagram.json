@@ -1,0 +1,25 @@
+{
+  "title": "Foundry Integration Impact — Additive (What Stays vs What Adds)",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "Foundry Integration (Additive)", "type": "rect", "color": "#94a3b8" },
+    { "id": "unchanged", "label": "What Stays Unchanged (Core Differentiation)", "type": "rect", "color": "#f59e0b" },
+    { "id": "trisearch", "label": "Tri-Search™ (keyword + vector + graph)", "type": "rect", "color": "#f59e0b" },
+    { "id": "antigravity", "label": "Antigravity Router (A/B/C truth classes)", "type": "rect", "color": "#22c55e" },
+    { "id": "governance", "label": "Tool governance (tenant/project isolation, allowlists, evidence)", "type": "rect", "color": "#f472b6" },
+    { "id": "adds", "label": "What Foundry Adds (Leverage)", "type": "rect", "color": "#a78bfa" },
+    { "id": "threads", "label": "Threads (P0): durable persistence", "type": "rect", "color": "#94a3b8" },
+    { "id": "kb", "label": "Knowledge Bases (P0/P1): enterprise docs grounding", "type": "rect", "color": "#a78bfa" },
+    { "id": "orchestration", "label": "Orchestration (P1): multi-agent workflows", "type": "rect", "color": "#60a5fa" }
+  ],
+  "edges": [
+    { "source": "root", "target": "unchanged", "label": "keeps" },
+    { "source": "unchanged", "target": "trisearch", "label": "differentiator" },
+    { "source": "unchanged", "target": "antigravity", "label": "differentiator" },
+    { "source": "unchanged", "target": "governance", "label": "differentiator" },
+    { "source": "root", "target": "adds", "label": "leverages" },
+    { "source": "adds", "target": "threads", "label": "P0" },
+    { "source": "adds", "target": "kb", "label": "P0/P1" },
+    { "source": "adds", "target": "orchestration", "label": "P1" }
+  ]
+}

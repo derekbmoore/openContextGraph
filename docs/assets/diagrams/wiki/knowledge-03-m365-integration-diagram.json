@@ -1,0 +1,27 @@
+{
+  "title": "Microsoft 365 Integration — Teams + Outlook + SharePoint + OneDrive",
+  "type": "architecture",
+  "nodes": [
+    { "id": "m365", "label": "Microsoft 365 (Teams / Outlook / SharePoint)", "type": "rect", "color": "#60a5fa" },
+    { "id": "foundry", "label": "Azure AI Foundry Agent Service (Elena/Marcus/Sage)", "type": "rect", "color": "#a78bfa" },
+    { "id": "iq", "label": "Foundry IQ (knowledge bases, multi-source grounding)", "type": "rect", "color": "#a78bfa" },
+    { "id": "ctxeco_mcp", "label": "ctxEco MCP + Tools (governed memory, ingestion, evidence, policy)", "type": "rect", "color": "#34d399" },
+    { "id": "memory", "label": "Tri-Search™ + Gk + Operational memory", "type": "rect", "color": "#f59e0b" },
+    { "id": "phase1", "label": "Phase 1 (MVP): SharePoint + Foundry IQ KB", "type": "rect", "color": "#22c55e" },
+    { "id": "phase2", "label": "Phase 2: Teams bot for Elena", "type": "rect", "color": "#60a5fa" },
+    { "id": "phase3", "label": "Phase 3: Outlook add-in (optional)", "type": "rect", "color": "#94a3b8" },
+    { "id": "gating", "label": "Gating: Entra ID (tenant/user/groups) + permission trimming + auditability", "type": "note", "color": "#f472b6" },
+    { "id": "onedrive_gap", "label": "Known gap: OneDrive not always via remote SharePoint; plan Blob/OneLake or MCP tool", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "m365", "target": "foundry", "label": "connects to" },
+    { "source": "foundry", "target": "iq", "label": "uses" },
+    { "source": "foundry", "target": "ctxeco_mcp", "label": "uses" },
+    { "source": "ctxeco_mcp", "target": "memory", "label": "operates on" },
+    { "source": "m365", "target": "phase1", "label": "MVP" },
+    { "source": "m365", "target": "phase2", "label": "next" },
+    { "source": "m365", "target": "phase3", "label": "optional" },
+    { "source": "foundry", "target": "gating", "label": "enforces" },
+    { "source": "m365", "target": "onedrive_gap", "label": "design around" }
+  ]
+}

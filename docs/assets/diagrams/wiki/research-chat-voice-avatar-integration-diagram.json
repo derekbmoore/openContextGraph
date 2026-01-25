@@ -1,0 +1,29 @@
+{
+  "title": "Chat, Voice, Avatar Integration Strategy — Hybrid Architecture (Recommended)",
+  "type": "architecture",
+  "nodes": [
+    { "id": "ui", "label": "ctxeco.com SPA (Static Web App)", "type": "rect", "color": "#60a5fa" },
+    { "id": "api", "label": "api.ctxeco.com (Container App API)", "type": "rect", "color": "#34d399" },
+    { "id": "chat", "label": "Chat: POST /api/v1/chat", "type": "rect", "color": "#60a5fa" },
+    { "id": "voice", "label": "Voice: WebSocket /api/v1/voice/*", "type": "rect", "color": "#22c55e" },
+    { "id": "avatar", "label": "Avatar: /api/v1/voice/avatar/*", "type": "rect", "color": "#22c55e" },
+    { "id": "option_a", "label": "Option A: Direct Azure (no Foundry)", "type": "rect", "color": "#94a3b8" },
+    { "id": "option_b", "label": "Option B: Foundry as Orchestrator", "type": "rect", "color": "#94a3b8" },
+    { "id": "option_c", "label": "Option C: Hybrid (RECOMMENDED)", "type": "highlight", "color": "#ef4444" },
+    { "id": "foundry_chat", "label": "Chat → Foundry (orchestration)", "type": "rect", "color": "#a78bfa" },
+    { "id": "direct_voice", "label": "Voice → Azure Realtime API (direct, latency critical)", "type": "rect", "color": "#22c55e" },
+    { "id": "direct_avatar", "label": "Avatar → Azure Speech (direct, WebRTC critical)", "type": "rect", "color": "#22c55e" }
+  ],
+  "edges": [
+    { "source": "ui", "target": "api", "label": "calls" },
+    { "source": "api", "target": "chat", "label": "routes" },
+    { "source": "api", "target": "voice", "label": "routes" },
+    { "source": "api", "target": "avatar", "label": "routes" },
+    { "source": "chat", "target": "option_c", "label": "uses" },
+    { "source": "voice", "target": "option_c", "label": "uses" },
+    { "source": "avatar", "target": "option_c", "label": "uses" },
+    { "source": "option_c", "target": "foundry_chat", "label": "chat path" },
+    { "source": "option_c", "target": "direct_voice", "label": "voice path" },
+    { "source": "option_c", "target": "direct_avatar", "label": "avatar path" }
+  ]
+}

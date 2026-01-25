@@ -1,0 +1,49 @@
+{
+  "title": "Antigravity Router — Truth-Value Ingestion Pipeline (A/B/C)",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "sources", "label": "Inputs: PDFs, manuals, email, slides, CSV/JSON/logs", "type": "rect", "color": "#22c55e" },
+    { "id": "router", "label": "Antigravity Router", "type": "rect", "color": "#ef4444" },
+    { "id": "classify", "label": "Classify by truth value: A / B / C", "type": "diamond", "color": "#f59e0b" },
+
+    { "id": "class_a", "label": "Class A (Immutable)", "type": "rect", "color": "#60a5fa" },
+    { "id": "engine_a", "label": "Engine: Docling", "type": "rect", "color": "#94a3b8" },
+    { "id": "examples_a", "label": "Examples: PDFs, manuals, specs", "type": "note", "color": "#94a3b8" },
+
+    { "id": "class_b", "label": "Class B (Ephemeral)", "type": "rect", "color": "#a78bfa" },
+    { "id": "engine_b", "label": "Engine: Unstructured", "type": "rect", "color": "#94a3b8" },
+    { "id": "examples_b", "label": "Examples: emails, slides, docs", "type": "note", "color": "#94a3b8" },
+
+    { "id": "class_c", "label": "Class C (Operational)", "type": "rect", "color": "#34d399" },
+    { "id": "engine_c", "label": "Engine: Pandas", "type": "rect", "color": "#94a3b8" },
+    { "id": "examples_c", "label": "Examples: CSV, JSON, logs", "type": "note", "color": "#94a3b8" },
+
+    { "id": "metadata", "label": "Attach metadata: provenance_id, decay_rate, classification", "type": "rect", "color": "#f472b6" },
+    { "id": "store", "label": "Store + Index in Memory (Zep/Graph)", "type": "rect", "color": "#f59e0b" },
+    { "id": "impl", "label": "Implementation: backend/etl/", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "sources", "target": "router", "label": "documents / data" },
+    { "source": "router", "target": "classify", "label": "routing decision" },
+
+    { "source": "classify", "target": "class_a", "label": "A" },
+    { "source": "class_a", "target": "engine_a", "label": "extract" },
+    { "source": "class_a", "target": "examples_a", "label": "typical inputs" },
+
+    { "source": "classify", "target": "class_b", "label": "B" },
+    { "source": "class_b", "target": "engine_b", "label": "extract" },
+    { "source": "class_b", "target": "examples_b", "label": "typical inputs" },
+
+    { "source": "classify", "target": "class_c", "label": "C" },
+    { "source": "class_c", "target": "engine_c", "label": "extract" },
+    { "source": "class_c", "target": "examples_c", "label": "typical inputs" },
+
+    { "source": "engine_a", "target": "metadata", "label": "enriched content" },
+    { "source": "engine_b", "target": "metadata", "label": "enriched content" },
+    { "source": "engine_c", "target": "metadata", "label": "enriched content" },
+
+    { "source": "metadata", "target": "store", "label": "persist + index" },
+    { "source": "router", "target": "impl", "label": "code reference" }
+  ]
+}
+

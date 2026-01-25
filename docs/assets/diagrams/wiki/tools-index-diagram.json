@@ -1,0 +1,32 @@
+{
+  "title": "Tools Section — How Agents Act (MCP + HTTP + Governance)",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "tools_root", "label": "Tools (DIKW: Wisdom enablers)", "type": "rect", "color": "#a78bfa" },
+
+    { "id": "mcp", "label": "MCP (Model Context Protocol)", "type": "rect", "color": "#60a5fa" },
+    { "id": "http_tools", "label": "HTTP Tool Endpoints (Action-group compatible)", "type": "rect", "color": "#34d399" },
+    { "id": "governance", "label": "Tool Governance", "type": "rect", "color": "#f472b6" },
+    { "id": "audit", "label": "Audit + attribution (who did what)", "type": "note", "color": "#94a3b8" },
+    { "id": "policy", "label": "Policy checks (ALLOW/DENY) + allowlists", "type": "note", "color": "#94a3b8" },
+    { "id": "evidence", "label": "Evidence bundles (inputs, outputs, provenance)", "type": "note", "color": "#94a3b8" },
+
+    { "id": "foundry_master", "label": "Foundry IQ + ctxEco Integration Master", "type": "highlight", "color": "#ef4444" },
+    { "id": "foundry_blueprint", "label": "Foundry Agent Integration Blueprint", "type": "rect", "color": "#22c55e" },
+    { "id": "mcp_userid_test", "label": "MCP User ID Attribution Test", "type": "rect", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "tools_root", "target": "mcp", "label": "primary GTM surface" },
+    { "source": "tools_root", "target": "http_tools", "label": "lightweight demos / hardening" },
+    { "source": "tools_root", "target": "governance", "label": "enterprise safety" },
+
+    { "source": "governance", "target": "audit", "label": "required" },
+    { "source": "governance", "target": "policy", "label": "required" },
+    { "source": "governance", "target": "evidence", "label": "required" },
+
+    { "source": "tools_root", "target": "foundry_master", "label": "strategy" },
+    { "source": "tools_root", "target": "foundry_blueprint", "label": "implementation" },
+    { "source": "tools_root", "target": "mcp_userid_test", "label": "verification" }
+  ]
+}
+

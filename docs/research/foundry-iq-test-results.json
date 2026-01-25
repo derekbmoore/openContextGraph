@@ -1,0 +1,60 @@
+{
+  "config": {
+    "foundry_agent_endpoint": false,
+    "foundry_agent_key": false,
+    "foundry_agent_project": false,
+    "use_foundry_iq": false,
+    "foundry_iq_kb_id": false
+  },
+  "foundry_client": {
+    "foundry_client_exists": false,
+    "can_instantiate": false
+  },
+  "foundry_iq_client": {
+    "foundry_iq_client_exists": false
+  },
+  "mcp_tools": {
+    "mcp_tools_registry_exists": false
+  },
+  "mcp_endpoint": {
+    "mcp_endpoint_available": true,
+    "tool_count": 9,
+    "url": "https://api.ctxeco.com/mcp"
+  },
+  "hybrid_search": {
+    "hybrid_search_exists": false
+  },
+  "m365": {
+    "documentation_exists": true,
+    "implementation_exists": false
+  },
+  "maturity": {
+    "foundry_iq": {
+      "level": 0,
+      "status": "Configured but not operational",
+      "components": {
+        "config": false,
+        "client": false,
+        "hybrid_search": false
+      }
+    },
+    "fabric_iq": {
+      "level": 0,
+      "status": "Not explored",
+      "components": {}
+    },
+    "work_iq": {
+      "level": 0,
+      "status": "Not explored",
+      "components": {}
+    },
+    "m365_copilot": {
+      "level": 1,
+      "status": "Documented but not operational",
+      "components": {
+        "documentation": true,
+        "implementation": false
+      }
+    }
+  }
+}

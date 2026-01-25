@@ -1,0 +1,26 @@
+{
+  "title": "Foundry IQ — Enterprise Knowledge Bases + ctxEco Hybrid Retrieval",
+  "type": "architecture",
+  "nodes": [
+    { "id": "dikw", "label": "DIKW: Knowledge Layer", "type": "rect", "color": "#f59e0b" },
+    { "id": "foundry_iq", "label": "Foundry IQ: Enterprise docs (SharePoint/OneLake/web)", "type": "rect", "color": "#a78bfa" },
+    { "id": "ctxeco", "label": "ctxEco: episodic + semantic + operational memory", "type": "rect", "color": "#f59e0b" },
+    { "id": "mcp", "label": "ctxEco MCP server attached to Foundry agents", "type": "rect", "color": "#34d399" },
+    { "id": "fusion", "label": "Fuse at agent layer: KB grounding + ctxEco memory", "type": "rect", "color": "#ef4444" },
+    { "id": "kb1", "label": "KB-1 (M365 Knowledge): SharePoint + OneLake", "type": "rect", "color": "#60a5fa" },
+    { "id": "client", "label": "Foundry IQ client wrapper (to build)", "type": "rect", "color": "#94a3b8" },
+    { "id": "hybrid", "label": "Hybrid search fusion: preserves provenance + gating + evidence", "type": "rect", "color": "#f472b6" },
+    { "id": "flags", "label": "Feature flags: USE_FOUNDRY_IQ, FOUNDRY_IQ_KB_ID", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "dikw", "target": "foundry_iq", "label": "enterprise docs" },
+    { "source": "dikw", "target": "ctxeco", "label": "governed memory" },
+    { "source": "foundry_iq", "target": "kb1", "label": "configure" },
+    { "source": "mcp", "target": "ctxeco", "label": "cross-source retrieval" },
+    { "source": "mcp", "target": "fusion", "label": "evidence + policy" },
+    { "source": "foundry_iq", "target": "client", "label": "calls via" },
+    { "source": "client", "target": "hybrid", "label": "normalize + fuse" },
+    { "source": "hybrid", "target": "fusion", "label": "output" },
+    { "source": "dikw", "target": "flags", "label": "controls" }
+  ]
+}

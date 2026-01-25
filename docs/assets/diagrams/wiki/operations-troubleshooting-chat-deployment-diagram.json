@@ -1,0 +1,35 @@
+{
+  "title": "Chat Deployment Troubleshooting — Common Issues & Fixes",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "Chat Troubleshooting", "type": "rect", "color": "#ef4444" },
+    { "id": "issue1", "label": "Issue: Chat fails blindly (500)", "type": "rect", "color": "#ef4444" },
+    { "id": "fix1", "label": "Fix: Check config.py for duplicates, check main.py exception handlers", "type": "rect", "color": "#22c55e" },
+    { "id": "issue2", "label": "Issue: Values are None (500)", "type": "rect", "color": "#ef4444" },
+    { "id": "fix2", "label": "Fix: Remove duplicate Pydantic Field overrides in config.py", "type": "rect", "color": "#22c55e" },
+    { "id": "issue3", "label": "Issue: Agent Not Found (404)", "type": "rect", "color": "#ef4444" },
+    { "id": "fix3", "label": "Fix: Set AZURE_FOUNDRY_AGENT_API_VERSION=2024-05-01-preview", "type": "rect", "color": "#22c55e" },
+    { "id": "issue4", "label": "Issue: Resource Not Found (404)", "type": "rect", "color": "#ef4444" },
+    { "id": "fix4", "label": "Fix: Set AZURE_FOUNDRY_AGENT_ENDPOINT=https://zimax.openai.azure.com/", "type": "rect", "color": "#22c55e" },
+    { "id": "issue5", "label": "Issue: Nested JSON (200 but wrong format)", "type": "rect", "color": "#ef4444" },
+    { "id": "fix5", "label": "Fix: Ensure chat.py uses _extract_content helper", "type": "rect", "color": "#22c55e" },
+    { "id": "issue6", "label": "Issue: MCP 404", "type": "rect", "color": "#ef4444" },
+    { "id": "fix6", "label": "Fix: Use /mcp (root level), NOT /api/v1/mcp", "type": "rect", "color": "#22c55e" },
+    { "id": "config", "label": "Critical Config: ENDPOINT, API_VERSION, KEY, Agent IDs, CORS_ORIGINS, AUTH_REQUIRED", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "root", "target": "issue1", "label": "symptom" },
+    { "source": "issue1", "target": "fix1", "label": "solution" },
+    { "source": "root", "target": "issue2", "label": "symptom" },
+    { "source": "issue2", "target": "fix2", "label": "solution" },
+    { "source": "root", "target": "issue3", "label": "symptom" },
+    { "source": "issue3", "target": "fix3", "label": "solution" },
+    { "source": "root", "target": "issue4", "label": "symptom" },
+    { "source": "issue4", "target": "fix4", "label": "solution" },
+    { "source": "root", "target": "issue5", "label": "symptom" },
+    { "source": "issue5", "target": "fix5", "label": "solution" },
+    { "source": "root", "target": "issue6", "label": "symptom" },
+    { "source": "issue6", "target": "fix6", "label": "solution" },
+    { "source": "root", "target": "config", "label": "verify" }
+  ]
+}

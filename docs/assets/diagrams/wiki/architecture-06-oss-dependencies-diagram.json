@@ -1,0 +1,28 @@
+{
+  "title": "OSS Dependencies — Major Library Groups",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "OSS Dependencies", "type": "rect", "color": "#94a3b8" },
+    { "id": "core", "label": "Core: fastapi, uvicorn, pydantic", "type": "rect", "color": "#34d399" },
+    { "id": "agents", "label": "Agents: langchain, langgraph", "type": "rect", "color": "#60a5fa" },
+    { "id": "memory", "label": "Memory: zep-python, graphiti-core, networkx", "type": "rect", "color": "#f59e0b" },
+    { "id": "etl", "label": "ETL: unstructured, python-magic", "type": "rect", "color": "#22c55e" },
+    { "id": "orchestration", "label": "Orchestration: temporalio", "type": "rect", "color": "#a78bfa" },
+    { "id": "otel", "label": "Observability: opentelemetry-*", "type": "rect", "color": "#94a3b8" },
+    { "id": "requirements", "label": "Source of truth: backend/requirements.txt", "type": "note", "color": "#94a3b8" },
+    { "id": "todo_audit", "label": "TODO: license audit", "type": "note", "color": "#ef4444" },
+    { "id": "todo_pins", "label": "TODO: version pinning policy", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "root", "target": "core", "label": "group" },
+    { "source": "root", "target": "agents", "label": "group" },
+    { "source": "root", "target": "memory", "label": "group" },
+    { "source": "root", "target": "etl", "label": "group" },
+    { "source": "root", "target": "orchestration", "label": "group" },
+    { "source": "root", "target": "otel", "label": "group" },
+    { "source": "root", "target": "requirements", "label": "see" },
+    { "source": "root", "target": "todo_audit", "label": "next" },
+    { "source": "root", "target": "todo_pins", "label": "next" }
+  ]
+}
+

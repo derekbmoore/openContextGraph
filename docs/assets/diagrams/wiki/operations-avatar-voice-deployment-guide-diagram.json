@@ -1,0 +1,30 @@
+{
+  "title": "Avatar & Voice Deployment — Mode A (Avatar) + Mode B (Voice) Architecture",
+  "type": "architecture",
+  "nodes": [
+    { "id": "ui", "label": "Browser (Frontend)", "type": "rect", "color": "#60a5fa" },
+    { "id": "mode_a", "label": "Mode A: Avatar (Video + Audio)", "type": "rect", "color": "#22c55e" },
+    { "id": "rt_client", "label": "rt-client (Azure AI Realtime Audio SDK)", "type": "rect", "color": "#22c55e" },
+    { "id": "ice_endpoint", "label": "POST /api/v1/voice/avatar/ice-credentials", "type": "rect", "color": "#34d399" },
+    { "id": "direct_azure", "label": "Direct: Browser ↔ Azure VoiceLive (WebSocket/WebRTC)", "type": "rect", "color": "#22c55e" },
+    { "id": "mode_b", "label": "Mode B: Voice Only (Audio)", "type": "rect", "color": "#a78bfa" },
+    { "id": "ws_proxy", "label": "WebSocket Proxy: Browser ↔ Backend ↔ Azure VoiceLive", "type": "rect", "color": "#a78bfa" },
+    { "id": "backend", "label": "Backend: FastAPI WebSocket Relay", "type": "rect", "color": "#34d399" },
+    { "id": "resources", "label": "Azure Resources: VoiceLive (eastus2/swedencentral), Speech (westus2 CRITICAL for Avatar)", "type": "note", "color": "#94a3b8" },
+    { "id": "config", "label": "Config: AZURE_VOICELIVE_ENDPOINT, AZURE_SPEECH_KEY, AZURE_SPEECH_REGION=westus2", "type": "note", "color": "#94a3b8" },
+    { "id": "firewall", "label": "Firewall: UDP 3478 (STUN/TURN), 49152-65535 (Media), *.cognitive.microsoft.com, *.services.ai.azure.com", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "ui", "target": "mode_a", "label": "avatar mode" },
+    { "source": "mode_a", "target": "ice_endpoint", "label": "requests credentials" },
+    { "source": "ice_endpoint", "target": "rt_client", "label": "returns ICE + API key" },
+    { "source": "rt_client", "target": "direct_azure", "label": "direct connection" },
+    { "source": "ui", "target": "mode_b", "label": "voice mode" },
+    { "source": "mode_b", "target": "ws_proxy", "label": "WebSocket" },
+    { "source": "ws_proxy", "target": "backend", "label": "via" },
+    { "source": "backend", "target": "direct_azure", "label": "proxies to" },
+    { "source": "mode_a", "target": "resources", "label": "requires" },
+    { "source": "mode_a", "target": "config", "label": "requires" },
+    { "source": "mode_a", "target": "firewall", "label": "requires" }
+  ]
+}

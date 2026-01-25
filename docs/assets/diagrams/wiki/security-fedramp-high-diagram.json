@@ -1,0 +1,23 @@
+{
+  "title": "FedRAMP High Compliance — Control Mapping",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "root", "label": "FedRAMP High Compliance", "type": "rect", "color": "#f472b6" },
+    { "id": "ac2", "label": "AC-2: RBAC via SecurityContext", "type": "rect", "color": "#60a5fa" },
+    { "id": "au2", "label": "AU-2: OpenTelemetry → SIEM", "type": "rect", "color": "#34d399" },
+    { "id": "ia2", "label": "IA-2: OIDC/Keycloak integration", "type": "rect", "color": "#a78bfa" },
+    { "id": "sc8", "label": "SC-8: TLS 1.3 everywhere", "type": "rect", "color": "#22c55e" },
+    { "id": "sc28", "label": "SC-28: Database encryption", "type": "rect", "color": "#f59e0b" },
+    { "id": "si2", "label": "SI-2: SBOM + Grype scanning", "type": "rect", "color": "#94a3b8" },
+    { "id": "todo", "label": "TODO: Complete control matrix, evidence collection, boundary diagram", "type": "note", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "root", "target": "ac2", "label": "control" },
+    { "source": "root", "target": "au2", "label": "control" },
+    { "source": "root", "target": "ia2", "label": "control" },
+    { "source": "root", "target": "sc8", "label": "control" },
+    { "source": "root", "target": "sc28", "label": "control" },
+    { "source": "root", "target": "si2", "label": "control" },
+    { "source": "root", "target": "todo", "label": "next" }
+  ]
+}

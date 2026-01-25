@@ -1,0 +1,26 @@
+{
+  "title": "Foundry IQ + ctxEco: Complete DIKW Stack for Enterprise AI",
+  "type": "architecture",
+  "nodes": [
+    { "id": "header", "label": "Foundry IQ + ctxEco Integration", "type": "rect", "color": "#60a5fa" },
+    { "id": "dikw_pyramid", "label": "DIKW: Data → Information → Knowledge → Wisdom", "type": "rect", "color": "#f59e0b" },
+    { "id": "foundry", "label": "Foundry IQ", "type": "rect", "color": "#a78bfa" },
+    { "id": "docs", "label": "Enterprise Docs\n(SharePoint, OneLake)", "type": "rect", "color": "#94a3b8" },
+    { "id": "ctxeco", "label": "ctxEco", "type": "rect", "color": "#34d399" },
+    { "id": "memory", "label": "Governed Memory\n(Tri-Search™, Provenance)", "type": "rect", "color": "#94a3b8" },
+    { "id": "bridge", "label": "MCP Integration", "type": "rect", "color": "#22c55e" },
+    { "id": "agents", "label": "AI Agents\n(Elena, Marcus, Sage)", "type": "rect", "color": "#60a5fa" },
+    { "id": "value", "label": "Attributable Answers • Governed Memory • Evidence-First", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "header", "target": "dikw_pyramid", "label": "" },
+    { "source": "dikw_pyramid", "target": "foundry", "label": "Knowledge" },
+    { "source": "dikw_pyramid", "target": "ctxeco", "label": "Wisdom" },
+    { "source": "foundry", "target": "docs", "label": "grounds" },
+    { "source": "ctxeco", "target": "memory", "label": "provides" },
+    { "source": "foundry", "target": "bridge", "label": "integrates" },
+    { "source": "ctxeco", "target": "bridge", "label": "connects" },
+    { "source": "bridge", "target": "agents", "label": "powers" },
+    { "source": "agents", "target": "value", "label": "delivers" }
+  ]
+}

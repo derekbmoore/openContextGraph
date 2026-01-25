@@ -1,0 +1,28 @@
+{
+  "title": "Knowledge Section — DIKW Knowledge Layer Map",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "knowledge_root", "label": "Knowledge (DIKW: Knowledge)", "type": "rect", "color": "#f59e0b" },
+
+    { "id": "foundry_master", "label": "Foundry IQ + ctxEco Integration Master", "type": "highlight", "color": "#ef4444" },
+    { "id": "gk_trisearch", "label": "Graph Knowledge (Gk) + Tri-Search™", "type": "rect", "color": "#60a5fa" },
+    { "id": "foundry_hybrid", "label": "Foundry IQ Hybrid Search", "type": "rect", "color": "#a78bfa" },
+    { "id": "m365", "label": "Microsoft 365 Integration", "type": "rect", "color": "#22c55e" },
+    { "id": "iq_impl", "label": "Foundry IQ Implementation Notes", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "tenancy", "label": "Tenant isolation + permission trimming", "type": "note", "color": "#f472b6" },
+    { "id": "provenance", "label": "Evidence bundles + attribution", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "knowledge_root", "target": "foundry_master", "label": "start" },
+    { "source": "knowledge_root", "target": "gk_trisearch", "label": "ctxEco native memory" },
+    { "source": "knowledge_root", "target": "foundry_hybrid", "label": "Foundry IQ + ctxEco fusion" },
+    { "source": "knowledge_root", "target": "m365", "label": "enterprise sources" },
+    { "source": "knowledge_root", "target": "iq_impl", "label": "implementation checklist" },
+
+    { "source": "gk_trisearch", "target": "provenance", "label": "must include" },
+    { "source": "foundry_hybrid", "target": "tenancy", "label": "must preserve" },
+    { "source": "foundry_hybrid", "target": "provenance", "label": "must preserve" }
+  ]
+}
+

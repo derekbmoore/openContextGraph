@@ -1,0 +1,27 @@
+{
+  "title": "PoC Readiness Checklist — Verification Flow",
+  "type": "flowchart",
+  "nodes": [
+    { "id": "start", "label": "Verify PoC Readiness", "type": "rect", "color": "#94a3b8" },
+    { "id": "config", "label": "1) Configuration: Frontend (HTTPS/wss), Backend (env vars), Key Vault (secrets)", "type": "rect", "color": "#60a5fa" },
+    { "id": "auth", "label": "2) Auth: Entra redirect URIs, AUTH_REQUIRED=true, test user token works", "type": "rect", "color": "#f472b6" },
+    { "id": "chat", "label": "3) Chat: POST /api/v1/chat returns 200, Foundry or fallback works, memory writes", "type": "rect", "color": "#34d399" },
+    { "id": "voice", "label": "4) Voice: WS proxy or WebRTC direct works, no 401s, audio response received", "type": "rect", "color": "#22c55e" },
+    { "id": "avatar", "label": "5) Avatar: token + ICE creds work, video stream plays", "type": "rect", "color": "#22c55e" },
+    { "id": "memory", "label": "6) Tri-Search: POST /api/v1/memory/search returns results, enrich writes", "type": "rect", "color": "#f59e0b" },
+    { "id": "tools", "label": "7) MCP + Tools: tools/list returns manifest, tool endpoints respond", "type": "rect", "color": "#a78bfa" },
+    { "id": "go", "label": "Go: All checks pass, no Mixed Content, no 401s", "type": "rect", "color": "#22c55e" },
+    { "id": "nogo", "label": "No-Go: VoiceLive 401, ICE fails, auth fails, memory empty", "type": "rect", "color": "#ef4444" }
+  ],
+  "edges": [
+    { "source": "start", "target": "config", "label": "check 1" },
+    { "source": "config", "target": "auth", "label": "check 2" },
+    { "source": "auth", "target": "chat", "label": "check 3" },
+    { "source": "chat", "target": "voice", "label": "check 4" },
+    { "source": "voice", "target": "avatar", "label": "check 5" },
+    { "source": "avatar", "target": "memory", "label": "check 6" },
+    { "source": "memory", "target": "tools", "label": "check 7" },
+    { "source": "tools", "target": "go", "label": "if all pass" },
+    { "source": "tools", "target": "nogo", "label": "if any fail" }
+  ]
+}

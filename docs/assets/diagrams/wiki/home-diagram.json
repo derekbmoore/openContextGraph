@@ -1,0 +1,53 @@
+{
+  "title": "OpenContextGraph (ctxEco) Wiki — Information Architecture",
+  "type": "mindmap",
+  "nodes": [
+    { "id": "home", "label": "Home: OpenContextGraph (ctxEco)", "type": "rect", "color": "#60a5fa" },
+    { "id": "tagline", "label": "Defying Data Gravity with Context Engineering", "type": "note", "color": "#94a3b8" },
+
+    { "id": "arch", "label": "Architecture", "type": "rect", "color": "#34d399" },
+    { "id": "knowledge", "label": "Knowledge", "type": "rect", "color": "#f59e0b" },
+    { "id": "tools", "label": "Tools", "type": "rect", "color": "#a78bfa" },
+    { "id": "operations", "label": "Operations", "type": "rect", "color": "#22c55e" },
+    { "id": "security", "label": "Security", "type": "rect", "color": "#f472b6" },
+    { "id": "research", "label": "Research", "type": "rect", "color": "#94a3b8" },
+    { "id": "features", "label": "Key Features", "type": "rect", "color": "#60a5fa" },
+    { "id": "stories", "label": "Stories", "type": "rect", "color": "#fbbf24" },
+
+    { "id": "foundry_master", "label": "Start here: Foundry IQ + ctxEco Integration Master", "type": "highlight", "color": "#ef4444" },
+    { "id": "periodic_table", "label": "Interactive AI Periodic Table (roadmap)", "type": "link", "color": "#94a3b8" },
+
+    { "id": "stack", "label": "Technology Stack", "type": "rect", "color": "#111827" },
+    { "id": "stack_frontend", "label": "Frontend: React + Vite", "type": "pill", "color": "#60a5fa" },
+    { "id": "stack_backend", "label": "Backend: FastAPI + Python", "type": "pill", "color": "#34d399" },
+    { "id": "stack_agents", "label": "Agents: LangGraph + Azure AI Foundry", "type": "pill", "color": "#a78bfa" },
+    { "id": "stack_temporal", "label": "Orchestration: Temporal", "type": "pill", "color": "#94a3b8" },
+    { "id": "stack_memory", "label": "Memory: Zep + Graphiti", "type": "pill", "color": "#f59e0b" },
+    { "id": "stack_infra", "label": "Infra: Azure Container Apps", "type": "pill", "color": "#22c55e" },
+    { "id": "stack_auth", "label": "Auth: Microsoft Entra ID", "type": "pill", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "home", "target": "tagline", "label": "purpose" },
+    { "source": "home", "target": "foundry_master", "label": "recommended entrypoint" },
+    { "source": "home", "target": "periodic_table", "label": "explore roadmap" },
+
+    { "source": "home", "target": "arch", "label": "learn how it's built" },
+    { "source": "home", "target": "knowledge", "label": "how we retrieve & govern memory" },
+    { "source": "home", "target": "tools", "label": "how agents act (MCP + HTTP)" },
+    { "source": "home", "target": "operations", "label": "deploy & run" },
+    { "source": "home", "target": "security", "label": "controls & compliance" },
+    { "source": "home", "target": "research", "label": "strategy & investigations" },
+    { "source": "home", "target": "features", "label": "specs & behaviors" },
+    { "source": "home", "target": "stories", "label": "narratives & scenarios" },
+
+    { "source": "home", "target": "stack", "label": "implementation" },
+    { "source": "stack", "target": "stack_frontend", "label": "UI" },
+    { "source": "stack", "target": "stack_backend", "label": "API" },
+    { "source": "stack", "target": "stack_agents", "label": "brains" },
+    { "source": "stack", "target": "stack_temporal", "label": "spine" },
+    { "source": "stack", "target": "stack_memory", "label": "memory substrate" },
+    { "source": "stack", "target": "stack_infra", "label": "runtime" },
+    { "source": "stack", "target": "stack_auth", "label": "identity" }
+  ]
+}
+

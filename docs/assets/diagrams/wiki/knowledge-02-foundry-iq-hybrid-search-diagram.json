@@ -1,0 +1,30 @@
+{
+  "title": "Foundry IQ Hybrid Search — ctxEco Tri-Search™ + Foundry IQ Fusion",
+  "type": "architecture",
+  "nodes": [
+    { "id": "query", "label": "User Query", "type": "rect", "color": "#94a3b8" },
+    { "id": "ctxeco", "label": "ctxEco Tri-Search™", "type": "rect", "color": "#f59e0b" },
+    { "id": "semantic", "label": "Semantic/vector retrieval (ctxEco memory)", "type": "rect", "color": "#60a5fa" },
+    { "id": "keyword", "label": "Keyword retrieval (ctxEco memory)", "type": "rect", "color": "#34d399" },
+    { "id": "foundry_iq", "label": "Foundry IQ KBs (enterprise docs: SharePoint/OneLake/web)", "type": "rect", "color": "#a78bfa" },
+    { "id": "iq_client", "label": "Foundry IQ client wrapper (to build)", "type": "rect", "color": "#94a3b8" },
+    { "id": "fuse", "label": "Fuse with RRF (or weighted merge)", "type": "rect", "color": "#ef4444" },
+    { "id": "results", "label": "Results with evidence + gating metadata", "type": "rect", "color": "#f59e0b" },
+    { "id": "provenance", "label": "Preserve: provenance + permission trimming + evidence bundle", "type": "note", "color": "#f472b6" },
+    { "id": "flags", "label": "Feature flags: USE_FOUNDRY_IQ, FOUNDRY_IQ_KB_ID", "type": "note", "color": "#94a3b8" }
+  ],
+  "edges": [
+    { "source": "query", "target": "ctxeco", "label": "retrieve" },
+    { "source": "query", "target": "foundry_iq", "label": "retrieve" },
+    { "source": "ctxeco", "target": "semantic", "label": "step 1" },
+    { "source": "ctxeco", "target": "keyword", "label": "step 2" },
+    { "source": "foundry_iq", "target": "iq_client", "label": "via" },
+    { "source": "iq_client", "target": "foundry_iq", "label": "step 3" },
+    { "source": "semantic", "target": "fuse", "label": "candidates" },
+    { "source": "keyword", "target": "fuse", "label": "candidates" },
+    { "source": "foundry_iq", "target": "fuse", "label": "candidates" },
+    { "source": "fuse", "target": "results", "label": "ranked output" },
+    { "source": "results", "target": "provenance", "label": "must include" },
+    { "source": "foundry_iq", "target": "flags", "label": "controlled by" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "title": "Foundry IQ + ctxEco Integration — DIKW Stack for Enterprise AI",
+  "type": "architecture",
+  "nodes": [
+    { "id": "title", "label": "Foundry IQ + ctxEco Integration", "type": "rect", "color": "#60a5fa" },
+    { "id": "dikw", "label": "DIKW Stack: Data → Information → Knowledge → Wisdom", "type": "rect", "color": "#f59e0b" },
+    { "id": "foundry_iq", "label": "Foundry IQ: Enterprise Docs (SharePoint, OneLake, M365)", "type": "rect", "color": "#a78bfa" },
+    { "id": "ctxeco", "label": "ctxEco: Governed Memory (Tri-Search™, Provenance, Evidence)", "type": "rect", "color": "#34d399" },
+    { "id": "mcp", "label": "MCP Server: Bring-Your-Own Integration", "type": "rect", "color": "#22c55e" },
+    { "id": "agents", "label": "Foundry Agents: Elena, Marcus, Sage", "type": "rect", "color": "#60a5fa" },
+    { "id": "features", "label": "Key Features: Attributable Answers, Governed Memory, Cross-Source Synthesis, Evidence-First", "type": "note", "color": "#f472b6" },
+    { "id": "sources", "label": "10-16 Sources: M365, GitHub, Splunk, Databases", "type": "note", "color": "#94a3b8" },
+    { "id": "metrics", "label": "Metrics: < 60min setup, > 80% evidence rate, Zero cross-tenant leakage", "type": "note", "color": "#f59e0b" }
+  ],
+  "edges": [
+    { "source": "title", "target": "dikw", "label": "implements" },
+    { "source": "dikw", "target": "foundry_iq", "label": "Knowledge layer" },
+    { "source": "dikw", "target": "ctxeco", "label": "Wisdom layer" },
+    { "source": "foundry_iq", "target": "mcp", "label": "integrates via" },
+    { "source": "ctxeco", "target": "mcp", "label": "exposes via" },
+    { "source": "mcp", "target": "agents", "label": "powers" },
+    { "source": "agents", "target": "features", "label": "delivers" },
+    { "source": "foundry_iq", "target": "sources", "label": "connects" },
+    { "source": "ctxeco", "target": "metrics", "label": "ensures" }
+  ]
+}

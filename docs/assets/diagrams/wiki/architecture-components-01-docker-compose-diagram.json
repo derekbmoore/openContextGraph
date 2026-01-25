@@ -1,0 +1,38 @@
+{
+  "title": "Docker Compose Stack — Local/On-Prem Runtime Topology",
+  "type": "architecture",
+  "nodes": [
+    { "id": "compose", "label": "docker-compose.yml (Infrastructure as Code)", "type": "rect", "color": "#94a3b8" },
+
+    { "id": "postgres", "label": "PostgreSQL (:5432) — data layer", "type": "rect", "color": "#f59e0b" },
+    { "id": "zep", "label": "Zep (:8000) — memory layer (CtxGraph)", "type": "rect", "color": "#f59e0b" },
+    { "id": "temporal", "label": "Temporal (:7233) — orchestration layer (Spine)", "type": "rect", "color": "#a78bfa" },
+    { "id": "temporal_ui", "label": "Temporal UI (:8088)", "type": "rect", "color": "#a78bfa" },
+    { "id": "backend", "label": "Backend API (:8082) — FastAPI + Agents + Memory + ETL", "type": "rect", "color": "#34d399" },
+    { "id": "worker", "label": "Temporal Worker — workflow execution", "type": "rect", "color": "#22c55e" },
+
+    { "id": "consistency", "label": "Reproducibility: pinned versions + declared dependencies", "type": "note", "color": "#60a5fa" },
+    { "id": "compliance", "label": "Compliance support: auditable builds + clear boundaries", "type": "note", "color": "#f472b6" }
+  ],
+  "edges": [
+    { "source": "compose", "target": "postgres", "label": "defines" },
+    { "source": "compose", "target": "zep", "label": "defines" },
+    { "source": "compose", "target": "temporal", "label": "defines" },
+    { "source": "compose", "target": "temporal_ui", "label": "defines" },
+    { "source": "compose", "target": "backend", "label": "defines" },
+    { "source": "compose", "target": "worker", "label": "defines" },
+
+    { "source": "postgres", "target": "zep", "label": "storage backend" },
+    { "source": "postgres", "target": "temporal", "label": "persistence backend" },
+    { "source": "postgres", "target": "backend", "label": "app data (optional)" },
+
+    { "source": "zep", "target": "backend", "label": "memory API calls" },
+    { "source": "temporal", "target": "backend", "label": "workflow client" },
+    { "source": "temporal", "target": "worker", "label": "task queue" },
+    { "source": "temporal_ui", "target": "temporal", "label": "observes" },
+
+    { "source": "compose", "target": "consistency", "label": "why" },
+    { "source": "compose", "target": "compliance", "label": "why" }
+  ]
+}
+
