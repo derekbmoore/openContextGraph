@@ -129,6 +129,40 @@ If the API or worker fail in Azure, check:
 2. **Images**: That the correct image:tag is deployed (SHA when deployed from CI, or `latest` when run manually).  
 3. **Secrets**: Key Vault references and managed identity for the backend/worker (see [deployment](deployment.md) and Bicep).
 
+### Zep: "password authentication failed for user \"ctxecoadmin\""
+
+Zep is trying to connect to PostgreSQL with a user that doesn’t match the Flexible Server admin, or the password is wrong.
+
+- **Template default**: `main.bicep` uses Postgres admin `cogadmin` and passes it to Zep via `zepPostgresUser`. The Flex Server is created with `administratorLogin: 'cogadmin'`.
+- **If you see `ctxecoadmin`**: The Zep app was likely deployed with a different config (different params, older template, or manual env/secret). The Flex Server may have been created with `administratorLogin: 'ctxecoadmin'` elsewhere.
+
+**Fix:**
+
+1. **Redeploy with aligned credentials**  
+   Use the `postgresAdminUser` parameter so it matches the actual Postgres admin:
+   - If the server uses **cogadmin**: no change; default is correct.
+   - If the server uses **ctxecoadmin**: pass `postgresAdminUser=ctxecoadmin` in the Bicep/ARM deploy and use that server’s admin password for `postgresPassword`. Zep and Temporal will then use `ctxecoadmin`.
+
+2. **One-off fix in Azure**  
+   In the Zep Container App, update the secret that holds the config (or the revision’s env) so the DSN uses the real Postgres admin user and password for that Flex Server. The DSN is in the mounted `config.yaml` (from secret `zep-config-yaml`). Ensure it matches the server’s `administratorLogin` and password.
+
+3. **Confirm the Postgres user**  
+   In Azure Portal: Flex Server → Overview or Settings → check the admin login. Use that exact value for `postgresAdminUser` (and in any manual Zep config).
+
+### "The password was updated in KV" — Zep still failing
+
+Zep reads its Postgres connection from Key Vault when the app is configured with a managed identity and the **`zep-postgres-dsn`** secret.
+
+- **What to do**
+  1. In Key Vault, create or update the secret **`zep-postgres-dsn`** with the **full** Postgres connection string, including the new password.  
+     Example:  
+     `postgresql://ctxecoadmin:YOUR_NEW_PASSWORD@your-server.postgres.database.azure.com:5432/zep?sslmode=require`
+  2. User and host must match your Flex Server admin login and FQDN; `zep` is the database name.
+  3. Restart the Zep container app (new revision or scale to 0 then back to 1) so it pulls the updated secret from Key Vault.
+
+- **Why**  
+  Zep is configured to use Key Vault for `ZEP_STORE_POSTGRES_DSN`. The template also seeds **`zep-postgres-dsn`** at deploy time from the same password. If you change only **`postgres-password`** in KV, Zep does not see that; it uses **`zep-postgres-dsn`**. So after a password change, update **`zep-postgres-dsn`** with the new full DSN, then restart Zep.
+
 ---
 
 ## Changes made for integrated workspace (Jan 2026)

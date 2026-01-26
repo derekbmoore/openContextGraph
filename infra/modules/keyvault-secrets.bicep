@@ -9,6 +9,10 @@ param postgresConnectionString string = ''
 @secure()
 param postgresPassword string = ''
 
+@description('Full Postgres DSN for Zep (postgresql://user:pass@host:5432/zep?sslmode=require). Set so Zep can use KV reference and pick up password changes after restart.')
+@secure()
+param zepPostgresDsn string = ''
+
 @description('Zep API key.')
 @secure()
 param zepApiKey string = ''
@@ -84,6 +88,19 @@ resource postgresPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' =
   name: 'postgres-password'
   properties: {
     value: empty(postgresPassword) ? 'placeholder-postgres-password' : postgresPassword
+    contentType: 'text/plain'
+    attributes: {
+      enabled: true
+    }
+  }
+}
+
+// Zep Postgres DSN (full connection string). When you update the password in KV, update this secret too so Zep picks it up on restart.
+resource zepPostgresDsnSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'zep-postgres-dsn'
+  properties: {
+    value: empty(zepPostgresDsn) ? 'placeholder-zep-dsn' : zepPostgresDsn
     contentType: 'text/plain'
     attributes: {
       enabled: true

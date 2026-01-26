@@ -32,6 +32,15 @@ param zepPostgresPassword string
 @description('PostgreSQL database name for Zep.')
 param zepPostgresDb string = 'zep'
 
+@description('Key Vault URI (e.g. https://myvault.vault.azure.net/). When set with identityResourceId, Zep reads Postgres DSN from secret zep-postgres-dsn and picks up password changes after restart.')
+param keyVaultUri string = ''
+
+@description('User-assigned identity resource ID for Key Vault access (required if keyVaultUri is set).')
+param identityResourceId string = ''
+
+@description('User-assigned identity client ID (for reference).')
+param identityClientId string = ''
+
 @description('Zep API key (optional, for authentication).')
 @secure()
 param zepApiKey string = ''
@@ -126,11 +135,33 @@ resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024
   }
 }
 
+// When using Key Vault for DSN, add a secret that references KV so Zep picks up password updates after restart
+var useKvForDsn = !empty(keyVaultUri) && !empty(identityResourceId)
+var kvDsnSecret = useKvForDsn ? [
+  {
+    name: 'zep-postgres-dsn'
+    keyVaultUrl: '${keyVaultUri}secrets/zep-postgres-dsn'
+    identity: identityResourceId
+  }
+] : []
+var kvDsnEnv = useKvForDsn ? [
+  { name: 'ZEP_STORE_TYPE'
+    value: 'postgres' }
+  { name: 'ZEP_STORE_POSTGRES_DSN'
+    secretRef: 'zep-postgres-dsn' }
+] : []
+
 // Zep Container App
 resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: appName
   location: location
   tags: tags
+  identity: useKvForDsn ? {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identityResourceId}': {}
+    }
+  } : null
   properties: {
     managedEnvironmentId: acaEnvId
     configuration: {
@@ -159,7 +190,7 @@ resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'zep-config-yaml'
           value: zepConfigContent
         }
-      ], zepSecret, azureAiSecret, zepRegistrySecret)
+      ], kvDsnSecret, zepSecret, azureAiSecret, zepRegistrySecret)
       registries: zepRegistries
     }
     template: {
@@ -192,7 +223,7 @@ resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'ZEP_OPENAI_API_KEY'
               secretRef: 'azure-ai-key'
             }
-          ], zepApiEnv)
+          ], kvDsnEnv, zepApiEnv)
           resources: {
             cpu: json('0.5')
             memory: '1Gi'

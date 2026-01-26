@@ -40,6 +40,9 @@ param enablePrivateLink bool = false
 @secure()
 param postgresPassword string
 
+@description('Postgres admin login. Must match the Flexible Server administratorLogin. Use ctxecoadmin only if the existing server was created with that user.')
+param postgresAdminUser string = 'cogadmin'
+
 // param adminObjectId string
 
 @description('Container image for backend API.')
@@ -434,6 +437,12 @@ resource workerIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-1
   tags: union(identityTags, { Component: 'ManagedIdentity-Worker' })
 }
 
+resource zepIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+  name: '${envName}-zep-id'
+  location: location
+  tags: union(identityTags, { Component: 'ManagedIdentity-Zep' })
+}
+
 // =============================================================================
 // Key Vault
 // =============================================================================
@@ -450,12 +459,16 @@ module keyVaultModule 'modules/keyvault.bicep' = {
   }
 }
 
+// Build Zep Postgres DSN for Key Vault so Zep can use KV ref and pick up password changes after restart
+var zepPostgresDsn = 'postgresql://${postgresAdminUser}:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/zep?sslmode=require'
+
 // Seed required secrets (postgres, zep, azure-ai, foundry)
 module keyVaultSecrets 'modules/keyvault-secrets.bicep' = {
   name: 'keyVaultSecrets'
   params: {
     keyVaultName: keyVaultModule.outputs.keyVaultName
     postgresPassword: postgresPassword
+    zepPostgresDsn: zepPostgresDsn
     zepApiKey: zepApiKey
     azureAiKey: azureAiKey
     azureFoundryAgentEndpoint: azureFoundryAgentEndpoint
@@ -494,6 +507,20 @@ module workerKvRole 'modules/role-assignment.bicep' = {
   }
 }
 
+// Zep needs Key Vault Secrets User at the vault scope to read zep-postgres-dsn
+resource keyVaultForRole 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultModule.outputs.keyVaultName
+}
+resource zepKvRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: keyVaultForRole
+  name: guid(keyVaultForRole.id, zepIdentity.properties.principalId, keyVaultSecretsUserRole, 'zep-kv')
+  properties: {
+    roleDefinitionId: keyVaultSecretsUserRole
+    principalId: zepIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // =============================================================================
 // Temporal Container App
 // =============================================================================
@@ -507,7 +534,7 @@ module temporalModule 'modules/temporal-aca.bicep' = {
     appName: '${envName}-temporal'
     enableCustomDomain: false
     postgresFqdn: postgres.properties.fullyQualifiedDomainName
-    postgresUser: 'cogadmin'
+    postgresUser: postgresAdminUser
     postgresPassword: postgresPassword
     postgresDb: 'temporal'
     tags: union(mergedTags, { Component: 'Temporal' })
@@ -559,6 +586,7 @@ var zepTags = union(mergedTags, {
 
 module zepModule 'modules/zep-aca.bicep' = {
   name: 'zep'
+  dependsOn: [zepKvRole]
   params: {
     location: location
     acaEnvId: acaEnv.id
@@ -568,9 +596,12 @@ module zepModule 'modules/zep-aca.bicep' = {
     customDomainName: 'zep.ctxeco.com'
     appName: '${envName}-zep'
     zepPostgresFqdn: postgres.properties.fullyQualifiedDomainName
-    zepPostgresUser: 'cogadmin'
+    zepPostgresUser: postgresAdminUser
     zepPostgresPassword: postgresPassword
     zepPostgresDb: 'zep'
+    keyVaultUri: keyVaultModule.outputs.keyVaultUri
+    identityResourceId: zepIdentity.id
+    identityClientId: zepIdentity.properties.clientId
     zepApiKey: zepApiKey
     zepImage: zepImage
     registryServer: 'ghcr.io'
