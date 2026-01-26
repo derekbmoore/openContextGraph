@@ -220,6 +220,70 @@ If Zep is failing with a Postgres auth error and you want to fix it without a fu
    az containerapp logs show --resource-group "$RG" --name "$ZEP_APP" --tail 50
    ```
 
+### Zep revision Unhealthy / container will not run
+
+If the Zep revision shows **Unhealthy** or the container keeps restarting:
+
+1. **Confirm DSN and KV**  
+   Run the “Fix Zep in Azure (steps you can run now)” above: set **`zep-postgres-dsn`** in Key Vault to the correct full DSN, then restart (scale to 0 then back to 1, or revision restart).
+
+2. **Confirm Zep can read Key Vault**  
+   The Zep app uses a user-assigned identity with **Key Vault Secrets User** on the vault. If that role was missing or the identity wrong, Zep can’t resolve `zep-postgres-dsn` and may crash or hang. Redeploy the main Bicep so the Zep identity and `zepKvRole` are correct.
+
+3. **Give Zep more time to start**  
+   The template’s startup probe allows ~7 minutes (60s initial delay + 36×10s). If Zep still doesn’t pass before that, check Log stream for errors (e.g. failed DB connect, missing secret). After fixing causes, trigger a new revision (scale 0→1 or redeploy) so the new probe limits apply.
+
+4. **Force a new revision**  
+   After changing **`zep-postgres-dsn`** or fixing identity/KV, force a new revision so the app pulls the updated secret and probe config:
+   ```bash
+   az containerapp update -g ctxeco-rg -n ctxeco-zep --min-replicas 0 --max-replicas 2 --output none
+   az containerapp update -g ctxeco-rg -n ctxeco-zep --min-replicas 1 --max-replicas 2 --output none
+   ```
+   Or create a new revision with a suffix:  
+   `az containerapp update -g ctxeco-rg -n ctxeco-zep --revision-suffix "fix-$(date +%H%M)" --output none`
+
+5. **See why it’s unhealthy (no response on /healthz)**  
+   - **Portal → Log stream:** Azure Portal → Container Apps → **ctxeco-zep** → **Log stream**. Watch for `level=error`, `level=fatal`, `password authentication failed`, or `secret`/Key Vault errors.
+   - **Zep has no managed identity (common cause):** The app needs a user-assigned identity to read **`zep-postgres-dsn`** from Key Vault. Check: `az containerapp show -g ctxeco-rg -n ctxeco-zep --query 'identity.type' -o tsv`. If it returns `None`, and `az identity list -g ctxeco-rg` shows no **ctxeco-zep-id**, use the steps in **“Apply the Zep identity fix (manual)”** below, or redeploy the ctxEco main Bicep so the template creates the identity and role.
+   - **Key Vault access:** Portal → Key Vault **ctxecokv** → **Access control**. The Zep managed identity (e.g. **ctxeco-zep-id**) must have **Key Vault Secrets User**. The Bicep role `zepKvRole` does this at deploy time.
+   - **Redeploy Bicep:** To fix identity, probes, and KV wiring in one go, redeploy the ctxEco infra (e.g. run the deployment workflow or `az deployment group create` for the main Bicep).
+
+#### Apply the Zep identity fix (manual)
+
+When the Zep app has **no managed identity** (`identity.type` is `None`) and there is no **ctxeco-zep-id** in the resource group, you can create the identity, grant it access to the vault, and attach it to the app with these steps. Use the same resource group, vault, and app names as in “Fix Zep in Azure” (e.g. `ctxeco-rg`, `ctxecokv`, `ctxeco-zep`).
+
+1. **Create the user-assigned identity and assign Key Vault Secrets User:**
+
+   ```bash
+   RG=ctxeco-rg
+   KV=ctxecokv
+   ZEP_APP=ctxeco-zep
+   IDENTITY_NAME=ctxeco-zep-id
+
+   az identity create -g "$RG" -n "$IDENTITY_NAME" --output none
+   PRINCIPAL_ID=$(az identity show -g "$RG" -n "$IDENTITY_NAME" --query principalId -o tsv)
+   IDENTITY_ID=$(az identity show -g "$RG" -n "$IDENTITY_NAME" --query id -o tsv)
+   KV_ID=$(az keyvault show -g "$RG" -n "$KV" --query id -o tsv)
+   az role assignment create --role "Key Vault Secrets User" --assignee "$PRINCIPAL_ID" --scope "$KV_ID" --output none
+   ```
+
+2. **Attach the identity to the Zep app:**
+
+   ```bash
+   az containerapp identity assign -g "$RG" -n "$ZEP_APP" --user-assigned "$IDENTITY_ID" --output none
+   ```
+
+3. **Ensure the app uses the DSN from Key Vault**  
+   The Bicep config uses **`zep-postgres-dsn`** from the vault when `keyVaultUri` and `identityResourceId` are set. If this app was created without that, either redeploy the ctxEco Bicep or update the app so its secret/container config resolves `ZEP_STORE_POSTGRES_DSN` from the Key Vault secret **`zep-postgres-dsn`** (and the app uses the identity you just attached). Run **“Fix Zep in Azure (steps you can run now)”** to set **`zep-postgres-dsn`** in the vault if it’s missing or wrong.
+
+4. **Restart Zep** so it picks up identity and secrets:
+
+   ```bash
+   az containerapp update -g "$RG" -n "$ZEP_APP" --min-replicas 0 --max-replicas 2 --output none
+   az containerapp update -g "$RG" -n "$ZEP_APP" --min-replicas 1 --max-replicas 2 --output none
+   az containerapp logs show -g "$RG" -n "$ZEP_APP" --tail 50
+   ```
+
 ### Shared database (integrated workspace)
 
 When ctxEco and **secai-radar** use the same Postgres server (e.g. `ctxeco-db` with `envName: "ctxeco"`), see **`INTEGRATED-WORKSPACE-DATABASE.md`** at the workspace root. That doc covers:
