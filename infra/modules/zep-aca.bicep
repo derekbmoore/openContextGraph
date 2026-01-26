@@ -115,9 +115,12 @@ param tags object = {
   Component: 'Zep'
 }
 
-// Build the Zep config.yaml content using string concatenation
+// When Key Vault is used, DSN comes only from KV (env ZEP_STORE_POSTGRES_DSN). Config file must not set store.postgres.dsn so env wins.
+var useKvForDsn = !empty(keyVaultUri) && !empty(identityResourceId)
 var zepDsn = 'postgresql://${zepPostgresUser}:${zepPostgresPassword}@${zepPostgresFqdn}:5432/${zepPostgresDb}?sslmode=require'
-var zepConfigContent = 'store:\n  type: postgres\n  postgres:\n    dsn: "${zepDsn}"\nllm:\n  service: openai\n  azure_openai_endpoint: ${azureAiEndpoint}\n  azure_openai:\n    llm_deployment: ${azureOpenAiLlmDeployment}\n    embedding_deployment: ${azureOpenAiEmbeddingDeployment}\nserver:\n  host: 0.0.0.0\n  port: 8000\n  web_enabled: false\nlog:\n  level: debug\nauth:\n  required: false\n'
+// KV path: no dsn in config — Zep uses ZEP_STORE_POSTGRES_DSN from Key Vault ref. Inline path: dsn in config for single-source simplicity.
+var llmServerBlock = 'llm:\n  service: openai\n  azure_openai_endpoint: ${azureAiEndpoint}\n  azure_openai:\n    llm_deployment: ${azureOpenAiLlmDeployment}\n    embedding_deployment: ${azureOpenAiEmbeddingDeployment}\nserver:\n  host: 0.0.0.0\n  port: 8000\n  web_enabled: false\nlog:\n  level: debug\nauth:\n  required: false\n'
+var zepConfigContent = useKvForDsn ? 'store:\n  type: postgres\n${llmServerBlock}' : 'store:\n  type: postgres\n  postgres:\n    dsn: "${zepDsn}"\n${llmServerBlock}'
 
 // Get reference to existing ACA environment for parenting the cert
 resource acaEnv 'Microsoft.App/managedEnvironments@2022-03-01' existing = {
@@ -135,8 +138,7 @@ resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024
   }
 }
 
-// When using Key Vault for DSN, add a secret that references KV so Zep picks up password updates after restart
-var useKvForDsn = !empty(keyVaultUri) && !empty(identityResourceId)
+// Key Vault secret ref and env so Zep reads DSN from KV at runtime (no baked password in config when useKvForDsn).
 var kvDsnSecret = useKvForDsn ? [
   {
     name: 'zep-postgres-dsn'
@@ -235,9 +237,9 @@ resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
                 port: 8000
                 path: '/healthz'
               }
-              initialDelaySeconds: 30  // Max 60s allowed, use failureThreshold for longer wait
+              initialDelaySeconds: 60   // KV + Postgres can be slow on cold start
               periodSeconds: 10
-              failureThreshold: 18     // 30 + (18 * 10) = 210s total startup window
+              failureThreshold: 36     // 60 + (36 * 10) = 420s total startup window
             }
             {
               type: 'Readiness'
@@ -245,9 +247,9 @@ resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
                 port: 8000
                 path: '/healthz'
               }
-              initialDelaySeconds: 5
+              initialDelaySeconds: 10
               periodSeconds: 10
-              failureThreshold: 3
+              failureThreshold: 6
             }
             {
               type: 'Liveness'
@@ -255,7 +257,7 @@ resource zepApp 'Microsoft.App/containerApps@2023-05-01' = {
                 port: 8000
                 path: '/healthz'
               }
-              initialDelaySeconds: 60  // Max allowed (after startup probe completes)
+              initialDelaySeconds: 60
               periodSeconds: 30
               failureThreshold: 5
             }
