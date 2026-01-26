@@ -574,6 +574,16 @@ resource temporalVisibilityDb 'Microsoft.DBforPostgreSQL/flexibleServers/databas
   }
 }
 
+// SecAI Radar database (shared server, integrated workspace). SecAI runs migrations and creates secairadar_app via create-secairadar-db-user.py.
+resource secairadarDb 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2021-06-01' = {
+  parent: postgres
+  name: 'secairadar'
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
 // Enable pgvector extension on Zep database
 // Note: This requires azure.extensions parameter to include 'vector' in Postgres server config
 // The extension is created via init script or manual setup after deployment
@@ -586,7 +596,7 @@ var zepTags = union(mergedTags, {
 
 module zepModule 'modules/zep-aca.bicep' = {
   name: 'zep'
-  dependsOn: [zepKvRole]
+  dependsOn: [zepKvRole, keyVaultSecrets]
   params: {
     location: location
     acaEnvId: acaEnv.id

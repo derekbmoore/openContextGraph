@@ -1,5 +1,7 @@
 # Zep configuration for OpenContextGraph local docker-compose
-# Uses Postgres store with shared database
+# Uses Postgres store with shared database.
+# When run via docker-compose, ZEP_STORE_POSTGRES_DSN from the compose environment
+# overrides the DSN below so the password always matches the postgres service.
 
 Server:
   Host: 0.0.0.0

@@ -67,6 +67,9 @@ docker compose up -d postgres temporal zep api worker
 3. **API**  
    Depends on Temporal and Zep being healthy. Check `docker compose logs api` for connection or config errors.
 
+4. **Zep — "password authentication failed for user ctxEco"**  
+   Zep must use the same Postgres password as the `postgres` service. The compose file passes `ZEP_STORE_POSTGRES_DSN` and `ZEP_STORE_TYPE` from the environment so the DSN always uses `${POSTGRES_PASSWORD:-changeme}`. If you use a custom password, set `POSTGRES_PASSWORD` (e.g. in `.env`) so both postgres and Zep see it. If the postgres volume was created with a different password earlier, set `POSTGRES_PASSWORD` to that value when running `docker compose up`, or remove the volume and start fresh.
+
 ---
 
 ## Azure (Container Apps)
@@ -141,7 +144,7 @@ Zep is trying to connect to PostgreSQL with a user that doesn’t match the Flex
 1. **Redeploy with aligned credentials**  
    Use the `postgresAdminUser` parameter so it matches the actual Postgres admin:
    - If the server uses **cogadmin**: no change; default is correct.
-   - If the server uses **ctxecoadmin**: pass `postgresAdminUser=ctxecoadmin` in the Bicep/ARM deploy and use that server’s admin password for `postgresPassword`. Zep and Temporal will then use `ctxecoadmin`.
+   - If the server uses **ctxecoadmin**: pass `postgresAdminUser=ctxecoadmin` in the Bicep/ARM deploy (or set it in your environment’s `parameters.json`, e.g. `infra/environments/ctxeco/parameters.json` already sets it for the shared ctxeco-db) and use that server’s admin password for `postgresPassword`. Zep and Temporal will then use `ctxecoadmin`, and the Key Vault secret **`zep-postgres-dsn`** will be seeded with the correct DSN on deploy.
 
 2. **One-off fix in Azure**  
    In the Zep Container App, update the secret that holds the config (or the revision’s env) so the DSN uses the real Postgres admin user and password for that Flex Server. The DSN is in the mounted `config.yaml` (from secret `zep-config-yaml`). Ensure it matches the server’s `administratorLogin` and password.
@@ -163,6 +166,70 @@ Zep reads its Postgres connection from Key Vault when the app is configured with
 - **Why**  
   Zep is configured to use Key Vault for `ZEP_STORE_POSTGRES_DSN`. The template also seeds **`zep-postgres-dsn`** at deploy time from the same password. If you change only **`postgres-password`** in KV, Zep does not see that; it uses **`zep-postgres-dsn`**. So after a password change, update **`zep-postgres-dsn`** with the new full DSN, then restart Zep.
 
+### Fix Zep in Azure (steps you can run now)
+
+If Zep is failing with a Postgres auth error and you want to fix it without a full redeploy:
+
+1. **Set variables** (adjust for your environment; example uses `ctxeco-rg`, `ctxecokv`, `ctxeco-db`, `ctxeco-zep`):
+
+   ```bash
+   RG=ctxeco-rg
+   KV=ctxecokv
+   PG_USER=ctxecoadmin
+   PG_HOST=ctxeco-db.postgres.database.azure.com
+   ZEP_APP=ctxeco-zep
+   ```
+
+2. **Get the Postgres password** (must match the Flexible Server admin):
+
+   ```bash
+   PG_PASS=$(az keyvault secret show --vault-name "$KV" --name postgres-password --query value -o tsv)
+   ```
+
+   If that secret is wrong or missing, set the correct password in the vault or use the value you have:  
+   `PG_PASS='your-actual-postgres-admin-password'`
+
+3. **Build the DSN** (escape `@` and `%` in the password if needed; below assumes no special chars):
+
+   ```bash
+   DSN="postgresql://${PG_USER}:${PG_PASS}@${PG_HOST}:5432/zep?sslmode=require"
+   ```
+
+4. **Update the Key Vault secret** so Zep picks it up on next start:
+
+   ```bash
+   az keyvault secret set --vault-name "$KV" --name zep-postgres-dsn --value "$DSN" --output none
+   ```
+
+5. **Restart the Zep container app** (force a new revision so it re-reads KV):
+
+   ```bash
+   az containerapp revision restart --resource-group "$RG" --name "$ZEP_APP" --revision $(az containerapp revision list -g "$RG" -n "$ZEP_APP" --query '[0].name' -o tsv)
+   ```
+
+   Or scale to 0 and back to 1:
+
+   ```bash
+   az containerapp update --resource-group "$RG" --name "$ZEP_APP" --min-replicas 0 --max-replicas 2 --output none
+   az containerapp update --resource-group "$RG" --name "$ZEP_APP" --min-replicas 1 --max-replicas 2 --output none
+   ```
+
+6. **Check logs** to confirm Zep connects:
+
+   ```bash
+   az containerapp logs show --resource-group "$RG" --name "$ZEP_APP" --tail 50
+   ```
+
+### Shared database (integrated workspace)
+
+When ctxEco and **secai-radar** use the same Postgres server (e.g. `ctxeco-db` with `envName: "ctxeco"`), see **`INTEGRATED-WORKSPACE-DATABASE.md`** at the workspace root. That doc covers:
+
+- Which databases live on the server (`ctxEco`, `zep`, `temporal`, `temporal_visibility`, `secairadar`) and who creates them
+- Security: ctxEco uses the server admin and **ctxecokv**; secai-radar uses a dedicated user **`secairadar_app`** and **secai-radar-kv**
+- One-time steps for secai-radar (create `secairadar_app` via `create-secairadar-db-user.py`, store the connection string in secai-radar-kv)
+
+The Bicep in this repo creates the **`secairadar`** database on the shared server so secai-radar only needs to run migrations and the user-creation script.
+
 ---
 
 ## Changes made for integrated workspace (Jan 2026)
@@ -179,5 +246,10 @@ Zep reads its Postgres connection from Key Vault when the app is configured with
 - **Deploy (Azure)**  
   - When Deploy is triggered by CI completion, it uses backend and worker images tagged with the CI commit SHA instead of `:latest`.  
   - Deploy job’s `environment` is set correctly when triggered by `workflow_run` (no manual inputs).
+
+- **Zep (Azure)**  
+  - Zep module now depends on **keyVaultSecrets** so the **`zep-postgres-dsn`** secret exists in Key Vault before the Zep app starts.  
+  - **ctxeco** environment: `postgresAdminUser` set to `ctxecoadmin` in `infra/environments/ctxeco/parameters.json` so the DSN aligns with the existing ctxeco-db server.  
+  - Runbook: added **“Fix Zep in Azure (steps you can run now)”** with AZ CLI to set `zep-postgres-dsn` and restart the Zep app.
 
 More detail: [ctxeco-deployment-issues-january-2026.md](../05-knowledge-base/ctxeco-deployment-issues-january-2026.md) (“Local container fixes” section).

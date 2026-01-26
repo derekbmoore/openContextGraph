@@ -25,11 +25,15 @@ services:
   # =============================================================================
   zep:
     image: ghcr.io/getzep/zep:latest
+    command: ["--config", "/app/config.yaml"]
     environment:
       # Zep server
       ZEP_SERVER_ADDRESS: 0.0.0.0:8000
       # Embeddings (disable hard requirement on OpenAI by providing a dummy key)
       ZEP_OPENAI_API_KEY: ${OPENAI_API_KEY:-test}
+      # DSN must match postgres service (same POSTGRES_PASSWORD); env overrides config file
+      ZEP_STORE_TYPE: postgres
+      ZEP_STORE_POSTGRES_DSN: postgresql://ctxEco:${POSTGRES_PASSWORD:-changeme}@postgres:5432/ctxEco?sslmode=disable
     ports:
       - "8000:8000"
     volumes:
