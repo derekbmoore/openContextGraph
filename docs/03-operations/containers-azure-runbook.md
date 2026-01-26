@@ -149,27 +149,43 @@ Zep runs as a Container App and gets its **Postgres DSN only from Key Vault** wh
 
 ---
 
-**Fix script (copy-paste, then restart)** — use when you see `password authentication failed for user "ctxecoadmin"` or Zep unhealthy:
+**Fix when you see `password authentication failed for user "ctxecoadmin"`**
 
-```bash
-RG=ctxeco-rg
-KV=ctxecokv
-ZEP_APP=ctxeco-zep
-PG_USER=ctxecoadmin
-PG_HOST=ctxeco-db.postgres.database.azure.com
+The password in **ctxecokv** `postgres-password` must match what **ctxeco-db** uses for `ctxecoadmin`. If it doesn’t, use one of these:
 
-PG_PASS=$(az keyvault secret show --vault-name "$KV" --name postgres-password --query value -o tsv)
-# If that fails or is wrong: PG_PASS='your-actual-postgres-admin-password'
+- **You know the correct server password** — from this repo (ctxEco) run:
+  ```bash
+  POSTGRES_PASSWORD='the-actual-server-password' ./scripts/fix-zep-db-auth.sh
+  ```
+  Or run `./scripts/fix-zep-db-auth.sh` and enter the password when prompted. The script updates ctxecokv (`postgres-password`, `zep-postgres-dsn`, `postgres-connection-string`) and forces a new Zep revision.
 
-DSN="postgresql://${PG_USER}:${PG_PASS}@${PG_HOST}:5432/zep?sslmode=require"
-az keyvault secret set --vault-name "$KV" --name zep-postgres-dsn --value "$DSN" --output none
+- **You’re not sure of the password** — reset it on the server, then run the script with the new value:
+  1. Azure Portal → **ctxeco-db** → Settings → **Reset password**, or:
+     `az postgres flexible-server update -g ctxeco-rg -n ctxeco-db --admin-password 'YourNewPassword'`
+  2. `POSTGRES_PASSWORD='YourNewPassword' ./scripts/fix-zep-db-auth.sh`
 
-az containerapp update -g "$RG" -n "$ZEP_APP" --min-replicas 0 --max-replicas 2 --output none
-az containerapp update -g "$RG" -n "$ZEP_APP" --min-replicas 1 --max-replicas 2 --output none
-az containerapp logs show -g "$RG" -n "$ZEP_APP" --tail 50
-```
+- **Update both ctxEco and secai-radar** — from the secai-radar repo run `./scripts/update-db-credentials-secai-ctxeco.sh` (see **INTEGRATED-WORKSPACE-DATABASE.md** at the workspace root). That updates both vaults and restarts Zep.
 
-If **`postgres-password`** in the vault is wrong, fix it in the portal (or with `az keyvault secret set`) then re-run the script so **`zep-postgres-dsn`** is updated and Zep is restarted.
+**If Zep still fails after running the fix** (revision still logs `password authentication failed`):
+
+1. **Verify the DSN** — ensure the vault value matches the server and works locally:
+   ```bash
+   KV=ctxecokv
+   # Inspect (host/user/db only; password is redacted in practice)
+   az keyvault secret show --vault-name "$KV" --name zep-postgres-dsn --query value -o tsv
+   # Test connectivity (requires psql; replace with actual DSN from above or from portal)
+   # psql "<paste-DSN-here>" -c "SELECT 1"
+   ```
+   If you reset the server password with `az postgres flexible-server update --admin-password`, that value must be in **ctxecokv** `postgres-password`; `fix-zep-db-auth.sh` builds `zep-postgres-dsn` from it.
+
+2. **Force a new revision and scale** — sometimes scale 0→1 reuses the same revision; create a new one explicitly so the container cold-starts and refetches from Key Vault:
+   ```bash
+   az containerapp update -g ctxeco-rg -n ctxeco-zep --revision-suffix "dsn-$(date +%s)" --output none
+   az containerapp update -g ctxeco-rg -n ctxeco-zep --min-replicas 0 --max-replicas 2 --output none
+   az containerapp update -g ctxeco-rg -n ctxeco-zep --min-replicas 1 --max-replicas 2 --output none
+   ```
+
+3. **Confirm identity** — `az containerapp show -g ctxeco-rg -n ctxeco-zep --query 'identity.userAssignedIdentities' -o json` should list the Zep identity, and that identity must have **Key Vault Secrets User** on **ctxecokv**.
 
 ---
 
@@ -189,7 +205,7 @@ az role assignment create --role "Key Vault Secrets User" --assignee "$PRINCIPAL
 az containerapp identity assign -g "$RG" -n "$ZEP_APP" --user-assigned "$IDENTITY_ID" --output none
 ```
 
-Then run the **Fix script** above to set **`zep-postgres-dsn`** and restart.  
+Then run **`./scripts/fix-zep-db-auth.sh`** (or the “Update both” script from secai-radar) to set **`zep-postgres-dsn`** and restart.  
 Prefer a full Bicep deploy so identity and KV role stay in code; this is for one-off repair when the app was created without them.
 
 ---
@@ -198,7 +214,7 @@ Prefer a full Bicep deploy so identity and KV role stay in code; this is for one
 
 - **Log stream:** Container Apps → **ctxeco-zep** → Log stream. Look for `password authentication failed`, Key Vault/secret errors, or `SASL: FATAL`.
 - **Identity:** `identity.type` must be `UserAssigned` and the identity must have **Key Vault Secrets User** on the vault.
-- **Startup:** The template allows ~7 minutes (60s + 36×10s) for startup; after fixing DSN or identity, always restart (scale 0→1) so a new revision pulls the secret.
+- **Startup:** The template allows ~7 minutes (60s + 36×10s) for startup; after fixing DSN or identity, force a new revision (`--revision-suffix "dsn-$(date +%s)"`) then scale 0→1 so the new revision pulls the secret from Key Vault.
 
 ### Shared database (integrated workspace)
 
