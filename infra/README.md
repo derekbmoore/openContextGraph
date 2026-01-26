@@ -1,8 +1,8 @@
 # Infrastructure
 
-This folder contains the Bicep templates for the Cognitive Enterprise Architecture.
+This folder contains the Bicep templates and optional K8s manifests for the Cognitive Enterprise Architecture. **The OSS system is container-based:** default run paths are Docker Compose (local) and Azure Container Apps (here). For Kubernetes (AKS or on‑prem), see [infra/k8s/README.md](k8s/README.md).
 
-## Resources Deployed
+## Resources Deployed (Bicep → ACA)
 - **Azure Container Apps Environment**: For hosting Zep, Temporal, and Agents.
 - **Postgres Flexible Server (B1ms)**: Shared database for Zep and Temporal.
 - **Storage Account**: For Unstructured.io data ingestion (Data Lake).

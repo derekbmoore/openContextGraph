@@ -46,7 +46,7 @@ param postgresPassword string
 param backendImage string = 'ghcr.io/derekbmoore/opencontextgraph/backend:latest'
 
 @description('Container image for worker.')
-param workerImage string = 'ghcr.io/derekbmoore/opencontextgraph/backend:latest'
+param workerImage string = 'ghcr.io/derekbmoore/opencontextgraph/worker:latest'
 
 @description('Container image for Zep (memory).')
 param zepImage string = 'ghcr.io/getzep/zep:latest'

@@ -15,7 +15,7 @@ color_scheme: dark
 
 # Aux links
 aux_links:
-  "GitHub Repository": "https://github.com/derekbmoore/openContextGraph"
+  "GitHub Repository": "https://github.com/derekbmoore/opencontextgraph"
 
 # Navigation
 back_to_top: true

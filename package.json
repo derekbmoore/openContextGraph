@@ -1,0 +1,32 @@
+{
+  "name": "ctxEco",
+  "version": "1.0.0",
+  "description": "> **Cognition-as-a-Service for the Enterprise**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "playwright test",
+    "start:backend": "cd backend && uvicorn backend.api.main:app --host 0.0.0.0 --port 8082 --reload",
+    "start:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/derekbmoore/opencontextgraph.git"
+  },
+  "keywords": [],
+  "author": "Derek B. Moore",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/derekbmoore/opencontextgraph/issues"
+  },
+  "homepage": "https://github.com/derekbmoore/opencontextgraph#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  }
+}

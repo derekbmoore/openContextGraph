@@ -20,7 +20,7 @@ resource swa 'Microsoft.Web/staticSites@2022-03-01' = {
     tier: 'Standard'
   }
   properties: {
-    repositoryUrl: 'https://github.com/derekbmoore/ctxEco'
+    repositoryUrl: 'https://github.com/derekbmoore/opencontextgraph'
     branch: 'main'
     provider: 'GitHub'
     stagingEnvironmentPolicy: 'Enabled'
