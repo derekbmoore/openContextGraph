@@ -1,0 +1,327 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "6292559016988068037"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "acaEnvId": {
+      "type": "string",
+      "metadata": {
+        "description": "ID of the Container Apps Environment."
+      }
+    },
+    "acaEnvName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Container Apps Environment (for certificate parenting)."
+      }
+    },
+    "enableCustomDomain": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether to enable custom domain with managed certificate."
+      }
+    },
+    "customDomainName": {
+      "type": "string",
+      "defaultValue": "zep.ctxEco.work",
+      "metadata": {
+        "description": "Custom domain name for Zep."
+      }
+    },
+    "customDomainBindingType": {
+      "type": "string",
+      "defaultValue": "SniEnabled",
+      "metadata": {
+        "description": "Binding type: Disabled (HTTP only) or SniEnabled (HTTPS with Cert)."
+      }
+    },
+    "appName": {
+      "type": "string",
+      "defaultValue": "zep",
+      "metadata": {
+        "description": "Name of the Zep container app."
+      }
+    },
+    "zepPostgresFqdn": {
+      "type": "string",
+      "metadata": {
+        "description": "PostgreSQL FQDN for Zep storage."
+      }
+    },
+    "zepPostgresUser": {
+      "type": "string",
+      "defaultValue": "cogadmin",
+      "metadata": {
+        "description": "PostgreSQL admin user for Zep."
+      }
+    },
+    "zepPostgresPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "PostgreSQL admin password for Zep."
+      }
+    },
+    "zepPostgresDb": {
+      "type": "string",
+      "defaultValue": "zep",
+      "metadata": {
+        "description": "PostgreSQL database name for Zep."
+      }
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Key Vault URI (e.g. https://myvault.vault.azure.net/). When set with identityResourceId, Zep reads Postgres DSN from secret zep-postgres-dsn and picks up password changes after restart."
+      }
+    },
+    "identityResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "User-assigned identity resource ID for Key Vault access (required if keyVaultUri is set)."
+      }
+    },
+    "identityClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "User-assigned identity client ID (for reference)."
+      }
+    },
+    "zepApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Zep API key (optional, for authentication)."
+      }
+    },
+    "zepImage": {
+      "type": "string",
+      "defaultValue": "ghcr.io/getzep/zep:latest",
+      "metadata": {
+        "description": "Container image for Zep."
+      }
+    },
+    "registryServer": {
+      "type": "string",
+      "defaultValue": "ghcr.io",
+      "metadata": {
+        "description": "Container registry server for Zep image."
+      }
+    },
+    "registryUsername": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Registry username (optional, if image is private)."
+      }
+    },
+    "registryPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Registry password (optional, if image is private)."
+      }
+    },
+    "azureAiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure AI Services API key."
+      }
+    },
+    "azureAiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AI Services Endpoint."
+      }
+    },
+    "azureOpenAiLlmDeployment": {
+      "type": "string",
+      "defaultValue": "gpt-5-chat",
+      "metadata": {
+        "description": "Azure OpenAI LLM deployment name."
+      }
+    },
+    "azureOpenAiEmbeddingDeployment": {
+      "type": "string",
+      "defaultValue": "text-embedding-ada-002",
+      "metadata": {
+        "description": "Azure OpenAI Embedding deployment name."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Project": "CtxEco",
+        "Component": "Zep"
+      },
+      "metadata": {
+        "description": "Tags to apply to all resources."
+      }
+    }
+  },
+  "variables": {
+    "zepSecret": "[if(empty(parameters('zepApiKey')), createArray(), createArray(createObject('name', 'zep-api-key', 'value', parameters('zepApiKey'))))]",
+    "azureAiSecret": "[if(empty(parameters('azureAiKey')), createArray(), createArray(createObject('name', 'azure-ai-key', 'value', parameters('azureAiKey'))))]",
+    "zepApiEnv": "[if(empty(parameters('zepApiKey')), createArray(), createArray(createObject('name', 'ZEP_API_KEY', 'secretRef', 'zep-api-key')))]",
+    "zepRegistrySecret": "[if(empty(parameters('registryUsername')), createArray(), createArray(createObject('name', 'zep-registry-password', 'value', parameters('registryPassword'))))]",
+    "zepRegistries": "[if(empty(parameters('registryUsername')), createArray(), createArray(createObject('server', parameters('registryServer'), 'username', parameters('registryUsername'), 'passwordSecretRef', 'zep-registry-password')))]",
+    "useKvForDsn": "[and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('identityResourceId'))))]",
+    "zepDsn": "[format('postgresql://{0}:{1}@{2}:5432/{3}?sslmode=require', parameters('zepPostgresUser'), parameters('zepPostgresPassword'), parameters('zepPostgresFqdn'), parameters('zepPostgresDb'))]",
+    "llmServerBlock": "[format('llm:\n  service: openai\n  azure_openai_endpoint: {0}\n  azure_openai:\n    llm_deployment: {1}\n    embedding_deployment: {2}\nserver:\n  host: 0.0.0.0\n  port: 8000\n  web_enabled: false\nlog:\n  level: debug\nauth:\n  required: false\n', parameters('azureAiEndpoint'), parameters('azureOpenAiLlmDeployment'), parameters('azureOpenAiEmbeddingDeployment'))]",
+    "zepConfigContent": "[if(variables('useKvForDsn'), format('store:\n  type: postgres\n{0}', variables('llmServerBlock')), format('store:\n  type: postgres\n  postgres:\n    dsn: \"{0}\"\n{1}', variables('zepDsn'), variables('llmServerBlock')))]",
+    "kvDsnSecret": "[if(variables('useKvForDsn'), createArray(createObject('name', 'zep-postgres-dsn', 'keyVaultUrl', format('{0}secrets/zep-postgres-dsn', parameters('keyVaultUri')), 'identity', parameters('identityResourceId'))), createArray())]",
+    "kvDsnEnv": "[if(variables('useKvForDsn'), createArray(createObject('name', 'ZEP_STORE_TYPE', 'value', 'postgres'), createObject('name', 'ZEP_STORE_POSTGRES_DSN', 'secretRef', 'zep-postgres-dsn')), createArray())]"
+  },
+  "resources": [
+    {
+      "condition": "[and(parameters('enableCustomDomain'), equals(parameters('customDomainBindingType'), 'SniEnabled'))]",
+      "type": "Microsoft.App/managedEnvironments/managedCertificates",
+      "apiVersion": "2024-03-01",
+      "name": "[format('{0}/{1}', parameters('acaEnvName'), format('{0}-cert', parameters('appName')))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "subjectName": "[parameters('customDomainName')]",
+        "domainControlValidation": "CNAME"
+      }
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('appName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": "[if(variables('useKvForDsn'), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('identityResourceId')), createObject())), null())]",
+      "properties": {
+        "managedEnvironmentId": "[parameters('acaEnvId')]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 8000,
+            "transport": "http",
+            "allowInsecure": false,
+            "customDomains": "[if(parameters('enableCustomDomain'), createArray(createObject('name', parameters('customDomainName'), 'certificateId', if(equals(parameters('customDomainBindingType'), 'SniEnabled'), resourceId('Microsoft.App/managedEnvironments/managedCertificates', parameters('acaEnvName'), format('{0}-cert', parameters('appName'))), null()), 'bindingType', parameters('customDomainBindingType'))), createArray())]"
+          },
+          "dapr": {
+            "enabled": false
+          },
+          "secrets": "[concat(createArray(createObject('name', 'zep-postgres-password', 'value', parameters('zepPostgresPassword')), createObject('name', 'zep-config-yaml', 'value', variables('zepConfigContent'))), variables('kvDsnSecret'), variables('zepSecret'), variables('azureAiSecret'), variables('zepRegistrySecret'))]",
+          "registries": "[variables('zepRegistries')]"
+        },
+        "template": {
+          "volumes": [
+            {
+              "name": "zep-config-volume",
+              "storageType": "Secret",
+              "secrets": [
+                {
+                  "secretRef": "zep-config-yaml",
+                  "path": "config.yaml"
+                }
+              ]
+            }
+          ],
+          "containers": [
+            {
+              "name": "zep",
+              "image": "[parameters('zepImage')]",
+              "command": [
+                "/app/zep"
+              ],
+              "args": [
+                "--config",
+                "/config/config.yaml"
+              ],
+              "volumeMounts": [
+                {
+                  "volumeName": "zep-config-volume",
+                  "mountPath": "/config"
+                }
+              ],
+              "env": "[concat(createArray(createObject('name', 'ZEP_OPENAI_API_KEY', 'secretRef', 'azure-ai-key')), variables('kvDsnEnv'), variables('zepApiEnv'))]",
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1Gi"
+              },
+              "probes": [
+                {
+                  "type": "Startup",
+                  "httpGet": {
+                    "port": 8000,
+                    "path": "/healthz"
+                  },
+                  "initialDelaySeconds": 60,
+                  "periodSeconds": 10,
+                  "failureThreshold": 36
+                },
+                {
+                  "type": "Readiness",
+                  "httpGet": {
+                    "port": 8000,
+                    "path": "/healthz"
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 10,
+                  "failureThreshold": 6
+                },
+                {
+                  "type": "Liveness",
+                  "httpGet": {
+                    "port": 8000,
+                    "path": "/healthz"
+                  },
+                  "initialDelaySeconds": 60,
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 2,
+            "rules": [
+              {
+                "name": "http-scale",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "10",
+                    "cooldownPeriod": "1800"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments/managedCertificates', parameters('acaEnvName'), format('{0}-cert', parameters('appName')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "zepFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2023-05-01').configuration.ingress.fqdn]"
+    },
+    "zepApiUrl": {
+      "type": "string",
+      "value": "[if(parameters('enableCustomDomain'), format('https://{0}', parameters('customDomainName')), format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2023-05-01').configuration.ingress.fqdn))]"
+    }
+  }
+}
