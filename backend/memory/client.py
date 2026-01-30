@@ -135,8 +135,9 @@ class ZepMemoryClient:
             User object from Zep
         """
         # Try to get existing user
+        # NOTE: Zep uses singular /api/v1/user endpoint, not /api/v1/users
         try:
-            result = await self._request("GET", f"/api/v1/users/{user_id}")
+            result = await self._request("GET", f"/api/v1/user/{user_id}")
             if result:
                 logger.debug(f"User {user_id} exists in Zep")
                 return result
@@ -150,7 +151,8 @@ class ZepMemoryClient:
         }
         
         try:
-            result = await self._request("POST", "/api/v1/users", json=payload)
+            # NOTE: Zep uses singular /api/v1/user endpoint
+            result = await self._request("POST", "/api/v1/user", json=payload)
             if result:
                 logger.info(f"Created user in Zep: {user_id}")
             return result or payload
