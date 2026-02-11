@@ -63,6 +63,13 @@ Feature specifications and implementation details.
 
 Narrative descriptions and scenarios.
 
+### [Working Memory](working-memory/)
+
+Episodic memories, journey records, and session artifacts.
+
+**Recent:**
+- [Database Access Journey](working-memory/database-access-journey-2026-01-30.md) — Multi-day credential unification effort
+
 ---
 
 ## Technology Stack
