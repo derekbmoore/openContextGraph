@@ -1,0 +1,52 @@
+{
+  "edges": [
+    {
+      "label": "ingest context & security signals",
+      "source": "n1",
+      "target": "n2"
+    },
+    {
+      "label": "primary: serve automated trust scoring",
+      "source": "n2",
+      "target": "n3"
+    },
+    {
+      "label": "secondary: render explainable audit trails",
+      "source": "n2",
+      "target": "n4"
+    },
+    {
+      "label": "escalate edge cases",
+      "source": "n3",
+      "target": "n4"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#2563EB",
+      "id": "n1",
+      "label": "secairadar.cloud MCP",
+      "type": "service"
+    },
+    {
+      "color": "#7C3AED",
+      "id": "n2",
+      "label": "AI Trust Ranking Engine",
+      "type": "engine"
+    },
+    {
+      "color": "#16A34A",
+      "id": "n3",
+      "label": "Agent-First Consumers",
+      "type": "consumer"
+    },
+    {
+      "color": "#0EA5E9",
+      "id": "n4",
+      "label": "Human Verification Dashboards",
+      "type": "consumer"
+    }
+  ],
+  "title": "secairadar.cloud MCP Trust Ranking Architecture",
+  "type": "architecture"
+}

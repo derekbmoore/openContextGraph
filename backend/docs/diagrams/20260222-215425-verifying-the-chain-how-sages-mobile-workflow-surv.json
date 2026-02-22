@@ -1,0 +1,149 @@
+{
+  "edges": [
+    {
+      "label": "spin_down signal (untrusted/stale)",
+      "source": "orchestrator",
+      "target": "worker_old"
+    },
+    {
+      "label": "provision fresh MCP instance",
+      "source": "orchestrator",
+      "target": "worker_new"
+    },
+    {
+      "label": "state NOT carried in memory",
+      "source": "worker_old",
+      "target": "context_graph"
+    },
+    {
+      "label": "reconstruct from persisted graph",
+      "source": "context_graph",
+      "target": "rehydration"
+    },
+    {
+      "label": "stateless context survives worker lifecycle",
+      "source": "tri_search",
+      "target": "rehydration"
+    },
+    {
+      "label": "rebuild directed story graph",
+      "source": "rehydration",
+      "target": "visual_chain"
+    },
+    {
+      "label": "triggers rehydration on init via MCP",
+      "source": "worker_new",
+      "target": "rehydration"
+    },
+    {
+      "label": "render story diagram (Agent-verified, Human-consumed)",
+      "source": "visual_chain",
+      "target": "mobile_client"
+    },
+    {
+      "label": "lightweight verification ping",
+      "source": "mobile_client",
+      "target": "checkpoint"
+    },
+    {
+      "label": "resolve each node (title, content, edges)",
+      "source": "checkpoint",
+      "target": "visual_chain"
+    },
+    {
+      "label": "zero-trust MCP worker verification",
+      "source": "checkpoint",
+      "target": "worker_new"
+    },
+    {
+      "label": "trust-rank worker integrity",
+      "source": "secairadar",
+      "target": "orchestrator"
+    },
+    {
+      "label": "validate MCP agent trust post-recreate",
+      "source": "secairadar",
+      "target": "checkpoint"
+    },
+    {
+      "label": "agent-first graph persistence",
+      "source": "ocg",
+      "target": "context_graph"
+    },
+    {
+      "label": "trust-ranking flow for MCP agents",
+      "source": "ocg",
+      "target": "secairadar"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#4A90D9",
+      "id": "orchestrator",
+      "label": "MCP Orchestrator",
+      "type": "service"
+    },
+    {
+      "color": "#D94A4A",
+      "id": "worker_old",
+      "label": "MCP Worker (Destroyed)",
+      "type": "worker"
+    },
+    {
+      "color": "#4AD97A",
+      "id": "worker_new",
+      "label": "MCP Worker (Recreated)",
+      "type": "worker"
+    },
+    {
+      "color": "#F5A623",
+      "id": "context_graph",
+      "label": "Persisted Context Graph (OCG)",
+      "type": "datastore"
+    },
+    {
+      "color": "#F5A623",
+      "id": "tri_search",
+      "label": "Tri-Search Context (results, search_type, query)",
+      "type": "datastore"
+    },
+    {
+      "color": "#9B59B6",
+      "id": "visual_chain",
+      "label": "Visual Chain (Hook \u2192 Deep Dive \u2192 Insight \u2192 Conclusion)",
+      "type": "process"
+    },
+    {
+      "color": "#9B59B6",
+      "id": "rehydration",
+      "label": "Visual Chain Rehydration",
+      "type": "process"
+    },
+    {
+      "color": "#1ABC9C",
+      "id": "mobile_client",
+      "label": "Agent-First Mobile Client (Human-in-the-loop)",
+      "type": "client"
+    },
+    {
+      "color": "#1ABC9C",
+      "id": "checkpoint",
+      "label": "Agent Trust Checkpoint & Verification",
+      "type": "process"
+    },
+    {
+      "color": "#E67E22",
+      "id": "secairadar",
+      "label": "secairadar.cloud MCP Trust Ranking",
+      "type": "trust_layer"
+    },
+    {
+      "color": "#3498DB",
+      "id": "ocg",
+      "label": "OpenContextGraph Agent-First Architecture",
+      "type": "platform"
+    }
+  ],
+  "title": "Sage Mobile Workflow: MCP Worker Recreate & secairadar.cloud Trust Verification",
+  "type": "architecture"
+}

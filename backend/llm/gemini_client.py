@@ -1,6 +1,9 @@
 import os
 import logging
 import json
+import zlib
+import struct
+import hashlib
 from typing import Optional, Dict, Any, List
 
 import httpx
@@ -74,7 +77,7 @@ class GeminiClient:
                 params = {"key": self.api_key}
                 payload = {
                     "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                    "generationConfig": {"temperature": 1.0},
+                    "generationConfig": {"temperature": 0.2},
                 }
 
                 try:
@@ -210,25 +213,52 @@ Output JSON: {{ "prompt": "...", "negative_prompt": "...", "style": "..." }}
         or return a placeholder if not configured for image gen.
         """
         if not self.api_key:
-            # Transparent 1x1 PNG fallback to keep pipeline durable when image API is unavailable
-            return bytes.fromhex(
-                "89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C489"
-                "0000000A49444154789C6360000000020001E221BC330000000049454E44AE426082"
-            )
+            return self._generate_fallback_png(visual_spec)
             
-        # Placeholder for actual Imagen integration
-        # Real integration requires 'imagen-3.0' model access which might differ in SDK
-        logger.info("Image generation requested. Returning fallback PNG bytes for stability.")
-        
-        # In a real "Gemini 3" scenario, we'd call the image API.
-        # For now, to satisfy "intact and functioning", we return a 1x1 png or similar 
-        # so the pipeline doesn't crash, unless we have a real `imagen` client.
-        
-        # TODO: Implement actual Imagen 3 call
-        return bytes.fromhex(
-            "89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C489"
-            "0000000A49444154789C6360000000020001E221BC330000000049454E44AE426082"
-        )
+        # Placeholder for actual Imagen integration.
+        # Until image output endpoint is wired, return deterministic, non-trivial fallback PNG.
+        logger.info("Image generation requested. Returning deterministic fallback PNG bytes.")
+        return self._generate_fallback_png(visual_spec)
+
+    @staticmethod
+    def _generate_fallback_png(visual_spec: Dict[str, Any], width: int = 256, height: int = 256) -> bytes:
+        """Generate a deterministic RGB PNG fallback from prompt/style text."""
+        seed_text = json.dumps(visual_spec or {}, sort_keys=True, ensure_ascii=True)
+        digest = hashlib.sha256(seed_text.encode("utf-8")).digest()
+
+        # Build scanlines with a simple deterministic gradient pattern.
+        rows = bytearray()
+        for y in range(height):
+            rows.append(0)  # no filter
+            for x in range(width):
+                r = (x + digest[0] + (y // 3)) % 256
+                g = (y + digest[1] + (x // 5)) % 256
+                b = (x ^ y ^ digest[2]) % 256
+                # Add banding for stronger visual structure
+                if ((x // 32) + (y // 32)) % 2 == 0:
+                    r = (r + digest[3]) % 256
+                    g = (g + digest[4]) % 256
+                    b = (b + digest[5]) % 256
+                rows.extend((r, g, b))
+
+        raw = bytes(rows)
+        compressed = zlib.compress(raw, level=9)
+
+        def chunk(chunk_type: bytes, data: bytes) -> bytes:
+            return (
+                struct.pack(">I", len(data))
+                + chunk_type
+                + data
+                + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+            )
+
+        png = bytearray()
+        png.extend(b"\x89PNG\r\n\x1a\n")
+        ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)  # 8-bit RGB
+        png.extend(chunk(b"IHDR", ihdr))
+        png.extend(chunk(b"IDAT", compressed))
+        png.extend(chunk(b"IEND", b""))
+        return bytes(png)
 
     def _get_mock_nano_banana(self, topic: str) -> Dict[str, Any]:
         """Fallback mock spec for robust operation"""

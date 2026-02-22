@@ -267,8 +267,8 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
         length = args.get("length", "medium")
         user_context = args.get("context")
         
-        # Map length to include_image decision
-        include_image = length != "short"
+        # Default Sage workflow always includes visual generation
+        include_image = True
         
         contextual_guidance = [f"Style: {style}.", f"Length: {length}."]
         if user_context:

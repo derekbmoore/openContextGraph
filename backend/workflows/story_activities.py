@@ -151,7 +151,10 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
             if search_results:
                 verification_context = "\n\n## Verification Context (Sage Tri-Search)\n"
                 for i, res in enumerate(search_results):
-                    content = res.get("content", "")[:300]
+                    if isinstance(res, dict):
+                        content = str(res.get("content", ""))[:300]
+                    else:
+                        content = str(res)[:300]
                     verification_context += f"{i+1}. {content}\n"
                 
                 # Append to existing context

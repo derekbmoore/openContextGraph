@@ -79,10 +79,28 @@ class ClaudeClient:
 
     @staticmethod
     def _extract_json_object(text: str) -> Dict[str, Any]:
-        """Extract JSON object from plain text or fenced block."""
-        clean_text = re.sub(r"```json\\s*", "", text)
-        clean_text = re.sub(r"```\\s*$", "", clean_text).strip()
-        return json.loads(clean_text)
+        """Extract JSON object from plain text, fenced block, or mixed prose."""
+        if not text:
+            raise json.JSONDecodeError("Empty response", "", 0)
+
+        clean_text = text.strip()
+        clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"\s*```$", "", clean_text).strip()
+
+        # Fast path
+        try:
+            return json.loads(clean_text)
+        except Exception:
+            pass
+
+        # Fallback: extract first JSON object span from mixed text
+        start = clean_text.find("{")
+        end = clean_text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            candidate = clean_text[start : end + 1]
+            return json.loads(candidate)
+
+        raise json.JSONDecodeError("No JSON object found", clean_text, 0)
 
     async def generate_story(
         self, 
@@ -210,11 +228,22 @@ Use concise, machine-readable labels and include secairadar.cloud trust-ranking 
 Return ONLY base64-encoded PNG bytes. No prose. No markdown.
 Create a high-contrast, modern, agent-first technical visual that supports machine+human interpretation.
 """
+        diagram_hint = ""
+        if diagram_spec:
+            nodes = diagram_spec.get("nodes", []) if isinstance(diagram_spec, dict) else []
+            edges = diagram_spec.get("edges", []) if isinstance(diagram_spec, dict) else []
+            node_labels = [str(n.get("label", "")).strip() for n in nodes[:6] if isinstance(n, dict)]
+            diagram_hint = (
+                f"Nodes: {', '.join([n for n in node_labels if n])}. "
+                f"Edges count: {len(edges)}."
+            ).strip()
+
         user_prompt = (
             f"Topic: {topic}\n"
             f"Context: {context or 'None'}\n"
-            f"Diagram JSON: {json.dumps(diagram_spec or {}, ensure_ascii=False)}\n"
-            "Generate a 256x256 PNG concept image encoded as base64."
+            f"Diagram hint: {diagram_hint or 'None'}\n"
+            "Generate a 256x256 PNG concept image encoded as base64. "
+            "Output must contain only base64 characters [A-Za-z0-9+/=]."
         )
 
         text = await self._call_text_model(system_prompt=system_prompt, user_prompt=user_prompt, temperature=0.4, max_tokens=4096)
@@ -223,7 +252,7 @@ Create a high-contrast, modern, agent-first technical visual that supports machi
         clean = clean.replace("```", "").strip()
 
         # If model returns surrounding text, extract likely base64 candidates and decode robustly.
-        candidates = re.findall(r"[A-Za-z0-9+/=]{200,}", clean)
+        candidates = re.findall(r"[A-Za-z0-9+/=]{120,}", clean)
         candidate_pool = [clean]
         candidate_pool.extend(sorted(candidates, key=len, reverse=True))
 
@@ -235,7 +264,7 @@ Create a high-contrast, modern, agent-first technical visual that supports machi
             token += "=" * ((4 - len(token) % 4) % 4)
             try:
                 data = base64.b64decode(token, validate=True)
-                if data:
+                if data and data.startswith(b"\x89PNG"):
                     return data
             except Exception:
                 continue

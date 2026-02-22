@@ -281,7 +281,7 @@ async def tool_generate_story(
 ):
     from workflows.client import execute_story
 
-    include_image = request.length != "short"
+    include_image = True
     result = await execute_story(
         user_id=user.user_id,
         tenant_id=user.tenant_id,
