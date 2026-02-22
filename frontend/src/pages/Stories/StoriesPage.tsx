@@ -8,8 +8,8 @@ interface StoryItem {
     topic: string;
     created_at: string;
     story_path: string;
-    image_path?: string;
-    architecture_image_path?: string;
+    image_path?: string | null;
+    architecture_image_path?: string | null;
 }
 
 export function StoriesPage() {
