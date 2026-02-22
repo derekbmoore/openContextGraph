@@ -220,6 +220,43 @@ async def chat(
             }
     
     # Always return a valid ChatResponse
+    try:
+        await memory_client.get_or_create_session(
+            session_id=session_id,
+            user_id=user.user_id,
+            metadata={
+                "tenant_id": user.tenant_id,
+                "agent_id": request.agent,
+                "type": "episode",
+                "channel": "chat",
+                "summary": result["response"][:240],
+            },
+        )
+        await memory_client.add_memory(
+            session_id=session_id,
+            messages=[
+                {
+                    "role": "user",
+                    "content": request.message,
+                    "metadata": {
+                        "agent_id": request.agent,
+                        "interaction_type": "chat_user_message",
+                    },
+                },
+                {
+                    "role": "assistant",
+                    "content": result["response"],
+                    "metadata": {
+                        "agent_id": request.agent,
+                        "interaction_type": "chat_agent_response",
+                    },
+                },
+            ],
+            metadata={"source": "chat.route"},
+        )
+    except Exception as e:
+        logger.warning(f"Failed to persist chat interaction memory: {e}")
+
     return ChatResponse(
         response=result["response"],
         session_id=session_id,

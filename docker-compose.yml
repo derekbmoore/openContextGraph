@@ -85,6 +85,10 @@ services:
       - AZURE_AI_KEY=${AZURE_AI_KEY}
       - AZURE_AI_DEPLOYMENT=${AZURE_AI_DEPLOYMENT:-gpt-5.2-chat}
       - AZURE_AI_MODEL_ROUTER=${AZURE_AI_MODEL_ROUTER:-model-router}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-opus-4-6}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-pro-preview}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-secai-radar}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
       # Auth
       - AUTH_REQUIRED=${AUTH_REQUIRED:-false}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -108,6 +112,14 @@ services:
     environment:
       - TEMPORAL_HOST=temporal:7233
       - ZEP_API_URL=http://zep:8000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - ONEDRIVE_DOCS_PATH=${ONEDRIVE_DOCS_PATH:-docs}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-opus-4-6}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-pro-preview}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-secai-radar}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
     depends_on:
       temporal:
         condition: service_started

@@ -19,6 +19,7 @@ from typing import Optional
 from api.middleware.auth import get_current_user, require_scopes
 from core.context import SecurityContext
 from etl import get_antigravity_router, DataClass
+from memory import get_memory_client
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,43 @@ async def ingest_document(
         
         # TODO: Store chunks in vector database
         # await vector_store.store_chunks(document_id, chunks)
+
+        # Standardized interaction memory write (ingestion milestone)
+        try:
+            memory_client = get_memory_client()
+            ingest_session_id = f"ingest-{document_id}"
+            await memory_client.get_or_create_session(
+                session_id=ingest_session_id,
+                user_id=user.user_id,
+                metadata={
+                    "tenant_id": user.tenant_id,
+                    "type": "milestone",
+                    "channel": "ingestion",
+                    "title": f"Ingested {filename}",
+                    "summary": f"{filename} classified as {data_class.value} with {len(chunks)} chunks",
+                    "document_id": document_id,
+                },
+            )
+            await memory_client.add_memory(
+                session_id=ingest_session_id,
+                messages=[
+                    {
+                        "role": "assistant",
+                        "content": (
+                            f"Ingestion milestone: {filename} ({len(content)} bytes) "
+                            f"was classified as {data_class.value} and produced {len(chunks)} chunks."
+                        ),
+                        "metadata": {
+                            "agent_id": "ingestion-router",
+                            "interaction_type": "ingestion_milestone",
+                            "document_id": document_id,
+                        },
+                    }
+                ],
+                metadata={"source": "etl.ingest"},
+            )
+        except Exception as e:
+            logger.warning(f"Failed to persist ingestion milestone memory: {e}")
         
         return IngestResponse(
             document_id=document_id,

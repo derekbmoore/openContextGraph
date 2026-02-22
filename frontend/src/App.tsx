@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import './App.css';
 import { MainLayout } from './components/MainLayout';
 import { ChatView } from './pages/Chat/ChatView';
@@ -23,6 +23,37 @@ import { BAUHub } from './pages/BAU/BAUHub';
 import { VoiceInteractionPage } from './pages/Voice/VoiceInteractionPage';
 import { StoriesPage } from './pages/Stories/StoriesPage';
 import { StoryDetail } from './pages/Stories/StoryDetail';
+
+function resolveAgentAlias(raw?: string): AgentId | null {
+  if (!raw) return null;
+  const normalized = raw.toLowerCase().replace(/[^a-z]/g, '');
+
+  if (normalized === 'elena' || normalized === 'elana') return 'elena';
+  if (normalized === 'marcus') return 'marcus';
+  if (normalized === 'sage' || normalized === 'sagemeridian') return 'sage';
+
+  return null;
+}
+
+function AgentDirectRoute({ onAgentSelect, fallbackToAgents = true }: { onAgentSelect: (agent: AgentId) => void; fallbackToAgents?: boolean }) {
+  const navigate = useNavigate();
+  const params = useParams();
+
+  useEffect(() => {
+    const alias = params.agentSlug ?? params.agentAlias;
+    const resolved = resolveAgentAlias(alias);
+
+    if (resolved) {
+      onAgentSelect(resolved);
+      navigate('/', { replace: true, state: { agentId: resolved } });
+      return;
+    }
+
+    navigate(fallbackToAgents ? '/agents' : '/', { replace: true });
+  }, [navigate, onAgentSelect, params.agentAlias, params.agentSlug, fallbackToAgents]);
+
+  return null;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -101,6 +132,10 @@ function AppContent() {
 
         {/* Agents Information */}
         <Route path="agents" element={<AgentsPage />} />
+        <Route path="agents/:agentSlug" element={<AgentDirectRoute onAgentSelect={setActiveAgent} />} />
+
+        {/* Direct mobile deep links for agents */}
+        <Route path=":agentAlias" element={<AgentDirectRoute onAgentSelect={setActiveAgent} fallbackToAgents={false} />} />
 
         {/* Sources / Unstructured intake */}
         <Route path="sources" element={<SourcesPage />} />

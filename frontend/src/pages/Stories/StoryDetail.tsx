@@ -59,7 +59,7 @@ export function StoryDetail() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Generate shareable URL
-    const shareableUrl = `https://engram.work/stories/${storyId}`;
+    const shareableUrl = `https://ctxeco.com/stories/${storyId}`;
 
     const handleShare = async () => {
         try {

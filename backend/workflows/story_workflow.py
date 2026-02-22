@@ -189,6 +189,7 @@ class StoryWorkflow:
                 return StoryWorkflowOutput(
                     story_id="",
                     topic=input.topic,
+                    title=input.topic,
                     story_content="",
                     success=False,
                     error=story_result.error,
@@ -292,6 +293,7 @@ class StoryWorkflow:
                 enrich_story_memory_activity,
                 EnrichMemoryInput(
                     user_id=input.user_id,
+                    tenant_id=input.tenant_id,
                     story_id=story_id,
                     topic=self._story_title or input.topic, # Use generated title
                     content=self._story_content[:5000], 
@@ -334,6 +336,7 @@ class StoryWorkflow:
             return StoryWorkflowOutput(
                 story_id=story_id,
                 topic=input.topic,
+                title=self._story_title or input.topic,
                 story_content=self._story_content or "",
                 success=False,
                 error=str(e),

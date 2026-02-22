@@ -129,8 +129,12 @@ class Settings(BaseSettings):
     # ==========================================================================
     # Anthropic Claude for story generation
     anthropic_api_key: Optional[str] = Field(None, alias="ANTHROPIC_API_KEY")
+    anthropic_model: str = Field("claude-opus-4-6", alias="ANTHROPIC_MODEL")
     # Google Gemini for diagram generation via Nano Banana Pro
     gemini_api_key: Optional[str] = Field(None, alias="GEMINI_API_KEY")
+    gemini_model: str = Field("gemini-3.1-pro-preview", alias="GEMINI_MODEL")
+    google_cloud_project: str = Field("secai-radar", alias="GOOGLE_CLOUD_PROJECT")
+    google_cloud_location: str = Field("global", alias="GOOGLE_CLOUD_LOCATION")
     # OneDrive docs path (local folder that syncs)
     onedrive_docs_path: str = Field("docs", alias="ONEDRIVE_DOCS_PATH")
 

@@ -1,0 +1,38 @@
+{
+  "title": "SecAI Radar Trust Oracle Architecture",
+  "type": "architecture",
+  "nodes": [
+    { "id": "sources", "label": "Discovery Sources\n(Registries, Repos, Docs)", "type": "rect", "color": "#1e293b" },
+    { "id": "scout", "label": "Scout Worker", "type": "rect", "color": "#0ea5e9" },
+    { "id": "curator", "label": "Curator Worker", "type": "rect", "color": "#38bdf8" },
+    { "id": "evidence", "label": "Evidence Miner", "type": "rect", "color": "#22d3ee" },
+    { "id": "scorer", "label": "Scorer\n(D1..D6 + Tier + Flags)", "type": "rect", "color": "#14b8a6" },
+    { "id": "decay", "label": "Temporal Decay Engine\nClass A/B/C λ", "type": "rect", "color": "#10b981" },
+    { "id": "drift", "label": "Drift Sentinel", "type": "rect", "color": "#84cc16" },
+    { "id": "publisher", "label": "Publisher\nAtomic Snapshot", "type": "rect", "color": "#a3e635" },
+    { "id": "db", "label": "PostgreSQL\n(secairadar)", "type": "cylinder", "color": "#f59e0b" },
+    { "id": "api", "label": "Public API\nTruth Hub", "type": "rect", "color": "#f97316" },
+    { "id": "agent_endpoints", "label": "Agent-First Discovery\n/llms.txt + /.well-known/trust-scores.json", "type": "rect", "color": "#fb7185" },
+    { "id": "web", "label": "secairadar.cloud\nVerified MCP + Agent Rankings", "type": "rect", "color": "#a855f7" },
+    { "id": "sage", "label": "Sage Meridian\nNarrative + Visual Direction", "type": "rect", "color": "#8b5cf6" }
+  ],
+  "edges": [
+    { "source": "sources", "target": "scout", "label": "fetch observations" },
+    { "source": "scout", "target": "curator", "label": "normalize + dedupe" },
+    { "source": "curator", "target": "evidence", "label": "target list" },
+    { "source": "evidence", "target": "scorer", "label": "security evidence" },
+    { "source": "scorer", "target": "decay", "label": "raw trust score" },
+    { "source": "decay", "target": "drift", "label": "time-weighted signals" },
+    { "source": "drift", "target": "publisher", "label": "deltas + events" },
+    { "source": "curator", "target": "db", "label": "canonical entities" },
+    { "source": "evidence", "target": "db", "label": "evidence packs" },
+    { "source": "scorer", "target": "db", "label": "score snapshots" },
+    { "source": "drift", "target": "db", "label": "drift events" },
+    { "source": "publisher", "target": "db", "label": "latest published view" },
+    { "source": "db", "target": "api", "label": "query rankings" },
+    { "source": "api", "target": "agent_endpoints", "label": "discovery metadata" },
+    { "source": "api", "target": "web", "label": "rankings + detail" },
+    { "source": "db", "target": "sage", "label": "daily brief context" },
+    { "source": "sage", "target": "web", "label": "storytelling layer" }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "edges": [
+    {
+      "label": "Submits",
+      "source": "user",
+      "target": "request"
+    },
+    {
+      "label": "Enters",
+      "source": "request",
+      "target": "routing_logic"
+    },
+    {
+      "color": "#f59e0b",
+      "label": "Routes to",
+      "source": "routing_logic",
+      "style": "dashed",
+      "target": "model_a"
+    },
+    {
+      "color": "#f59e0b",
+      "label": "Routes to",
+      "source": "routing_logic",
+      "style": "dashed",
+      "target": "model_b"
+    },
+    {
+      "label": "Generates",
+      "source": "model_a",
+      "target": "response"
+    },
+    {
+      "label": "Generates",
+      "source": "model_b",
+      "target": "response"
+    },
+    {
+      "color": "#ef4444",
+      "label": "Returns to",
+      "source": "response",
+      "style": "dashed",
+      "target": "user"
+    },
+    {
+      "label": "Asks",
+      "source": "user",
+      "target": "uncertainty"
+    },
+    {
+      "color": "#10b981",
+      "label": "Passes Through",
+      "source": "response",
+      "target": "verification_layer",
+      "thickness": 2
+    },
+    {
+      "color": "#10b981",
+      "label": "Creates",
+      "source": "verification_layer",
+      "target": "audit_trail",
+      "thickness": 2
+    },
+    {
+      "color": "#10b981",
+      "label": "Provides Verifiable Answer To",
+      "source": "audit_trail",
+      "target": "user",
+      "thickness": 2
+    },
+    {
+      "color": "#8b5cf6",
+      "label": "Is a key component of",
+      "source": "verification_layer",
+      "style": "dotted",
+      "target": "trust_infra",
+      "thickness": 2
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#ffffff",
+      "icon": "user",
+      "id": "user",
+      "label": "User",
+      "type": "person"
+    },
+    {
+      "color": "#e0e0e0",
+      "icon": "message-question",
+      "id": "request",
+      "label": "User Request",
+      "type": "document"
+    },
+    {
+      "color": "#4a4a4a",
+      "id": "routing_layer",
+      "label": "Model Routing Layer (The Opaque Box)",
+      "style": "dashed",
+      "type": "group"
+    },
+    {
+      "color": "#f59e0b",
+      "icon": "git-fork",
+      "id": "routing_logic",
+      "label": "Routing Logic",
+      "notes": "Criteria: Cost, Complexity, Latency, Capability",
+      "parent": "routing_layer",
+      "type": "hexagon"
+    },
+    {
+      "color": "#3b82f6",
+      "icon": "cpu",
+      "id": "model_a",
+      "label": "Lightweight Model",
+      "notes": "For simple, factual lookups.",
+      "parent": "routing_layer",
+      "type": "database"
+    },
+    {
+      "color": "#a855f7",
+      "icon": "server",
+      "id": "model_b",
+      "label": "Frontier Model",
+      "notes": "For complex, nuanced reasoning.",
+      "parent": "routing_layer",
+      "type": "database"
+    },
+    {
+      "color": "#e0e0e0",
+      "icon": "message-dots",
+      "id": "response",
+      "label": "Generated Response",
+      "type": "document"
+    },
+    {
+      "color": "#ef4444",
+      "icon": "help",
+      "id": "uncertainty",
+      "label": "Which model answered?",
+      "notes": "Problems: Opacity, Drift, Accountability Gaps",
+      "type": "ellipse"
+    },
+    {
+      "color": "#059669",
+      "id": "verification_layer",
+      "label": "Verification Layer",
+      "type": "group"
+    },
+    {
+      "color": "#14b8a6",
+      "icon": "fingerprint",
+      "id": "fingerprinting",
+      "label": "Response Fingerprinting",
+      "parent": "verification_layer",
+      "type": "rect"
+    },
+    {
+      "color": "#14b8a6",
+      "icon": "shield-check",
+      "id": "attestation",
+      "label": "Cryptographic Attestation",
+      "parent": "verification_layer",
+      "type": "rect"
+    },
+    {
+      "color": "#14b8a6",
+      "icon": "binary",
+      "id": "metadata",
+      "label": "Metadata Headers",
+      "parent": "verification_layer",
+      "type": "rect"
+    },
+    {
+      "color": "#65a30d",
+      "icon": "file-text",
+      "id": "audit_trail",
+      "label": "Verifiable Audit Trail",
+      "notes": "Logs model ID, version, and configuration for each call.",
+      "type": "database"
+    },
+    {
+      "color": "#8b5cf6",
+      "icon": "building",
+      "id": "trust_infra",
+      "label": "Trust Infrastructure",
+      "notes": "The AI equivalent of web certificate transparency.",
+      "type": "cylinder"
+    }
+  ],
+  "subtitle": "Visualized by Sage for Gemini 3 (Visual Reasoning Mode)",
+  "theme": "dark",
+  "title": "Model Routing Verification: From Opacity to Trust",
+  "type": "architecture"
+}

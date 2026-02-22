@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">SecAI Radar Trust Oracle — Agent-First Verification</title>
+  <desc id="desc">A futuristic visual showing SecAI Radar as an agent-first trust verification system for MCP servers and AI agents.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .label { fill: #e2e8f0; font-family: Inter, Segoe UI, Arial, sans-serif; }
+      .sub { fill: #94a3b8; font-family: Inter, Segoe UI, Arial, sans-serif; }
+      .wire { stroke: #38bdf8; stroke-width: 2.2; fill: none; opacity: 0.8; }
+      .node { fill: #0b1220; stroke: #475569; stroke-width: 1.2; }
+      .nodeHot { fill: #101827; stroke: #22d3ee; stroke-width: 1.8; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+
+  <g opacity="0.22">
+    <path d="M80 780 C 300 640, 540 660, 760 520 S 1180 300, 1520 340" class="wire"/>
+    <path d="M90 710 C 290 610, 530 600, 760 430 S 1190 240, 1510 260" class="wire"/>
+    <path d="M120 210 C 300 260, 540 240, 740 320 S 1180 520, 1500 600" class="wire"/>
+  </g>
+
+  <g transform="translate(800 440)">
+    <circle r="190" fill="#0b1120" stroke="#1d4ed8" stroke-opacity="0.35"/>
+    <circle r="146" fill="#0f172a" stroke="#22d3ee" stroke-opacity="0.45"/>
+    <circle r="96" fill="url(#core)" filter="url(#glow)"/>
+    <text x="0" y="-8" text-anchor="middle" class="label" font-size="28" font-weight="700">SecAI Radar</text>
+    <text x="0" y="26" text-anchor="middle" class="sub" font-size="16">Trust Oracle Engine</text>
+  </g>
+
+  <g>
+    <rect x="170" y="170" rx="16" ry="16" width="270" height="110" class="node"/>
+    <text x="305" y="214" text-anchor="middle" class="label" font-size="20" font-weight="600">Scout + Curator</text>
+    <text x="305" y="242" text-anchor="middle" class="sub" font-size="14">Discovery + Canonicalization</text>
+
+    <rect x="170" y="340" rx="16" ry="16" width="270" height="110" class="node"/>
+    <text x="305" y="384" text-anchor="middle" class="label" font-size="20" font-weight="600">Evidence Miner</text>
+    <text x="305" y="412" text-anchor="middle" class="sub" font-size="14">Repo + Docs + Signals</text>
+
+    <rect x="170" y="510" rx="16" ry="16" width="270" height="110" class="nodeHot"/>
+    <text x="305" y="554" text-anchor="middle" class="label" font-size="20" font-weight="600">Scorer + Decay</text>
+    <text x="305" y="582" text-anchor="middle" class="sub" font-size="14">D1..D6 + Temporal Truth Decay</text>
+
+    <rect x="1160" y="170" rx="16" ry="16" width="290" height="110" class="nodeHot"/>
+    <text x="1305" y="214" text-anchor="middle" class="label" font-size="20" font-weight="600">Agent-First API</text>
+    <text x="1305" y="242" text-anchor="middle" class="sub" font-size="14">llms.txt + well-known JSON</text>
+
+    <rect x="1160" y="340" rx="16" ry="16" width="290" height="110" class="node"/>
+    <text x="1305" y="384" text-anchor="middle" class="label" font-size="20" font-weight="600">secairadar.cloud</text>
+    <text x="1305" y="412" text-anchor="middle" class="sub" font-size="14">Verified MCP + Agent Rankings</text>
+
+    <rect x="1160" y="510" rx="16" ry="16" width="290" height="110" class="node"/>
+    <text x="1305" y="554" text-anchor="middle" class="label" font-size="20" font-weight="600">Sage Meridian</text>
+    <text x="1305" y="582" text-anchor="middle" class="sub" font-size="14">Narrative + Visual Story Layer</text>
+  </g>
+
+  <g stroke-linecap="round" opacity="0.9">
+    <path d="M440 225 C 560 240, 620 300, 700 360" class="wire"/>
+    <path d="M440 395 C 560 405, 620 410, 705 425" class="wire"/>
+    <path d="M440 565 C 560 555, 620 520, 700 485" class="wire"/>
+
+    <path d="M900 360 C 980 300, 1040 250, 1160 225" class="wire"/>
+    <path d="M895 430 C 990 420, 1070 405, 1160 395" class="wire"/>
+    <path d="M900 490 C 990 540, 1070 565, 1160 565" class="wire"/>
+  </g>
+
+  <text x="800" y="86" text-anchor="middle" class="label" font-size="44" font-weight="800">First Highly Trusted MCP + AI Agent Verification System</text>
+  <text x="800" y="124" text-anchor="middle" class="sub" font-size="20">Evidence-first, truth-decayed, machine-readable trust intelligence</text>
+
+  <text x="800" y="848" text-anchor="middle" class="sub" font-size="16">Generated for Sage Meridian story artifacts • 2026-02-22</text>
+</svg>

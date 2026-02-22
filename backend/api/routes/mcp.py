@@ -265,10 +265,19 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
         topic = args.get("topic", "Untitled")
         style = args.get("style", "informative")
         length = args.get("length", "medium")
+        user_context = args.get("context")
         
         # Map length to include_image decision
         include_image = length != "short"
         
+        contextual_guidance = [f"Style: {style}.", f"Length: {length}."]
+        if user_context:
+            contextual_guidance.append(str(user_context))
+        if "secai" in topic.lower() or "secairadar" in topic.lower() or "mcp" in topic.lower():
+            contextual_guidance.append(
+                "Focus on secairadar.cloud MCP + AI trust ranking system with outputs optimized for agents first, then humans."
+            )
+
         logger.info(f"MCP: Triggering Temporal story workflow for '{topic}'")
         
         try:
@@ -276,7 +285,7 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
                 user_id=user.user_id,
                 tenant_id=user.tenant_id,
                 topic=topic,
-                context=f"Style: {style}. Length: {length}.",
+                context=" ".join(contextual_guidance),
                 include_diagram=True,
                 include_image=include_image,
                 diagram_type="architecture",
@@ -291,7 +300,7 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
                     "story_content": result.story_content[:2000] + "..." if len(result.story_content) > 2000 else result.story_content,
                     "story_path": result.story_path,
                     "diagram_path": result.diagram_path,
-                    "image_path": f"/api/v1/images/{result.story_id}.png" if result.story_id else None,
+                    "image_path": f"/api/v1/images/{result.story_id}.png" if result.image_path else None,
                 }
             else:
                 return {

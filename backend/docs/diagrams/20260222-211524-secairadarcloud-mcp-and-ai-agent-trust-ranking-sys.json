@@ -1,0 +1,74 @@
+{
+  "edges": [
+    {
+      "label": "ingest raw security signals",
+      "source": "n_sources",
+      "target": "n_mcp"
+    },
+    {
+      "label": "stream standardized context (MCP Protocol)",
+      "source": "n_mcp",
+      "target": "n_engine"
+    },
+    {
+      "label": "store/retrieve trust scores & history",
+      "source": "n_engine",
+      "target": "n_kg"
+    },
+    {
+      "label": "Priority 1: serve low-latency trust API",
+      "source": "n_engine",
+      "target": "n_agents"
+    },
+    {
+      "label": "discover & invoke context tools",
+      "source": "n_agents",
+      "target": "n_mcp"
+    },
+    {
+      "label": "Priority 2: render explainable audit UI",
+      "source": "n_engine",
+      "target": "n_humans"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#475569",
+      "id": "n_sources",
+      "label": "Threat Intel & Telemetry Sources",
+      "type": "database"
+    },
+    {
+      "color": "#2563EB",
+      "id": "n_mcp",
+      "label": "secairadar.cloud MCP Server",
+      "type": "service"
+    },
+    {
+      "color": "#7C3AED",
+      "id": "n_engine",
+      "label": "AI Agent Trust Ranking Engine",
+      "type": "engine"
+    },
+    {
+      "color": "#059669",
+      "id": "n_kg",
+      "label": "Trust Vector Knowledge Graph",
+      "type": "database"
+    },
+    {
+      "color": "#16A34A",
+      "id": "n_agents",
+      "label": "Autonomous AI Agents (Agent-First Consumers)",
+      "type": "consumer"
+    },
+    {
+      "color": "#0EA5E9",
+      "id": "n_humans",
+      "label": "Human SecOps Dashboards (Secondary)",
+      "type": "consumer"
+    }
+  ],
+  "title": "secairadar.cloud MCP and AI Agent Trust Ranking Architecture",
+  "type": "architecture"
+}

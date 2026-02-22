@@ -1,0 +1,36 @@
+{
+  "edges": [
+    {
+      "label": "influences",
+      "source": "n1",
+      "target": "n2"
+    },
+    {
+      "label": "produces",
+      "source": "n2",
+      "target": "n3"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#4285F4",
+      "id": "n1",
+      "label": "secai-radar milestone: trusted MCP trust-ranking breakthrough",
+      "type": "circle"
+    },
+    {
+      "color": "#DB4437",
+      "id": "n2",
+      "label": "Context",
+      "type": "rect"
+    },
+    {
+      "color": "#0F9D58",
+      "id": "n3",
+      "label": "Outcome",
+      "type": "rect"
+    }
+  ],
+  "title": "Mock Diagram: secai-radar milestone: trusted MCP trust-ranking breakthrough",
+  "type": "architecture"
+}

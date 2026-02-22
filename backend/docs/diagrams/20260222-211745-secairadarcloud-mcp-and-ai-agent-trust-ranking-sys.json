@@ -1,0 +1,58 @@
+{
+  "edges": [
+    {
+      "label": "ingest & normalize signals",
+      "source": "n1",
+      "target": "n2"
+    },
+    {
+      "label": "supply ranked trust data & context",
+      "source": "n2",
+      "target": "n3"
+    },
+    {
+      "label": "expose tools/resources via Model Context Protocol",
+      "source": "n3",
+      "target": "n4"
+    },
+    {
+      "label": "render explanatory audits & UI views",
+      "source": "n2",
+      "target": "n5"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#F59E0B",
+      "id": "n1",
+      "label": "Threat & Telemetry Signals",
+      "type": "data"
+    },
+    {
+      "color": "#7C3AED",
+      "id": "n2",
+      "label": "secairadar Trust Ranking Engine",
+      "type": "engine"
+    },
+    {
+      "color": "#2563EB",
+      "id": "n3",
+      "label": "secairadar MCP Server",
+      "type": "service"
+    },
+    {
+      "color": "#16A34A",
+      "id": "n4",
+      "label": "AI Agents (Primary Consumers)",
+      "type": "consumer"
+    },
+    {
+      "color": "#0EA5E9",
+      "id": "n5",
+      "label": "Human SecOps Dashboard (Secondary)",
+      "type": "consumer"
+    }
+  ],
+  "title": "secairadar.cloud MCP and AI Agent Trust Ranking System Architecture",
+  "type": "architecture"
+}

@@ -1,0 +1,80 @@
+{
+  "edges": [
+    {
+      "label": "ingest behavior signals",
+      "source": "telemetry",
+      "target": "trust_engine"
+    },
+    {
+      "label": "calculate & store rank",
+      "source": "trust_engine",
+      "target": "trust_db"
+    },
+    {
+      "label": "supply trust context & tools",
+      "source": "trust_db",
+      "target": "mcp_server"
+    },
+    {
+      "label": "MCP: serve trust scores (Agent-First)",
+      "source": "mcp_server",
+      "target": "ai_agents"
+    },
+    {
+      "label": "supply audit trails",
+      "source": "trust_db",
+      "target": "rest_api"
+    },
+    {
+      "label": "render human reviews (Secondary)",
+      "source": "rest_api",
+      "target": "human_soc"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#64748B",
+      "id": "telemetry",
+      "label": "Agent Activity & Threat Intel",
+      "type": "source"
+    },
+    {
+      "color": "#8B5CF6",
+      "id": "trust_engine",
+      "label": "AI Trust Ranking Engine",
+      "type": "engine"
+    },
+    {
+      "color": "#F59E0B",
+      "id": "trust_db",
+      "label": "Trust Vector Database",
+      "type": "database"
+    },
+    {
+      "color": "#2563EB",
+      "id": "mcp_server",
+      "label": "secairadar.cloud MCP Server",
+      "type": "service"
+    },
+    {
+      "color": "#10B981",
+      "id": "ai_agents",
+      "label": "AI Agents (MCP Clients)",
+      "type": "consumer"
+    },
+    {
+      "color": "#0EA5E9",
+      "id": "rest_api",
+      "label": "Explainability API",
+      "type": "service"
+    },
+    {
+      "color": "#0369A1",
+      "id": "human_soc",
+      "label": "SOC Analyst Dashboards",
+      "type": "consumer"
+    }
+  ],
+  "title": "secairadar.cloud MCP & AI Agent Trust Ranking Architecture",
+  "type": "architecture"
+}

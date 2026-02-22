@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
 
 from core import get_settings
-from .routes import health, chat, memory, etl, stories, voice, images, mcp, graph, tools, telemetry, validation
+from .routes import health, chat, memory, etl, stories, voice, images, mcp, graph, tools, telemetry, validation, discovery
 from .middleware.cors_preflight import CORSPreflightMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -141,6 +141,7 @@ def create_app() -> FastAPI:
 
     # Routes
     app.include_router(health.router, tags=["Health"])
+    app.include_router(discovery.router, tags=["Discovery"])
     app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
     app.include_router(memory.router, prefix="/api/v1/memory", tags=["Memory"])
     app.include_router(etl.router, prefix="/api/v1/etl", tags=["ETL"])

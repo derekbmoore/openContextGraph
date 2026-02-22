@@ -97,6 +97,7 @@ class SaveArtifactsOutput:
 class EnrichMemoryInput:
     """Input for memory enrichment"""
     user_id: str
+    tenant_id: str
     story_id: str
     topic: str
     content: str
@@ -134,7 +135,8 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
         # Sage performs an independent search to verify and enrich context
         activity.logger.info(f"Sage Verification: Searching memory for '{input.topic}'")
         try:
-            from memory.client import memory_client
+            from memory.client import get_memory_client
+            memory_client = get_memory_client()
             
             # Using global-search or a specific session if we had one
             # Using global-search or a specific session if we had one
@@ -210,20 +212,31 @@ async def generate_story_activity(input: GenerateStoryInput) -> GenerateStoryOut
 @activity.defn
 async def generate_diagram_activity(input: GenerateDiagramInput) -> GenerateDiagramOutput:
     """
-    Generate a diagram specification using Gemini.
-    
-    Returns a Nano Banana Pro compatible JSON spec.
+    Generate Nano Banana JSON with Sage (Opus 4.6), then refine via Gemini 3.1.
+
+    Returns canonical diagram JSON for agent-first consumption.
     """
     activity.logger.info(f"Generating diagram: {input.topic}")
     
     try:
+        from llm.claude_client import get_claude_client
         from llm.gemini_client import get_gemini_client
-        
-        client = get_gemini_client()
-        spec = await client.generate_diagram_spec(
+
+        claude_client = get_claude_client()
+        gemini_client = get_gemini_client()
+
+        # Step 1: Sage creates canonical Nano Banana diagram JSON
+        initial_spec = await claude_client.generate_nano_banana_diagram(
             topic=input.topic,
             diagram_type=input.diagram_type,
             story_context=input.story_content,
+        )
+
+        # Step 2: Gemini 3.1 standard workflow refines/validates that JSON
+        spec = await gemini_client.render_diagram_from_nano_banana(
+            topic=input.topic,
+            diagram_type=input.diagram_type,
+            nano_banana_json=initial_spec,
         )
         
         activity.logger.info("Diagram spec generated")
@@ -245,31 +258,39 @@ async def generate_diagram_activity(input: GenerateDiagramInput) -> GenerateDiag
 @activity.defn
 async def generate_image_activity(input: GenerateImageInput) -> GenerateImageOutput:
     """
-    Generate an image using the two-step flow:
-    1. Generate visual spec (JSON describing the image)
-    2. Generate image from spec using Nano Banana Pro
-    
-    This mirrors the proven workflow: spec → Nano Banana Pro → image.
+    Generate visual impact image with Sage (Opus 4.6) first,
+    then fallback to Gemini prompt/spec path.
     """
     activity.logger.info(f"Generating image for prompt: {input.prompt[:50]}...")
     
     try:
+        from llm.claude_client import get_claude_client
         from llm.gemini_client import get_gemini_client
-        
-        client = get_gemini_client()
-        
-        # Step 1: Generate visual specification
-        activity.logger.info("Step 1: Generating visual specification...")
-        visual_spec = await client.generate_visual_spec(
-            topic=input.prompt,
-            context="Story illustration for CtxEco",
-            diagram_spec=input.diagram_spec
-        )
-        activity.logger.info(f"Visual spec generated: {visual_spec.get('title', 'untitled')}")
-        
-        # Step 2: Generate image from spec
-        activity.logger.info("Step 2: Generating image from visual spec...")
-        image_data = await client.generate_image_from_spec(visual_spec)
+
+        claude_client = get_claude_client()
+        gemini_client = get_gemini_client()
+
+        # Step 1: Sage visual impact image
+        activity.logger.info("Step 1: Generating visual impact image with Opus 4.6...")
+        try:
+            image_data = await claude_client.generate_visual_impact_image(
+                topic=input.prompt,
+                diagram_spec=input.diagram_spec,
+                context="secairadar.cloud MCP and AI agent trust ranking system; agent-first then humans",
+            )
+        except Exception as opus_error:
+            activity.logger.warning(f"Opus visual generation failed, using Gemini fallback: {opus_error}")
+            image_data = b""
+
+        # Step 2: Gemini fallback path if needed
+        if not image_data:
+            activity.logger.info("Step 2: Opus image empty, using Gemini visual spec fallback...")
+            visual_spec = await gemini_client.generate_visual_spec(
+                topic=input.prompt,
+                context="Story illustration for CtxEco",
+                diagram_spec=input.diagram_spec,
+            )
+            image_data = await gemini_client.generate_image_from_spec(visual_spec)
         
         if not image_data:
              return GenerateImageOutput(image_data=b"", success=False, error="Empty image data returned")
@@ -360,29 +381,40 @@ async def enrich_story_memory_activity(input: EnrichMemoryInput) -> EnrichMemory
     activity.logger.info(f"Enriching memory: {input.story_id}")
     
     try:
-        from memory.client import memory_client
+        from memory.client import get_memory_client
+        memory_client = get_memory_client()
         
         session_id = f"story-{input.story_id}"
         
-        await memory_client.add_session(
+        await memory_client.get_or_create_session(
             session_id=session_id,
             user_id=input.user_id,
             metadata={
+                "tenant_id": input.tenant_id,
                 "title": input.topic,
+                "summary": input.content[:240],
                 "type": "story",
+                "channel": "story",
                 "story_id": input.story_id,
                 "image_path": input.image_path,
                 "created_at": datetime.now().isoformat(),
+                "agent_id": "sage",
             }
         )
-        
-        await memory_client.add_messages(
+
+        await memory_client.add_memory(
             session_id=session_id,
             messages=[{
                 "role": "assistant",
                 "content": input.content,
-                "metadata": {"agent_id": "sage", "topic": input.topic},
-            }]
+                "metadata": {
+                    "agent_id": "sage",
+                    "topic": input.topic,
+                    "interaction_type": "story_generation_milestone",
+                    "story_id": input.story_id,
+                },
+            }],
+            metadata={"source": "story.workflow"},
         )
         
         activity.logger.info(f"Memory enriched: {session_id}")
