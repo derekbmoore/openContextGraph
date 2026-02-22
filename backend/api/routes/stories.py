@@ -232,12 +232,20 @@ class StoryListItem(BaseModel):
     created_at: str
     story_path: str
     image_path: Optional[str] = None
+    architecture_image_path: Optional[str] = None
 
 
 class VisualGenerateRequest(BaseModel):
     """Request to generate a visual for an existing story."""
     prompt: Optional[str] = None
     context: Optional[str] = None
+
+
+class StoryEnrichRequest(BaseModel):
+    """Request to (re)generate missing story artifacts."""
+    force_visual: bool = False
+    force_diagram: bool = False
+    force_architecture_image: bool = False
 
 
 # =============================================================================
@@ -423,6 +431,83 @@ async def generate_story_visual(
     raise HTTPException(status_code=503, detail="Visual generation not yet implemented")
 
 
+@router.post("/{story_id}/enrich", response_model=StoryResponse)
+async def enrich_story_artifacts(
+    story_id: str,
+    request: StoryEnrichRequest,
+    user: SecurityContext = Depends(get_current_user),
+):
+    """
+    Regenerate and persist missing visual/diagram artifacts for an existing story.
+    Uses existing workflow activities to keep Sage output consistent.
+    """
+    story = await get_story(story_id, user)
+
+    topic = story.topic
+    story_content = story.story_content
+
+    diagram_spec = story.diagram_spec
+    diagram_image_data = None
+    image_data = None
+
+    needs_diagram = request.force_diagram or (diagram_spec is None)
+    needs_arch_image = request.force_architecture_image or (story.architecture_image_path is None)
+    needs_visual = request.force_visual or (story.image_path is None)
+
+    try:
+        from workflows.story_activities import (
+            GenerateDiagramInput,
+            GenerateImageInput,
+            SaveArtifactsInput,
+            generate_diagram_activity,
+            generate_image_activity,
+            save_artifacts_activity,
+        )
+
+        if needs_diagram or needs_arch_image:
+            diagram_result = await generate_diagram_activity(
+                GenerateDiagramInput(
+                    topic=topic,
+                    story_content=story_content,
+                    diagram_type="architecture",
+                )
+            )
+            if diagram_result.success:
+                diagram_spec = diagram_result.spec or diagram_spec
+                diagram_image_data = diagram_result.image_data or None
+            else:
+                logger.warning(f"Diagram enrichment failed for {story_id}: {diagram_result.error}")
+
+        if needs_visual:
+            image_result = await generate_image_activity(
+                GenerateImageInput(
+                    prompt=topic,
+                    diagram_spec=diagram_spec,
+                )
+            )
+            if image_result.success:
+                image_data = image_result.image_data
+            else:
+                logger.warning(f"Visual enrichment failed for {story_id}: {image_result.error}")
+
+        await save_artifacts_activity(
+            SaveArtifactsInput(
+                story_id=story_id,
+                topic=topic,
+                story_content=story_content,
+                diagram_spec=diagram_spec,
+                diagram_image_data=diagram_image_data if needs_arch_image else None,
+                image_data=image_data if needs_visual else None,
+            )
+        )
+
+    except Exception as e:
+        logger.error(f"Story artifact enrichment failed for {story_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return await get_story(story_id, user)
+
+
 @router.post("/{story_id}/architecture-image", response_model=StoryResponse)
 async def upload_architecture_image(
     story_id: str,
@@ -567,13 +652,20 @@ async def list_stories(user: SecurityContext = Depends(get_current_user)):
             image_path_str = f"/api/v1/images/{story_id}.png"
         elif await _check_image_in_blob(f"{story_id}.png"):
             image_path_str = f"/api/v1/images/{story_id}.png"
+
+        architecture_image_path_str = None
+        if (stories_dir.parent / "images" / f"{story_id}-architecture.png").exists():
+            architecture_image_path_str = f"/api/v1/images/{story_id}-architecture.png"
+        elif await _check_image_in_blob(f"{story_id}-architecture.png"):
+            architecture_image_path_str = f"/api/v1/images/{story_id}-architecture.png"
             
         stories.append(StoryListItem(
             story_id=story_id,
             topic=story_id.split("-", 2)[-1].replace("-", " ") if "-" in story_id else story_id,
             created_at=datetime.fromtimestamp(story_file.stat().st_mtime).isoformat(),
             story_path=str(story_file),
-            image_path=image_path_str
+            image_path=image_path_str,
+            architecture_image_path=architecture_image_path_str,
         ))
     
     # Then, get stories from blob storage (if not already in local)
@@ -587,13 +679,18 @@ async def list_stories(user: SecurityContext = Depends(get_current_user)):
         image_path_str = None
         if await _check_image_in_blob(f"{story_id}.png"):
             image_path_str = f"/api/v1/images/{story_id}.png"
+
+        architecture_image_path_str = None
+        if await _check_image_in_blob(f"{story_id}-architecture.png"):
+            architecture_image_path_str = f"/api/v1/images/{story_id}-architecture.png"
         
         stories.append(StoryListItem(
             story_id=story_id,
             topic=story_id.split("-", 2)[-1].replace("-", " ") if "-" in story_id else story_id,
             created_at=blob_story["last_modified"].isoformat() if blob_story.get("last_modified") else datetime.now().isoformat(),
             story_path=f"blob://{story_id}.md",
-            image_path=image_path_str
+            image_path=image_path_str,
+            architecture_image_path=architecture_image_path_str,
         ))
     
     # Sort by created_at descending

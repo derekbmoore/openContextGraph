@@ -38,6 +38,7 @@ function resolveAgentAlias(raw?: string): AgentId | null {
 function AgentDirectRoute({ onAgentSelect, fallbackToAgents = true }: { onAgentSelect: (agent: AgentId) => void; fallbackToAgents?: boolean }) {
   const navigate = useNavigate();
   const params = useParams();
+  const [resolvedAgent, setResolvedAgent] = useState<AgentId | null>(null);
 
   useEffect(() => {
     const alias = params.agentSlug ?? params.agentAlias;
@@ -45,12 +46,16 @@ function AgentDirectRoute({ onAgentSelect, fallbackToAgents = true }: { onAgentS
 
     if (resolved) {
       onAgentSelect(resolved);
-      navigate('/', { replace: true, state: { agentId: resolved } });
+      setResolvedAgent(resolved);
       return;
     }
 
     navigate(fallbackToAgents ? '/agents' : '/', { replace: true });
   }, [navigate, onAgentSelect, params.agentAlias, params.agentSlug, fallbackToAgents]);
+
+  if (resolvedAgent) {
+    return <ChatView />;
+  }
 
   return null;
 }

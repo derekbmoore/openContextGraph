@@ -606,7 +606,31 @@ export class ApiClient {
       topic: string
       created_at: string
       story_path: string
+      image_path?: string | null
+      architecture_image_path?: string | null
     }>>('/story/')
+  }
+
+  async createStory(topic: string, context?: string) {
+    return this.request<{
+      story_id: string
+      topic: string
+      story_content: string
+      story_path: string
+      diagram_spec?: Record<string, unknown> | null
+      diagram_path?: string | null
+      image_path?: string | null
+      architecture_image_path?: string | null
+      created_at: string
+    }>('/story/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        topic,
+        context,
+        include_diagram: true,
+        diagram_type: 'architecture',
+      }),
+    })
   }
 
   async getStory(storyId: string) {
@@ -640,6 +664,31 @@ export class ApiClient {
     }>(`/story/${storyId}/architecture-image`, {
       method: 'POST',
       body: formData,
+    })
+  }
+
+  async enrichStoryArtifacts(storyId: string, options?: {
+    force_visual?: boolean
+    force_diagram?: boolean
+    force_architecture_image?: boolean
+  }) {
+    return this.request<{
+      story_id: string
+      topic: string
+      story_content: string
+      story_path: string
+      diagram_spec?: Record<string, unknown> | null
+      diagram_path?: string | null
+      image_path?: string | null
+      architecture_image_path?: string | null
+      created_at: string
+    }>(`/story/${storyId}/enrich`, {
+      method: 'POST',
+      body: JSON.stringify({
+        force_visual: Boolean(options?.force_visual),
+        force_diagram: Boolean(options?.force_diagram),
+        force_architecture_image: Boolean(options?.force_architecture_image),
+      }),
     })
   }
 }
@@ -697,8 +746,13 @@ export const getGoldenRun = (runId: string) => apiClient.getGoldenRun(runId);
 
 // Stories
 export const listStories = () => apiClient.listStories();
+export const createStory = (topic: string, context?: string) => apiClient.createStory(topic, context);
 export const getStory = (storyId: string) => apiClient.getStory(storyId);
 export const uploadArchitectureImage = (storyId: string, file: File) => apiClient.uploadArchitectureImage(storyId, file);
+export const enrichStoryArtifacts = (
+  storyId: string,
+  options?: { force_visual?: boolean; force_diagram?: boolean; force_architecture_image?: boolean }
+) => apiClient.enrichStoryArtifacts(storyId, options);
 
 export const getSystemSettings = () => apiClient.getSystemSettings();
 export const updateSystemSettings = (settings: unknown) => apiClient.updateSystemSettings(settings);

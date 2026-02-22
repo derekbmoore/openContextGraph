@@ -181,7 +181,7 @@ export function StoryDetail() {
                         >
                             📜 Narrative
                         </button>
-                        {story.diagram_spec && (
+                        {(story.diagram_spec || story.architecture_image_path) && (
                             <button
                                 className={`tab-button ${activeTab === 'diagram' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('diagram')}
@@ -226,7 +226,7 @@ export function StoryDetail() {
                             </div>
                         )}
 
-                        {activeTab === 'diagram' && story.diagram_spec && (
+                        {activeTab === 'diagram' && (story.diagram_spec || story.architecture_image_path) && (
                             <div className="diagram-view">
                                 {/* Upload button and uploaded image */}
                                 <div className="architecture-upload-section">
@@ -261,10 +261,12 @@ export function StoryDetail() {
                                     </div>
                                 )}
 
-                                <div className="diagram-placeholder">
-                                    <h3>Technical Specification</h3>
-                                    <pre>{JSON.stringify(story.diagram_spec, null, 2)}</pre>
-                                </div>
+                                {story.diagram_spec && (
+                                    <div className="diagram-placeholder">
+                                        <h3>Technical Specification</h3>
+                                        <pre>{JSON.stringify(story.diagram_spec, null, 2)}</pre>
+                                    </div>
+                                )}
                             </div>
                         )}
 

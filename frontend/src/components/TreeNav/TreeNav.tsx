@@ -77,7 +77,7 @@ export function TreeNav({ activeAgent, onAgentChange, onNavigate }: TreeNavProps
           status: activeAgent === 'sage' ? 'active' : 'idle',
           onClick: () => {
             onAgentChange('sage');
-            navigate('/');
+            navigate('/agents/sageMeridian');
           }
         },
         {

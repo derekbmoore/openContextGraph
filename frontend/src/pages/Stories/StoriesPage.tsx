@@ -9,6 +9,7 @@ interface StoryItem {
     created_at: string;
     story_path: string;
     image_path?: string;
+    architecture_image_path?: string;
 }
 
 export function StoriesPage() {
@@ -21,7 +22,20 @@ export function StoriesPage() {
         const fetchStories = async () => {
             try {
                 const data = await listStories();
-                setStories(data);
+                // Collapse duplicates by normalized topic, keep newest by created_at
+                const byTopic = new Map<string, StoryItem>();
+                for (const item of data) {
+                    const key = (item.topic || '').trim().toLowerCase();
+                    const existing = byTopic.get(key);
+                    if (!existing) {
+                        byTopic.set(key, item);
+                        continue;
+                    }
+                    if (new Date(item.created_at).getTime() > new Date(existing.created_at).getTime()) {
+                        byTopic.set(key, item);
+                    }
+                }
+                setStories(Array.from(byTopic.values()));
             } catch (err: any) {
                 setError(err.message || 'Failed to load stories');
             } finally {
@@ -57,9 +71,9 @@ export function StoriesPage() {
                             onClick={() => navigate(`/stories/${story.story_id}`)}
                         >
                             <div className="story-icon">
-                                {story.image_path ? (
+                                {(story.image_path || story.architecture_image_path) ? (
                                     <img
-                                        src={getFullImageUrl(story.image_path)}
+                                        src={getFullImageUrl(story.image_path || story.architecture_image_path || '')}
                                         alt=""
                                         className="story-thumbnail-image"
                                     />

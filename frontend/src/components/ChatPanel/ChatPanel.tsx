@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useMemo, type FormEvent, type CSSProperties } from 'react'
 import type { Agent } from '../../types'
 import { chatService } from '../../services/ChatService'
+import { createStory } from '../../services/api'
 import { clearSession, type ApiError } from '../../services/api'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useNavigate } from 'react-router-dom';
 import './ChatPanel.css'
 
 interface ChatPanelProps {
@@ -51,6 +53,7 @@ function createWelcomeMessage(agent: Agent): Message {
 
 
 export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: ChatPanelProps) {
+  const navigate = useNavigate()
   // Component remounts when agent changes (via key prop in App.tsx)
   // So we can initialize state directly
   const initialMessage = useMemo(() => createWelcomeMessage(agent), [agent])
@@ -160,6 +163,39 @@ export function ChatPanel({ agent, sessionId: sessionIdProp, onMetricsUpdate }: 
     setError(null)
 
     try {
+      const lowerInput = userInput.toLowerCase()
+      const looksLikeStoryRequest = /\bstory\b|\bvisual\b|\bdiagram\b|\bartifact\b/.test(lowerInput)
+
+      if (agent.id === 'sage' && looksLikeStoryRequest) {
+        const confirmed = window.confirm(
+          'Generate a full Sage artifact set now?\n\nThis will create a story + visual + architecture diagram.'
+        )
+
+        if (confirmed) {
+          const artifact = await createStory(userInput, 'Requested from Sage chat panel with confirmed full artifact generation.')
+          const storyUrl = `/stories/${artifact.story_id}`
+
+          const assistantMessage: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content:
+              `✅ Story artifact generated.\n\n` +
+              `- Story: ${artifact.story_id}\n` +
+              `- Visual: ${artifact.image_path ?? 'generated'}\n` +
+              `- Diagram: ${artifact.diagram_path ?? 'generated'}\n\n` +
+              `Opening: ${storyUrl}`,
+            agentId: 'sage',
+            agentName: 'Sage - Storyteller',
+            timestamp: new Date(),
+          }
+
+          setMessages(prev => [...prev, assistantMessage])
+          setIsTyping(false)
+          navigate(storyUrl)
+          return
+        }
+      }
+
       // Call backend API via strict ChatService
       const response = await chatService.sendMessage(userInput, agent.id, sessionId)
 
