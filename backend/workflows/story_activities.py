@@ -55,6 +55,7 @@ class GenerateDiagramOutput:
     """Output from diagram generation activity"""
     spec: Optional[dict]
     success: bool
+    image_data: Optional[bytes] = None
     error: Optional[str] = None
 
 
@@ -80,6 +81,7 @@ class SaveArtifactsInput:
     topic: str
     story_content: str
     diagram_spec: Optional[dict] = None
+    diagram_image_data: Optional[bytes] = None
     image_data: Optional[bytes] = None
 
 
@@ -90,6 +92,7 @@ class SaveArtifactsOutput:
     diagram_path: Optional[str]
     image_path: Optional[str]
     success: bool
+    architecture_image_path: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -241,11 +244,23 @@ async def generate_diagram_activity(input: GenerateDiagramInput) -> GenerateDiag
             diagram_type=input.diagram_type,
             nano_banana_json=initial_spec,
         )
+
+        # Step 3: Gemini 3.1 renders diagram image bytes from canonical schema (non-blocking)
+        diagram_image_data = b""
+        try:
+            diagram_image_data = await gemini_client.generate_diagram_image_from_nano_banana(
+                topic=input.topic,
+                diagram_type=input.diagram_type,
+                nano_banana_json=spec,
+            )
+        except Exception as render_err:
+            activity.logger.warning(f"Diagram image render failed; continuing with JSON spec only: {render_err}")
         
         activity.logger.info("Diagram spec generated")
         
         return GenerateDiagramOutput(
             spec=spec,
+            image_data=diagram_image_data or None,
             success=True,
         )
         
@@ -323,6 +338,7 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
     
     try:
         from core import get_settings
+        from azure.storage.blob.aio import BlobServiceClient
         
         settings = get_settings()
         docs_path = Path(settings.onedrive_docs_path or "docs")
@@ -347,6 +363,14 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
             diagram_file = diagrams_dir / diagram_filename
             diagram_file.write_text(json.dumps(input.diagram_spec, indent=2), encoding="utf-8")
             diagram_path = str(diagram_file)
+
+        # Save diagram image if present
+        architecture_image_path = None
+        if input.diagram_image_data:
+            diagram_image_filename = f"{input.story_id}-architecture.png"
+            diagram_image_file = images_dir / diagram_image_filename
+            diagram_image_file.write_bytes(input.diagram_image_data)
+            architecture_image_path = str(diagram_image_file)
             
         # Save image if present
         image_path = None
@@ -355,6 +379,39 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
             image_file = images_dir / image_filename
             image_file.write_bytes(input.image_data)
             image_path = str(image_file)
+
+        # Mirror artifacts to Azure Blob when configured (durable cloud retrieval)
+        if settings.azure_storage_connection_string:
+            async with BlobServiceClient.from_connection_string(settings.azure_storage_connection_string) as blob_service:
+                stories_container = settings.azure_storage_stories_container or "stories"
+                diagrams_container = settings.azure_storage_diagrams_container or "diagrams"
+                images_container = settings.azure_storage_images_container or "images"
+
+                for container_name in (stories_container, diagrams_container, images_container):
+                    try:
+                        await blob_service.create_container(container_name)
+                    except Exception:
+                        pass
+
+                await blob_service.get_container_client(stories_container).get_blob_client(story_filename).upload_blob(
+                    input.story_content.encode("utf-8"), overwrite=True
+                )
+
+                if input.diagram_spec:
+                    diagram_payload = json.dumps(input.diagram_spec, indent=2).encode("utf-8")
+                    await blob_service.get_container_client(diagrams_container).get_blob_client(f"{input.story_id}.json").upload_blob(
+                        diagram_payload, overwrite=True
+                    )
+
+                if input.diagram_image_data:
+                    await blob_service.get_container_client(images_container).get_blob_client(f"{input.story_id}-architecture.png").upload_blob(
+                        input.diagram_image_data, overwrite=True
+                    )
+
+                if input.image_data:
+                    await blob_service.get_container_client(images_container).get_blob_client(f"{input.story_id}.png").upload_blob(
+                        input.image_data, overwrite=True
+                    )
         
         activity.logger.info(f"Artifacts saved: {story_path}")
         
@@ -362,6 +419,7 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
             story_path=str(story_path),
             diagram_path=diagram_path,
             image_path=image_path,
+            architecture_image_path=architecture_image_path,
             success=True,
         )
         
@@ -371,6 +429,7 @@ async def save_artifacts_activity(input: SaveArtifactsInput) -> SaveArtifactsOut
             story_path=None,
             diagram_path=None,
             image_path=None,
+            architecture_image_path=None,
             success=False,
             error=str(e),
         )

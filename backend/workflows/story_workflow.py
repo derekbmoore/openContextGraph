@@ -71,6 +71,7 @@ class StoryWorkflowOutput:
     diagram_spec: Optional[dict] = None
     diagram_path: Optional[str] = None
     image_path: Optional[str] = None
+    architecture_image_path: Optional[str] = None
     memory_session_id: Optional[str] = None
     success: bool = True
     error: Optional[str] = None
@@ -125,6 +126,7 @@ class StoryWorkflow:
         self._story_path: Optional[str] = None
         self._diagram_path: Optional[str] = None
         self._image_path: Optional[str] = None
+        self._architecture_image_path: Optional[str] = None
         self._status: str = "starting"
         self._progress: int = 0
     
@@ -205,6 +207,8 @@ class StoryWorkflow:
             
             # Step 2: Generate Diagram and Image (Sequential to allow Diagram -> Visual linking)
             
+            diagram_image_data = None
+
             # 2a. Generate Diagram first (if requested)
             if input.include_diagram:
                 workflow.logger.info("Step 2a: Generating diagram...")
@@ -222,6 +226,7 @@ class StoryWorkflow:
                     
                     if diagram_result.success:
                         self._diagram_spec = diagram_result.spec
+                        diagram_image_data = diagram_result.image_data
                         workflow.logger.info("Diagram spec generated")
                     else:
                         workflow.logger.warning(f"Diagram generation failed: {diagram_result.error}")
@@ -268,6 +273,7 @@ class StoryWorkflow:
                     topic=self._story_title or input.topic,  # Use generated title if available
                     story_content=self._story_content,
                     diagram_spec=self._diagram_spec,
+                    diagram_image_data=diagram_image_data,
                     image_data=image_data,
                 ),
                 start_to_close_timeout=timedelta(seconds=30),
@@ -278,6 +284,7 @@ class StoryWorkflow:
                 self._story_path = save_result.story_path
                 self._diagram_path = save_result.diagram_path
                 self._image_path = save_result.image_path
+                self._architecture_image_path = save_result.architecture_image_path
                 workflow.logger.info(f"Artifacts saved: {save_result.story_path}")
             else:
                 workflow.logger.warning(f"Failed to save artifacts: {save_result.error}")
@@ -324,6 +331,7 @@ class StoryWorkflow:
                 diagram_spec=self._diagram_spec,
                 diagram_path=self._diagram_path,
                 image_path=self._image_path,
+                architecture_image_path=self._architecture_image_path,
                 memory_session_id=memory_session_id,
                 success=True,
                 tokens_used=tokens_used,

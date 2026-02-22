@@ -139,6 +139,47 @@ async def _save_image_to_blob(filename: str, content: bytes) -> bool:
     return False
 
 
+async def _get_diagram_from_blob(story_id: str) -> Optional[dict]:
+    """Get diagram JSON from Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return None
+
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_diagrams_container or "diagrams"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(f"{story_id}.json")
+            if await blob_client.exists():
+                download = await blob_client.download_blob()
+                payload = await download.readall()
+                return json.loads(payload.decode("utf-8"))
+    except Exception as e:
+        logger.warning(f"Failed to get diagram from blob: {e}")
+
+    return None
+
+
+async def _check_diagram_in_blob(filename: str) -> bool:
+    """Check if diagram exists in Azure Blob Storage."""
+    settings = get_settings()
+    blob_service = await _get_blob_service()
+    if not blob_service:
+        return False
+
+    try:
+        async with blob_service:
+            container_name = settings.azure_storage_diagrams_container or "diagrams"
+            container_client = blob_service.get_container_client(container_name)
+            blob_client = container_client.get_blob_client(filename)
+            return await blob_client.exists()
+    except Exception as e:
+        logger.warning(f"Failed to check diagram in blob: {e}")
+
+    return False
+
+
 async def _check_image_in_blob(filename: str) -> bool:
     """Check if image exists in Azure Blob Storage."""
     settings = get_settings()
@@ -288,6 +329,7 @@ async def create_story(
             diagram_spec=result.diagram_spec,
             diagram_path=result.diagram_path,
             image_path=f"/api/v1/images/{result.story_id}.png" if (await _check_image_exists(result.story_id)) else None,
+            architecture_image_path=f"/api/v1/images/{result.story_id}-architecture.png" if result.architecture_image_path else None,
             created_at=datetime.now().isoformat(),
         )
         
@@ -305,7 +347,9 @@ async def _check_image_exists(story_id: str) -> bool:
     settings = get_settings()
     docs_path = Path(settings.onedrive_docs_path or "docs")
     image_path = docs_path / "images" / f"{story_id}.png"
-    return image_path.exists()
+    if image_path.exists():
+        return True
+    return await _check_image_in_blob(f"{story_id}.png")
 
 
 async def _create_story_direct(request: StoryCreateRequest, user: SecurityContext) -> StoryResponse:
@@ -335,6 +379,8 @@ async def get_latest_story(user: SecurityContext = Depends(get_current_user)):
     diagram_spec = None
     if diagram_path.exists():
         diagram_spec = json.loads(diagram_path.read_text())
+    else:
+        diagram_spec = await _get_diagram_from_blob(story_id)
     
     # Check for image
     image_path_str = None
@@ -347,8 +393,12 @@ async def get_latest_story(user: SecurityContext = Depends(get_current_user)):
         story_content=latest.read_text(),
         story_path=str(latest),
         diagram_spec=diagram_spec,
-        diagram_path=str(diagram_path) if diagram_path.exists() else None,
+        diagram_path=str(diagram_path) if diagram_path.exists() else (f"blob://{story_id}.json" if diagram_spec else None),
         image_path=image_path_str,
+        architecture_image_path=f"/api/v1/images/{story_id}-architecture.png" if (
+            (stories_dir.parent / "images" / f"{story_id}-architecture.png").exists()
+            or await _check_image_in_blob(f"{story_id}-architecture.png")
+        ) else None,
         created_at=datetime.fromtimestamp(latest.stat().st_mtime).isoformat(),
     )
 
@@ -457,12 +507,14 @@ async def get_story(story_id: str, user: SecurityContext = Depends(get_current_u
     if not story_content:
         raise HTTPException(status_code=404, detail=f"Story not found: {story_id}")
     
-    # Try to load corresponding diagram (local only for now)
+    # Try to load corresponding diagram (local first, then blob)
     diagrams_dir = _get_diagrams_dir()
     diagram_path = diagrams_dir / f"{story_id}.json"
     diagram_spec = None
     if diagram_path.exists():
         diagram_spec = json.loads(diagram_path.read_text())
+    else:
+        diagram_spec = await _get_diagram_from_blob(story_id)
     
     # Check for Imagen-generated image (local first, then blob)
     images_dir = _get_images_dir()
@@ -489,7 +541,7 @@ async def get_story(story_id: str, user: SecurityContext = Depends(get_current_u
         story_content=story_content,
         story_path=story_path_str,
         diagram_spec=diagram_spec,
-        diagram_path=str(diagram_path) if diagram_path.exists() else None,
+        diagram_path=str(diagram_path) if diagram_path.exists() else (f"blob://{story_id}.json" if diagram_spec else None),
         image_path=image_path_str,
         architecture_image_path=architecture_image_path_str,
         created_at=created_at,

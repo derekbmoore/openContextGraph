@@ -143,6 +143,7 @@ class Settings(BaseSettings):
     # ==========================================================================
     azure_storage_connection_string: Optional[str] = Field(None, alias="AZURE_STORAGE_CONNECTION_STRING")
     azure_storage_stories_container: str = Field("stories", alias="AZURE_STORAGE_STORIES_CONTAINER")
+    azure_storage_diagrams_container: str = Field("diagrams", alias="AZURE_STORAGE_DIAGRAMS_CONTAINER")
     azure_storage_images_container: str = Field("images", alias="AZURE_STORAGE_IMAGES_CONTAINER")
 
     # ==========================================================================

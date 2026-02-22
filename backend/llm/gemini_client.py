@@ -1,9 +1,12 @@
 import os
 import logging
 import json
+import asyncio
 import zlib
 import struct
 import hashlib
+import base64
+import re
 from typing import Optional, Dict, Any, List
 
 import httpx
@@ -56,7 +59,7 @@ class GeminiClient:
                 f"Gemini Vertex client initialized model={self.primary_model_name} project={self.project} location={self.location}"
             )
 
-    async def _generate_with_fallback(self, prompt: str) -> str:
+    async def _generate_with_fallback(self, prompt: str, timeout_seconds: float = 90.0) -> str:
         """Generate text with Vertex REST and model fallback chain."""
         if not self.api_key:
             raise RuntimeError("Gemini API key not initialized")
@@ -64,7 +67,7 @@ class GeminiClient:
         last_error: Optional[str] = None
         tried: List[str] = []
 
-        async with httpx.AsyncClient(timeout=90.0) as client:
+        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
             for model_name in self.fallback_model_names:
                 if model_name in tried:
                     continue
@@ -179,6 +182,60 @@ Requirements:
             logger.warning(f"Gemini diagram refinement failed, using input JSON: {e}")
             return nano_banana_json
 
+    async def generate_diagram_image_from_nano_banana(
+        self,
+        topic: str,
+        diagram_type: str,
+        nano_banana_json: Dict[str, Any],
+    ) -> bytes:
+        """Generate diagram PNG bytes from Nano Banana JSON via Vertex text output (base64), with deterministic fallback."""
+        if not self.api_key:
+            return self._generate_fallback_png(
+                {
+                    "topic": topic,
+                    "diagram_type": diagram_type,
+                    "diagram": nano_banana_json,
+                    "kind": "diagram",
+                },
+                width=640,
+                height=360,
+            )
+
+        prompt = f"""You are Gemini 3.1 creating a rendered diagram image.
+Input diagram schema:
+{json.dumps(nano_banana_json, ensure_ascii=False)}
+
+Requirements:
+- Output ONLY base64-encoded PNG bytes
+- Canvas 1024x768
+- Render a clean architecture diagram using nodes and edges exactly from schema
+- No markdown, no prose
+"""
+        try:
+            text = await asyncio.wait_for(
+                self._generate_with_fallback(prompt, timeout_seconds=25.0),
+                timeout=30.0,
+            )
+            image = self._decode_base64_png(text)
+            if image:
+                if len(image) > 3_500_000:
+                    logger.warning("Gemini diagram image too large for workflow payload; using compact fallback")
+                else:
+                    return image
+        except Exception as e:
+            logger.warning(f"Gemini diagram image generation failed, using fallback image: {e}")
+
+        return self._generate_fallback_png(
+            {
+                "topic": topic,
+                "diagram_type": diagram_type,
+                "diagram": nano_banana_json,
+                "kind": "diagram",
+            },
+            width=640,
+            height=360,
+        )
+
 
     async def generate_visual_spec(
         self, 
@@ -221,6 +278,30 @@ Output JSON: {{ "prompt": "...", "negative_prompt": "...", "style": "..." }}
         return self._generate_fallback_png(visual_spec)
 
     @staticmethod
+    def _decode_base64_png(text: str) -> bytes:
+        """Decode PNG bytes from raw base64 or mixed output text."""
+        clean = (text or "").strip().replace("\n", "")
+        clean = re.sub(r"^```(?:[a-zA-Z0-9]+)?", "", clean).replace("```", "").strip()
+
+        candidates = re.findall(r"[A-Za-z0-9+/=]{120,}", clean)
+        pool = [clean]
+        pool.extend(sorted(candidates, key=len, reverse=True))
+
+        for candidate in pool:
+            token = re.sub(r"[^A-Za-z0-9+/=]", "", candidate)
+            if not token:
+                continue
+            token += "=" * ((4 - len(token) % 4) % 4)
+            try:
+                data = base64.b64decode(token, validate=True)
+                if data and data.startswith(b"\x89PNG"):
+                    return data
+            except Exception:
+                continue
+
+        return b""
+
+    @staticmethod
     def _generate_fallback_png(visual_spec: Dict[str, Any], width: int = 256, height: int = 256) -> bytes:
         """Generate a deterministic RGB PNG fallback from prompt/style text."""
         seed_text = json.dumps(visual_spec or {}, sort_keys=True, ensure_ascii=True)
@@ -231,14 +312,10 @@ Output JSON: {{ "prompt": "...", "negative_prompt": "...", "style": "..." }}
         for y in range(height):
             rows.append(0)  # no filter
             for x in range(width):
-                r = (x + digest[0] + (y // 3)) % 256
-                g = (y + digest[1] + (x // 5)) % 256
-                b = (x ^ y ^ digest[2]) % 256
-                # Add banding for stronger visual structure
-                if ((x // 32) + (y // 32)) % 2 == 0:
-                    r = (r + digest[3]) % 256
-                    g = (g + digest[4]) % 256
-                    b = (b + digest[5]) % 256
+                # Structured, compressible bands (safer payload size for Temporal)
+                r = (((x // 16) * 10) + digest[0]) % 256
+                g = (((y // 16) * 10) + digest[1]) % 256
+                b = ((((x // 32) + (y // 32)) * 20) + digest[2]) % 256
                 rows.extend((r, g, b))
 
         raw = bytes(rows)

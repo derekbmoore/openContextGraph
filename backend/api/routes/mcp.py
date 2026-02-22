@@ -301,6 +301,7 @@ async def dispatch_tool(tool_name: str, args: dict, user: Optional[SecurityConte
                     "story_path": result.story_path,
                     "diagram_path": result.diagram_path,
                     "image_path": f"/api/v1/images/{result.story_id}.png" if result.image_path else None,
+                    "architecture_image_path": f"/api/v1/images/{result.story_id}-architecture.png" if result.architecture_image_path else None,
                 }
             else:
                 return {

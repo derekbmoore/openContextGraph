@@ -1,0 +1,203 @@
+{
+  "edges": [
+    {
+      "label": "1. Dispatch MCP tool: generate_architecture_image",
+      "source": "orchestrator",
+      "target": "opus"
+    },
+    {
+      "label": "Persist workflow state (Event Sourced)",
+      "source": "orchestrator",
+      "target": "state_store"
+    },
+    {
+      "label": "Emit raw image artifact",
+      "source": "opus",
+      "target": "opus_artifact"
+    },
+    {
+      "label": "Binary payload hand-off via MCP",
+      "source": "opus_artifact",
+      "target": "serialization_boundary_1"
+    },
+    {
+      "label": "Validate payload integrity & hash",
+      "source": "serialization_boundary_1",
+      "target": "metadata_extractor"
+    },
+    {
+      "label": "2. Route extracted graph metadata via MCP",
+      "source": "metadata_extractor",
+      "target": "vertex_ai"
+    },
+    {
+      "label": "Invoke Nano for edge-optimized JSON refinement",
+      "source": "vertex_ai",
+      "target": "gemini_nano"
+    },
+    {
+      "label": "Emit strict schema-compliant JSON",
+      "source": "gemini_nano",
+      "target": "refined_json"
+    },
+    {
+      "label": "Enforce JSON schema & type safety",
+      "source": "refined_json",
+      "target": "serialization_boundary_2"
+    },
+    {
+      "label": "3. Pass validated JSON payload to renderer",
+      "source": "serialization_boundary_2",
+      "target": "renderer"
+    },
+    {
+      "label": "Render deterministic publishable diagram",
+      "source": "renderer",
+      "target": "final_artifact"
+    },
+    {
+      "label": "Compare output semantics vs input intent",
+      "source": "final_artifact",
+      "target": "round_trip_verifier"
+    },
+    {
+      "label": "Original reference for semantic diff",
+      "source": "opus_artifact",
+      "target": "round_trip_verifier"
+    },
+    {
+      "label": "Emit machine-readable pass/fail canary",
+      "source": "round_trip_verifier",
+      "target": "canary_signal"
+    },
+    {
+      "label": "Workflow durability confirmed (or trigger retry)",
+      "source": "canary_signal",
+      "target": "orchestrator"
+    },
+    {
+      "label": "State recovery checkpoint 1",
+      "source": "state_store",
+      "target": "serialization_boundary_1"
+    },
+    {
+      "label": "State recovery checkpoint 2",
+      "source": "state_store",
+      "target": "serialization_boundary_2"
+    },
+    {
+      "label": "Inject Trust Score: Model output fidelity",
+      "source": "secairadar",
+      "target": "opus"
+    },
+    {
+      "label": "Inject Trust Score: Refinement accuracy",
+      "source": "secairadar",
+      "target": "gemini_nano"
+    },
+    {
+      "label": "Query MCP registry for high-trust agent routing",
+      "source": "secairadar",
+      "target": "orchestrator"
+    },
+    {
+      "label": "Update agent trust scores based on semantic drift",
+      "source": "round_trip_verifier",
+      "target": "secairadar"
+    }
+  ],
+  "nodes": [
+    {
+      "color": "#6366f1",
+      "id": "orchestrator",
+      "label": "MCP Durable Orchestrator (Agentic Control Plane)",
+      "type": "orchestrator"
+    },
+    {
+      "color": "#f59e0b",
+      "id": "opus",
+      "label": "Claude 3 Opus (Visual Architecture Agent)",
+      "type": "model"
+    },
+    {
+      "color": "#fbbf24",
+      "id": "opus_artifact",
+      "label": "Raw Architecture Image Artifact (Unverified)",
+      "type": "artifact"
+    },
+    {
+      "color": "#ef4444",
+      "id": "serialization_boundary_1",
+      "label": "MCP Boundary 1 (Binary Payload & Hash Check)",
+      "type": "boundary"
+    },
+    {
+      "color": "#8b5cf6",
+      "id": "metadata_extractor",
+      "label": "Vision-to-Text Extractor (Agentic Pre-processor)",
+      "type": "processor"
+    },
+    {
+      "color": "#3b82f6",
+      "id": "vertex_ai",
+      "label": "Vertex AI MCP Gateway (Routing & Auth)",
+      "type": "infrastructure"
+    },
+    {
+      "color": "#10b981",
+      "id": "gemini_nano",
+      "label": "Gemini Nano (Edge JSON Refinement Agent)",
+      "type": "model"
+    },
+    {
+      "color": "#ef4444",
+      "id": "serialization_boundary_2",
+      "label": "MCP Boundary 2 (Strict JSON Schema Validation)",
+      "type": "boundary"
+    },
+    {
+      "color": "#fde047",
+      "id": "refined_json",
+      "label": "Refined Diagram JSON (Machine-Readable Schema)",
+      "type": "artifact"
+    },
+    {
+      "color": "#8b5cf6",
+      "id": "renderer",
+      "label": "Banana Diagram Renderer (Deterministic Output)",
+      "type": "processor"
+    },
+    {
+      "color": "#fbbf24",
+      "id": "final_artifact",
+      "label": "Published Diagram Image (Cryptographically Signed)",
+      "type": "artifact"
+    },
+    {
+      "color": "#06b6d4",
+      "id": "round_trip_verifier",
+      "label": "Agentic Round-Trip Verifier (Semantic Diff)",
+      "type": "validator"
+    },
+    {
+      "color": "#64748b",
+      "id": "state_store",
+      "label": "Durable State Store (Event Sourcing & Recovery)",
+      "type": "infrastructure"
+    },
+    {
+      "color": "#dc2626",
+      "id": "secairadar",
+      "label": "secairadar.cloud (Agent Trust Ranking & MCP Registry)",
+      "type": "trust_layer"
+    },
+    {
+      "color": "#22c55e",
+      "id": "canary_signal",
+      "label": "Telemetry Canary: Machine-Readable Health Signal",
+      "type": "signal"
+    }
+  ],
+  "title": "Durable Workflow: MCP Agent Hand-off & secairadar.cloud Trust Ranking",
+  "type": "architecture"
+}
